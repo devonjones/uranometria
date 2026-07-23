@@ -142,11 +142,12 @@ Review changes for the **self-contained output guarantee**: a generated chart is
 
 ## network-boundary-reviewer
 
-Review changes touching **network access**. This library has exactly one sanctioned network call: `catalog.sesame()`, the CDS Sesame designation resolver. Everything else is offline by contract, because host applications (astro workflow managers, CI, air-gapped processing boxes) embed this library and must be able to hold it to `allow_online=False`.
+Review changes touching **network access and external processes**. Sanctioned network calls, all to CDS services: `catalog.sesame()` (designation resolver, chart pipeline) and the `annotate.field` queries (VizieR Gaia DR3/Tycho-2, SIMBAD), each gated by `allow_online`/`--offline` and degrading to warnings. The Gaia archive (gea.esac.esa.int) is never contacted; it is blocked in some sandboxes, which is why Gaia data comes through VizieR. The one sanctioned external process is the ASTAP solver in `annotate/solver.py`: list-argv subprocess (never `shell=True`), explicit timeout, and a clear install-hint error when the binary is missing. Everything else is offline by contract, because host applications (astro workflow managers, CI, air-gapped processing boxes) embed this library and must be able to hold it to `allow_online=False`.
 
 **FLAG (P1) when a PR:**
 
-- Adds any network call outside `sesame()`, or any code path that reaches `sesame()` without passing an `allow_online` gate. Trace from `resolve_objects` down.
+- Adds any network call outside the sanctioned set above, or any code path reaching them without an `allow_online` gate. Trace from `resolve_objects` and `annotate.model.build_model` down.
+- Adds a subprocess call outside `annotate/solver.py`, or weakens the solver invocation (`shell=True`, missing timeout, unquoted paths).
 - Performs network I/O at import time or during `Catalog()` construction. Catalog data is bundled; construction must work in an offline sandbox.
 - Removes or bypasses the CLI `--offline` flag's effect.
 
@@ -217,7 +218,7 @@ Each reviewer runs independently and reports findings without coordination. A re
 | `celestial-math-reviewer` | `src/uranometria/chart.py`, `catalog.py` (angles), hemisphere logic in `page.py`/`core.py` |
 | `markup-safety-reviewer` | `src/uranometria/page.py`, `chart.py` (SVG emission) |
 | `self-contained-output-reviewer` | `src/uranometria/page.py`, `chart.py`, `assets/` |
-| `network-boundary-reviewer` | `src/uranometria/catalog.py`, `core.py`, `cli.py` |
+| `network-boundary-reviewer` | `src/uranometria/catalog.py`, `core.py`, `cli.py`, `annotate/` |
 | `catalog-data-reviewer` | `src/uranometria/catalog.py`, `resources.py`, `data/`, `assets/`, packaging config |
 | `public-surface-reviewer` | `core.py`, `cli.py`, `__init__.py`, `README.md`, `examples/`, `pyproject.toml` |
 

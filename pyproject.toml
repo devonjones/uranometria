@@ -1,6 +1,6 @@
 [project]
 name = "uranometria"
-version = "0.3.1"
+version = "0.4.0"
 description = "Star-atlas style HTML sky charts of the deep-sky objects you have photographed"
 readme = "README.md"
 license = "Apache-2.0"
@@ -13,14 +13,23 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Astronomy",
 ]
 dependencies = [
+    "click>=8.4.2",
     "pyyaml>=6",
 ]
 
 [project.scripts]
 uranometria = "uranometria.cli:main"
 
+[project.optional-dependencies]
+annotate = [
+    "astropy>=6",
+    "astroquery>=0.4",
+]
+
 [dependency-groups]
 dev = [
+    "astropy>=8.0.1",
+    "astroquery>=0.4.11",
     "black>=26.5.1",
     "pytest>=8",
 ]
@@ -31,3 +40,4 @@ build-backend = "uv_build"
 
 [tool.black]
 line-length = 100
+target-version = ["py311"]

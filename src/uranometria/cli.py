@@ -1,49 +1,111 @@
-"""Command-line wrapper: uranometria config.yaml [-o output.html]"""
+"""Command-line interface: uranometria chart / uranometria annotate."""
 
-import argparse
 import os
 import sys
 
+import click
 import yaml
 
+from . import __version__
 from .core import SkymapError, generate
 
 
-def main(argv=None):
-    ap = argparse.ArgumentParser(
-        prog="uranometria", description="Generate an HTML sky chart from a YAML object list."
-    )
-    ap.add_argument("config", help="YAML config file")
-    ap.add_argument("-o", "--output", help="output HTML path (default: <config>.html)")
-    ap.add_argument(
-        "--offline",
-        action="store_true",
-        help="never call the online Sesame resolver for unknown designations",
-    )
-    ap.add_argument(
-        "--mirror",
-        action="store_true",
-        help="mirrored (celestial-globe) orientation instead of the default "
-        "sky view; same as 'mirror: true' in the config",
-    )
-    args = ap.parse_args(argv)
+@click.group()
+@click.version_option(__version__, prog_name="uranometria")
+def main():
+    """Star charts and annotated astrophotos for the objects you've imaged."""
 
-    out = args.output or os.path.splitext(args.config)[0] + ".html"
+
+@main.command()
+@click.argument("config", type=click.Path(exists=True, dir_okay=False))
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(dir_okay=False),
+    help="output HTML path (default: <config>.html)",
+)
+@click.option("--offline", is_flag=True, help="never call the online Sesame resolver")
+@click.option(
+    "--mirror",
+    is_flag=True,
+    help="mirrored (celestial-globe) orientation; same as 'mirror: true' in the config",
+)
+def chart(config, output, offline, mirror):
+    """Generate an HTML sky chart from a YAML object list."""
+    out = output or os.path.splitext(config)[0] + ".html"
     try:
-        with open(args.config) as f:
+        with open(config) as f:
             cfg = yaml.safe_load(f)
         if not isinstance(cfg, dict):
-            raise SkymapError(f"{args.config} is not a mapping")
-        if args.mirror:
+            raise SkymapError(f"{config} is not a mapping")
+        if mirror:
             cfg["mirror"] = True
-        warnings = generate(cfg, out, allow_online=not args.offline)
+        warnings = generate(cfg, out, allow_online=not offline)
     except (SkymapError, FileNotFoundError, ValueError) as e:
-        sys.exit(f"error: {e}")
+        raise click.ClickException(str(e)) from None
     for w in warnings:
-        print("note:", w, file=sys.stderr)
-    size = os.path.getsize(out) // 1024
-    print(f"wrote {out} ({size} KB)")
-    return 0
+        click.echo(f"note: {w}", err=True)
+    click.echo(f"wrote {out} ({os.path.getsize(out) // 1024} KB)")
+
+
+@main.command()
+@click.argument("image", type=click.Path(exists=True, dir_okay=False))
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(dir_okay=False),
+    help="output JSON path (default: <image>.annotations.json)",
+)
+@click.option(
+    "--mag-limit", default=12.5, show_default=True, help="faintest field stars to include"
+)
+@click.option("--max-stars", default=15, show_default=True, help="most field stars to include")
+@click.option("--offline", is_flag=True, help="skip SIMBAD/VizieR star queries (DSOs only)")
+@click.option("--astap", help="path to the astap_cli binary (or set ASTAP_CLI)")
+@click.option("--astap-db", help="path to the ASTAP star database directory (or set ASTAP_DB)")
+@click.option("--ra", type=float, help="pointing hint: RA in hours")
+@click.option("--dec", type=float, help="pointing hint: declination in degrees")
+@click.option(
+    "--radius", default=30.0, show_default=True, help="search radius around the hint, degrees"
+)
+def annotate(image, output, mag_limit, max_stars, offline, astap, astap_db, ra, dec, radius):
+    """Plate-solve IMAGE and write its annotation model (JSON).
+
+    Solve the star-rich stack, not a starless render. Requires the [annotate]
+    extra (astropy + astroquery) and the ASTAP command-line solver.
+    """
+    try:
+        from .annotate import AstapError, build_model, write_model
+    except ImportError as err:
+        raise click.ClickException(
+            f"the annotate feature needs the [annotate] extra ({err}). "
+            'Install with: uv tool install "uranometria[annotate] @ git+https://github.com/devonjones/uranometria"'
+        ) from None
+    out = output or os.fspath(image) + ".annotations.json"
+    solve_kwargs = {"astap": astap, "db_dir": astap_db, "radius": radius}
+    if ra is not None and dec is not None:
+        solve_kwargs.update(ra_hours=ra, dec=dec)
+    try:
+        model = build_model(
+            image,
+            mag_limit=mag_limit,
+            max_stars=max_stars,
+            allow_online=not offline,
+            solve_kwargs=solve_kwargs,
+        )
+    except AstapError as e:
+        raise click.ClickException(str(e)) from None
+    write_model(model, out)
+    for w in model["warnings"]:
+        click.echo(f"note: {w}", err=True)
+    s = model["solved"]
+    dsos = sum(1 for o in model["objects"] if o["kind"] == "dso")
+    stars = sum(1 for o in model["objects"] if o["kind"] == "star")
+    click.echo(
+        f"solved: center {s['center_ra']:.4f}° {s['center_dec']:+.4f}° · "
+        f"{s['scale_arcsec_px']}\"/px · FOV {s['fov_deg'][0]}°×{s['fov_deg'][1]}°"
+    )
+    click.echo(f"wrote {out} ({dsos} DSOs, {stars} stars)")
 
 
 if __name__ == "__main__":

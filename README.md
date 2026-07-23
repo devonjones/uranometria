@@ -42,11 +42,17 @@ From a local checkout: `uv tool install <path-to-checkout>`.
 
 ## CLI
 
+The CLI is a command group (as of 0.4.0; the bare `uranometria config.yaml`
+form became `uranometria chart config.yaml`).
+
 ```sh
-uranometria skymap.yaml                 # writes skymap.html next to the config
-uranometria skymap.yaml -o map.html
-uranometria skymap.yaml --offline       # never call the online resolver
-uranometria skymap.yaml --mirror        # mirrored (celestial-globe) orientation
+uranometria chart skymap.yaml           # writes skymap.html next to the config
+uranometria chart skymap.yaml -o map.html
+uranometria chart skymap.yaml --offline # never call the online resolver
+uranometria chart skymap.yaml --mirror  # mirrored (celestial-globe) orientation
+
+uranometria annotate stack.fit          # plate-solve + annotation model JSON
+uranometria annotate stack.fit --ra 13.5 --dec 47.2   # pointing hint speeds the solve
 ```
 
 Charts default to sky view, oriented the way the sky actually looks from
@@ -87,6 +93,28 @@ enter coordinates yourself.
 
 If any object sits south of declination -35°, a southern-hemisphere chart is
 added automatically and the page gets a toggle to switch between the two.
+
+## Annotating images
+
+`uranometria annotate` plate-solves a stacked astrophoto and writes an
+annotation model: a JSON sidecar listing everything identified in the frame
+(deep-sky objects, named bright stars, field stars) with sky and pixel
+coordinates, magnitudes, parallax distances, and catalog links. Renderers for
+an annotated PNG and an interactive HTML page build on this model.
+
+It needs two things beyond the base install:
+
+1. The `annotate` extra: `pip install "uranometria[annotate] @ git+https://github.com/devonjones/uranometria"`
+   (astropy + astroquery).
+2. The [ASTAP](https://www.hnsky.org/astap.htm) command-line solver with a
+   local star database (D20 works for fields near 1°). Point at them with
+   `--astap`/`--astap-db` or the `ASTAP_CLI`/`ASTAP_DB` environment variables.
+
+Solving is fully offline through ASTAP's bundled database. Field-star
+identification queries CDS services (VizieR for Gaia DR3 magnitudes and
+distances, Tycho-2 for designations, SIMBAD for named bright stars); pass
+`--offline` to skip those and keep only the bundled-catalog DSOs. Solve the
+star-rich stack, not a starless render.
 
 ## Library API
 
