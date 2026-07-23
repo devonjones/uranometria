@@ -24,17 +24,20 @@ zoom, drag to pan. The sample is generated from
 
 ## Install
 
+Not on PyPI yet — install straight from git:
+
 ```sh
-uv tool install uranometria            # once published
-uv tool install ~/Projects/uranometria # from a local checkout
+uv tool install git+https://github.com/devonjones/uranometria   # CLI on your PATH
+pip install git+https://github.com/devonjones/uranometria       # or plain pip
 ```
 
 Or as a dependency of another project:
 
 ```sh
-uv add uranometria                            # once published
-uv add uranometria @ git+https://github.com/devonjones/uranometria  # from git
+uv add "uranometria @ git+https://github.com/devonjones/uranometria"
 ```
+
+From a local checkout: `uv tool install <path-to-checkout>`.
 
 ## CLI
 
