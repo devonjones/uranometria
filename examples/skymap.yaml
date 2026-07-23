@@ -1,5 +1,5 @@
 # Example uranometria config — regenerate the sample with:
-#   uv run uranometria examples/skymap.yaml
+#   uv run uranometria chart examples/skymap.yaml
 #
 # Objects can be:
 #   - a bare designation:      - M31

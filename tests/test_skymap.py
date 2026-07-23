@@ -323,22 +323,28 @@ def test_title_entities_survive_case_transforms(tmp_path):
 
 
 def test_cli(tmp_path):
+    from click.testing import CliRunner
+
     from uranometria.cli import main
 
     cfg = tmp_path / "sky.yaml"
     cfg.write_text("objects: [M31]\n")
-    assert main([str(cfg), "--offline", "--mirror"]) == 0
+    result = CliRunner().invoke(main, ["chart", str(cfg), "--offline", "--mirror"])
+    assert result.exit_code == 0, result.output
     out = tmp_path / "sky.html"  # default output name
     assert "mirrored (globe) view" in out.read_text()
 
 
 def test_cli_non_mapping_yaml(tmp_path):
+    from click.testing import CliRunner
+
     from uranometria.cli import main
 
     cfg = tmp_path / "bad.yaml"
     cfg.write_text("- just\n- a list\n")
-    with pytest.raises(SystemExit, match="not a mapping"):
-        main([str(cfg)])
+    result = CliRunner().invoke(main, ["chart", str(cfg)])
+    assert result.exit_code != 0
+    assert "not a mapping" in result.output
 
 
 # ---- pr-review-loop round 1 -------------------------------------------------
