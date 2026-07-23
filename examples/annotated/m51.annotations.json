@@ -1,0 +1,445 @@
+{
+ "schema": 1,
+ "image": "M_51_1411x20sec_T22degC_2026-07-14_drizz.fit",
+ "image_size": [
+  2160,
+  3840
+ ],
+ "solved": {
+  "pixel_frame": "fits0",
+  "cd": [
+   [
+    -0.0003299258764896765,
+    1.0231196039249049e-05
+   ],
+   [
+    -1.0201054076435302e-05,
+    -0.0003299173451339913
+   ]
+  ],
+  "center_ra": 202.51662023322103,
+  "center_dec": 47.206372694886255,
+  "scale_arcsec_px": 1.188,
+  "fov_deg": [
+   0.713,
+   1.267
+  ],
+  "rotation_deg": -178.22897705224872,
+  "solver": "ASTAP"
+ },
+ "generated": "2026-07-23T22:16:52+00:00",
+ "objects": [
+  {
+   "kind": "dso",
+   "designation": "M51",
+   "name": "Whirlpool Galaxy",
+   "type": "Galaxy",
+   "constellation": "Canes\u2005Venatici",
+   "ra": 202.46962499999998,
+   "dec": 47.195166666666665,
+   "x": 1177.2,
+   "y": 1950.4,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=M51",
+    "wikipedia": "https://en.wikipedia.org/wiki/Messier_51"
+   }
+  },
+  {
+   "kind": "dso",
+   "designation": "NGC 5195",
+   "name": null,
+   "type": "Galaxy",
+   "constellation": "Canes\u2005Venatici",
+   "ra": 202.49829166666666,
+   "dec": 47.26613888888889,
+   "x": 1111.5,
+   "y": 1737.3,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=NGC+5195"
+   }
+  },
+  {
+   "kind": "dso",
+   "designation": "IC 4278",
+   "name": null,
+   "type": "Galaxy",
+   "constellation": "Canes\u2005Venatici",
+   "ra": 202.6147916666667,
+   "dec": 47.24688888888889,
+   "x": 873.9,
+   "y": 1802.9,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=IC+4278"
+   }
+  },
+  {
+   "kind": "dso",
+   "designation": "IC 4277",
+   "name": null,
+   "type": "Galaxy",
+   "constellation": "Canes\u2005Venatici",
+   "ra": 202.56966666666668,
+   "dec": 47.314166666666665,
+   "x": 960.5,
+   "y": 1596.4,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=IC+4277"
+   }
+  },
+  {
+   "kind": "dso",
+   "designation": "IC 4282",
+   "name": null,
+   "type": "Galaxy",
+   "constellation": "Canes\u2005Venatici",
+   "ra": 202.832375,
+   "dec": 47.183861111111106,
+   "x": 431.7,
+   "y": 2006.4,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=IC+4282"
+   }
+  },
+  {
+   "kind": "dso",
+   "designation": "IC 4263",
+   "name": null,
+   "type": "Galaxy",
+   "constellation": "Canes\u2005Venatici",
+   "ra": 202.13829166666665,
+   "dec": 46.92719444444444,
+   "x": 1888.0,
+   "y": 2738.8,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=IC+4263"
+   }
+  },
+  {
+   "kind": "dso",
+   "designation": "IC 4285",
+   "name": null,
+   "type": "Galaxy",
+   "constellation": "Canes\u2005Venatici",
+   "ra": 202.93975000000003,
+   "dec": 46.82161111111112,
+   "x": 238.8,
+   "y": 3109.4,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=IC+4285"
+   }
+  },
+  {
+   "kind": "dso",
+   "designation": "IC 4284",
+   "name": null,
+   "type": "Galaxy",
+   "constellation": "Canes\u2005Venatici",
+   "ra": 202.88308333333336,
+   "dec": 46.79511111111111,
+   "x": 358.3,
+   "y": 3186.6,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=IC+4284"
+   }
+  },
+  {
+   "kind": "dso",
+   "designation": "NGC 5198",
+   "name": null,
+   "type": "Galaxy",
+   "constellation": "Canes\u2005Venatici",
+   "ra": 202.5475,
+   "dec": 46.67077777777777,
+   "x": 1065.6,
+   "y": 3543.4,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=NGC+5198"
+   }
+  },
+  {
+   "kind": "dso",
+   "designation": "NGC 5169",
+   "name": null,
+   "type": "Galaxy",
+   "constellation": "Canes\u2005Venatici",
+   "ra": 202.041875,
+   "dec": 46.67213888888889,
+   "x": 2116.0,
+   "y": 3503.8,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=NGC+5169"
+   }
+  },
+  {
+   "kind": "dso",
+   "designation": "NGC 5173",
+   "name": null,
+   "type": "Galaxy",
+   "constellation": "Canes\u2005Venatici",
+   "ra": 202.10529166666666,
+   "dec": 46.591638888888895,
+   "x": 1993.1,
+   "y": 3752.4,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=NGC+5173"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "HD 117815",
+   "type": "Star (A5)",
+   "ra": 202.9837469085,
+   "dec": 47.23441583676999,
+   "x": 116.3,
+   "y": 1861.4,
+   "mag": 7.08,
+   "band": "V",
+   "dist_pc": 112,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=HD+117815"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 1,
+   "designation": "TYC 3466-994-1",
+   "ra": 202.75727465492,
+   "dec": 47.70836371272,
+   "x": 542.0,
+   "y": 413.8,
+   "mag": 9.5,
+   "band": "G",
+   "dist_pc": 128,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3466-994-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 2,
+   "designation": "TYC 3460-136-1",
+   "ra": 202.37944216292,
+   "dec": 47.76847658405,
+   "x": 1305.9,
+   "y": 208.4,
+   "mag": 10.1,
+   "band": "G",
+   "dist_pc": null,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3460-136-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 3,
+   "designation": "TYC 3466-997-1",
+   "ra": 202.53274252375,
+   "dec": 47.73815460327,
+   "x": 996.7,
+   "y": 310.1,
+   "mag": 10.4,
+   "band": "G",
+   "dist_pc": 1239,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3466-997-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 4,
+   "designation": "TYC 3463-978-1",
+   "ra": 202.72609046096,
+   "dec": 46.81528876982,
+   "x": 682.1,
+   "y": 3116.6,
+   "mag": 10.6,
+   "band": "G",
+   "dist_pc": 238,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3463-978-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 5,
+   "designation": "TYC 3466-1070-1",
+   "ra": 202.69017556774,
+   "dec": 47.7840535238,
+   "x": 672.1,
+   "y": 180.7,
+   "mag": 10.7,
+   "band": "G",
+   "dist_pc": 375,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3466-1070-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 6,
+   "designation": "TYC 3463-582-1",
+   "ra": 202.64975430542,
+   "dec": 46.99729234346,
+   "x": 824.2,
+   "y": 2560.9,
+   "mag": 10.9,
+   "band": "G",
+   "dist_pc": 980,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3463-582-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 7,
+   "designation": "TYC 3463-58-1",
+   "ra": 202.78110201134,
+   "dec": 47.18368331119,
+   "x": 537.3,
+   "y": 2004.1,
+   "mag": 10.9,
+   "band": "G",
+   "dist_pc": 975,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3463-58-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 8,
+   "designation": "TYC 3460-285-1",
+   "ra": 202.07652135958,
+   "dec": 47.42308834953,
+   "x": 1960.7,
+   "y": 1232.8,
+   "mag": 11.1,
+   "band": "G",
+   "dist_pc": 665,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3460-285-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 9,
+   "designation": "Gaia DR3 1551933213472189952",
+   "ra": 202.96465168074,
+   "dec": 46.94155717157,
+   "x": 178.0,
+   "y": 2747.4,
+   "mag": 11.2,
+   "band": "G",
+   "dist_pc": 64,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=Gaia+DR3+1551933213472189952"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 10,
+   "designation": "TYC 3463-587-1",
+   "ra": 202.83837832437,
+   "dec": 47.13587585616,
+   "x": 423.3,
+   "y": 2152.1,
+   "mag": 11.2,
+   "band": "G",
+   "dist_pc": 279,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3463-587-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 11,
+   "designation": "TYC 3463-348-1",
+   "ra": 202.79467749296,
+   "dec": 47.1926513632,
+   "x": 508.6,
+   "y": 1977.7,
+   "mag": 11.3,
+   "band": "G",
+   "dist_pc": 1841,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3463-348-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 12,
+   "designation": "TYC 3460-642-1",
+   "ra": 202.01920622522,
+   "dec": 47.21324001325,
+   "x": 2101.9,
+   "y": 1863.8,
+   "mag": 11.3,
+   "band": "G",
+   "dist_pc": 1488,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3460-642-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 13,
+   "designation": "TYC 3466-1146-1",
+   "ra": 202.71760648937,
+   "dec": 47.57116257031,
+   "x": 634.6,
+   "y": 827.0,
+   "mag": 11.5,
+   "band": "G",
+   "dist_pc": 364,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3466-1146-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 14,
+   "designation": "Gaia DR3 1551837448584205952",
+   "ra": 202.84357101551,
+   "dec": 46.83643510096,
+   "x": 436.9,
+   "y": 3059.3,
+   "mag": 11.6,
+   "band": "G",
+   "dist_pc": 1736,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=Gaia+DR3+1551837448584205952"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 15,
+   "designation": "TYC 3460-302-1",
+   "ra": 202.32829279624,
+   "dec": 47.68429592468,
+   "x": 1418.5,
+   "y": 459.9,
+   "mag": 11.6,
+   "band": "G",
+   "dist_pc": 388,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3460-302-1"
+   }
+  }
+ ],
+ "warnings": []
+}

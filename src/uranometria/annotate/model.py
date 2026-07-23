@@ -169,6 +169,10 @@ def build_model(image, *, mag_limit=12.5, max_stars=15, allow_online=True, solve
         "image_size": [width, height],
         "solved": {
             "pixel_frame": "fits0",  # see module docstring: 0-indexed, FITS row order
+            "cd": [
+                [solution["cd1_1"], solution["cd1_2"]],
+                [solution["cd2_1"], solution["cd2_2"]],
+            ],
             "center_ra": center_ra,
             "center_dec": center_dec,
             "scale_arcsec_px": round(scale, 3),

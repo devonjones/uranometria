@@ -113,7 +113,26 @@ It needs two things beyond the base install:
 The model's object positions are 0-indexed pixels in the solved image's
 FITS frame (`solved.pixel_frame: "fits0"`); renderers drawing on top-left
 origin rasters flip y. Solving is fully offline through ASTAP's bundled
-database. Field-star
+database.
+
+Add `--png` to also render the annotated image: markers and leader labels
+colored by object class (galaxies blue, emission nebulae pink, planetaries
+teal, clusters orange, named stars yellow), numbered circles for field
+stars, a legend panel, N/E compass from the solved CD matrix, and a scale
+bar. `uranometria render model.json image.fit` re-renders from an existing
+model. Two samples from real Seestar data live in
+[`examples/annotated/`](examples/annotated/):
+
+![M51 annotated](examples/annotated/M51_annotated.jpg)
+
+The Whirlpool from a 1,411-sub drizzled stack: M51 and NGC 5195 called out,
+the IC companions labeled, HD 117815 identified with magnitude and distance,
+and Gaia field stars keyed to the legend table.
+
+![Sh2-142 annotated](examples/annotated/Sh2-142_annotated.jpg)
+
+The Wizard Nebula from a Seestar stack JPEG: NGC 7380 and Sh2-142 labeled at
+their own centroids, four named bright stars, and the field-star table. Field-star
 identification queries CDS services (VizieR for Gaia DR3 magnitudes and
 distances, Tycho-2 for designations, SIMBAD for named bright stars); pass
 `--offline` to skip those and keep only the bundled-catalog DSOs. Solve the

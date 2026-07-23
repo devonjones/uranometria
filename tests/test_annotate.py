@@ -316,3 +316,118 @@ def test_cli_annotate_reports_os_errors(monkeypatch, tmp_path):
     assert result.exit_code != 0
     assert "permission denied" in result.output
     assert "Traceback" not in result.output
+
+
+# ---- PNG renderer (uranometria-2) ------------------------------------------
+
+
+def _tiny_model(w=80, h=60):
+    return {
+        "schema": 1,
+        "image": "tiny.jpg",
+        "image_size": [w, h],
+        "solved": {
+            "pixel_frame": "fits0",
+            "cd": [[-0.00033, 0.00001], [0.00001, 0.00033]],
+            "center_ra": 202.5,
+            "center_dec": 47.2,
+            "scale_arcsec_px": 1.19,
+            "fov_deg": [0.03, 0.02],
+            "rotation_deg": 178.0,
+            "solver": "ASTAP",
+        },
+        "generated": "2026-01-01T00:00:00+00:00",
+        "objects": [
+            {
+                "kind": "dso",
+                "designation": "M51",
+                "name": "Whirlpool Galaxy",
+                "type": "Galaxy",
+                "ra": 202.47,
+                "dec": 47.2,
+                "x": 30.0,
+                "y": 25.0,
+                "links": {},
+            },
+            {
+                "kind": "star",
+                "named": True,
+                "designation": "HD 1",
+                "type": "Star (A5)",
+                "ra": 202.6,
+                "dec": 47.3,
+                "x": 60.0,
+                "y": 15.0,
+                "mag": 7.0,
+                "band": "V",
+                "dist_pc": 100,
+                "links": {},
+            },
+            {
+                "kind": "star",
+                "named": False,
+                "key": 1,
+                "designation": "TYC 1-2-3",
+                "ra": 202.4,
+                "dec": 47.1,
+                "x": 20.0,
+                "y": 45.0,
+                "mag": 10.5,
+                "band": "G",
+                "dist_pc": 500,
+                "links": {},
+            },
+        ],
+        "warnings": [],
+    }
+
+
+def test_compass_vectors():
+    from uranometria.annotate.render_png import compass_vectors
+
+    # identity-ish CD (north up, east right in pixel space)
+    north, east = compass_vectors([[1e-4, 0.0], [0.0, 1e-4]])
+    assert north == pytest.approx((0.0, 1.0))
+    assert east == pytest.approx((1.0, 0.0))
+    # mirrored x (typical sky image): east flips, north stays
+    north, east = compass_vectors([[-1e-4, 0.0], [0.0, 1e-4]])
+    assert north == pytest.approx((0.0, 1.0))
+    assert east == pytest.approx((-1.0, 0.0))
+
+
+def test_dso_color_classes():
+    from uranometria.annotate.render_png import COLORS, dso_color
+
+    assert dso_color("Galaxy") == COLORS["galaxy"]
+    assert dso_color("Planetary nebula") == COLORS["planetary"]
+    assert dso_color("Emission nebula (H II)") == COLORS["emission"]
+    assert dso_color("Dark nebula") == COLORS["dark"]
+    assert dso_color("Open cluster") == COLORS["cluster"]
+    # Cl+N types (M42, NGC 7380) deliberately color as nebulae, not clusters
+    assert dso_color("Cluster + nebula") == COLORS["emission"]
+
+
+def test_render_png_smoke(tmp_path):
+    from PIL import Image
+
+    from uranometria.annotate.render_png import render_png
+
+    img = tmp_path / "tiny.jpg"
+    Image.new("RGB", (80, 60), (8, 10, 24)).save(img)
+    out = tmp_path / "tiny_annotated.png"
+    render_png(_tiny_model(), img, out)
+    with Image.open(out) as rendered:
+        w, h = rendered.size
+    assert w > 80  # legend panel added
+    assert h >= 59
+
+
+def test_render_png_size_mismatch(tmp_path):
+    from PIL import Image
+
+    from uranometria.annotate.render_png import render_png
+
+    img = tmp_path / "wrong.jpg"
+    Image.new("RGB", (50, 50)).save(img)
+    with pytest.raises(ValueError, match="same image"):
+        render_png(_tiny_model(), img, tmp_path / "x.png")
