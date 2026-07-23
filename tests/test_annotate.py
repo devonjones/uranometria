@@ -165,7 +165,7 @@ def test_model_online_star_assembly(monkeypatch, tmp_path):
             "mag": 7.08,
             "band": "V",
             "sp_type": "A5",
-            "dist_pc": 112,
+            "dist_ly": 365,
         }
     ]
     field = [
@@ -176,7 +176,7 @@ def test_model_online_star_assembly(monkeypatch, tmp_path):
             "dec": 47.27,
             "mag": 7.1,
             "band": "G",
-            "dist_pc": 112,
+            "dist_ly": 365,
         },
         {
             "designation": "TYC 3463-582-1",
@@ -184,7 +184,7 @@ def test_model_online_star_assembly(monkeypatch, tmp_path):
             "dec": 47.1,
             "mag": 10.9,
             "band": "G",
-            "dist_pc": 980,
+            "dist_ly": 3196,
         },
         {
             "designation": "Gaia DR3 2",
@@ -192,7 +192,7 @@ def test_model_online_star_assembly(monkeypatch, tmp_path):
             "dec": 47.3,
             "mag": 12.0,
             "band": "G",
-            "dist_pc": None,
+            "dist_ly": None,
         },
     ]
     monkeypatch.setattr(model, "solve", lambda image, **kw: dict(M51_SOLUTION))
@@ -360,7 +360,7 @@ def _tiny_model(w=80, h=60):
                 "y": 15.0,
                 "mag": 7.0,
                 "band": "V",
-                "dist_pc": 100,
+                "dist_ly": 326,
                 "links": {},
             },
             {
@@ -374,7 +374,7 @@ def _tiny_model(w=80, h=60):
                 "y": 45.0,
                 "mag": 10.5,
                 "band": "G",
-                "dist_pc": 500,
+                "dist_ly": 1631,
                 "links": {},
             },
         ],
@@ -623,3 +623,102 @@ def test_load_image_edge_cases(tmp_path):
     fits.PrimaryHDU().writeto(f3)
     with pytest.raises(ValueError, match="no image data"):
         _load_image(f3)
+
+
+def test_render_applies_cross_frame_flip(tmp_path):
+    """A fits0 model composited onto a JPEG must draw at flipped y — pins the
+    render-time flip block itself, not just the needs_flip helper."""
+    import numpy as np
+    from PIL import Image
+
+    from uranometria.annotate.render_png import render_png
+
+    W, H = 200, 150
+    img = tmp_path / "t.jpg"
+    Image.new("RGB", (W, H), (0, 0, 0)).save(img)
+    m = _tiny_model(W, H)
+    m["image"] = "t.jpg"
+    m["solved"]["pixel_frame"] = "fits0"  # jpg target => flip must apply
+    m["objects"] = [
+        {
+            "kind": "star",
+            "named": False,
+            "key": 1,
+            "designation": "T",
+            "ra": 0.0,
+            "dec": 0.0,
+            "x": 40.0,
+            "y": 20.0,
+            "mag": 10.0,
+            "band": "G",
+            "dist_ly": None,
+            "links": {},
+        }
+    ]
+    out = tmp_path / "o.png"
+    render_png(m, img, out)
+    a = np.asarray(Image.open(out).convert("RGB"), dtype=int)
+
+    def green_pixels(cy):
+        win = a[max(0, cy - 7) : cy + 8, 30:52]
+        return int(((win[:, :, 1] > 140) & (win[:, :, 0] < 140)).sum())
+
+    assert green_pixels((H - 1) - 20) > 0  # circle drawn at the flipped row
+    assert green_pixels(20) == 0  # nothing at the unflipped row
+
+
+def test_dso_redshift_distance_offline(monkeypatch, tmp_path):
+    import uranometria.annotate.model as model
+
+    monkeypatch.setattr(model, "solve", lambda image, **kw: dict(M51_SOLUTION))
+    monkeypatch.setattr(model, "_image_size", lambda image: (3872, 2192))
+    m = model.build_model(tmp_path / "f.fit", allow_online=False)
+    m51 = next(o for o in m["objects"] if o["designation"] == "M51")
+    # Hubble-flow from OpenNGC redshift: ~22 Mly for M51
+    assert 15e6 < m51["dist_ly"] < 32e6
+
+
+def test_dso_distances_merge_and_failure(monkeypatch, tmp_path):
+    import uranometria.annotate.model as model
+
+    monkeypatch.setattr(model, "solve", lambda image, **kw: dict(M51_SOLUTION))
+    monkeypatch.setattr(model, "_image_size", lambda image: (3872, 2192))
+    monkeypatch.setattr(model, "named_bright_stars", lambda *a, **k: [])
+    monkeypatch.setattr(model, "stars_in_field", lambda *a, **k: [])
+    monkeypatch.setattr(model, "dso_distances", lambda desigs: {"IC 4277": 500_000_000})
+    m = model.build_model(tmp_path / "f.fit", allow_online=True)
+    ic = next(o for o in m["objects"] if o["designation"] == "IC 4277")
+    assert ic["dist_ly"] == 500_000_000  # SIMBAD fill for redshift-less DSOs
+
+    def boom(desigs):
+        raise RuntimeError("simbad down")
+
+    monkeypatch.setattr(model, "dso_distances", boom)
+    m = model.build_model(tmp_path / "f.fit", allow_online=True)
+    assert any("distance lookup failed" in w for w in m["warnings"])
+
+
+def test_star_dist_ly_passthrough(monkeypatch, tmp_path):
+    import uranometria.annotate.model as model
+
+    monkeypatch.setattr(model, "solve", lambda image, **kw: dict(M51_SOLUTION))
+    monkeypatch.setattr(model, "_image_size", lambda image: (3872, 2192))
+    monkeypatch.setattr(model, "dso_distances", lambda desigs: {})
+    monkeypatch.setattr(model, "named_bright_stars", lambda *a, **k: [])
+    monkeypatch.setattr(
+        model,
+        "stars_in_field",
+        lambda *a, **k: [
+            {
+                "designation": "TYC 1-1-1",
+                "ra": 202.7,
+                "dec": 47.1,
+                "mag": 10.9,
+                "band": "G",
+                "dist_ly": 3196,
+            }
+        ],
+    )
+    m = model.build_model(tmp_path / "f.fit", allow_online=True)
+    star = next(o for o in m["objects"] if o["kind"] == "star")
+    assert star["dist_ly"] == 3196

@@ -110,9 +110,11 @@ It needs two things beyond the base install:
    local star database (D20 works for fields near 1°). Point at them with
    `--astap`/`--astap-db` or the `ASTAP_CLI`/`ASTAP_DB` environment variables.
 
-The model's object positions are 0-indexed pixels in the solved image's
-FITS frame (`solved.pixel_frame: "fits0"`); renderers drawing on top-left
-origin rasters flip y. Solving is fully offline through ASTAP's bundled
+The model's object positions are 0-indexed pixels in the frame named by
+`solved.pixel_frame`: `"fits0"` for FITS sources (FITS row order) and
+`"raster0"` for JPEG/PNG sources (top-down, drawn as-is). A renderer only
+flips y when compositing a model onto an image of the other kind — the
+bundled renderer does this automatically. Solving is fully offline through ASTAP's bundled
 database.
 
 Add `--png` to also render the annotated image: markers and leader labels

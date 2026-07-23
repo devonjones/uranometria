@@ -308,16 +308,22 @@ def render_png(model, image_path, output, *, title=None, max_width=2000):
             lx = min(max(lx, 0.03 * W), 0.97 * W)
             ly = min(max(ly, 0.07 * H), 0.95 * H)
             score = 10 * _seg_crossings(x, y, lx, ly, (x, y)) + 0.1 * i
+            # penalize directions whose text would run off the near edge, so
+            # the anchor never has to flip against the leader line
+            if (dx >= 0 and lx > 0.82 * W) or (dx < 0 and lx < 0.18 * W):
+                score += 5
             if best is None or score < best[0]:
-                best = (score, lx, ly)
+                best = (score, lx, ly, dx)
             if score < 0.5:
                 break
-        _, lx, ly = best
-        ha = "left" if lx >= x else "right"
-        if lx > 0.85 * W:
-            ha = "right"  # keep text inside the frame near the panel edge
-        elif lx < 0.15 * W:
-            ha = "left"
+        _, lx, ly, dx = best
+        ha = "left" if dx >= 0 else "right"
+        # clamp inward with the natural anchor rather than flipping it — a
+        # flipped anchor makes the leader strike through its own text
+        if ha == "left" and lx > 0.82 * W:
+            lx = 0.82 * W
+        elif ha == "right" and lx < 0.18 * W:
+            lx = 0.18 * W
         ax.plot([x, lx], [y, ly], color=color, lw=1.0, alpha=0.9, zorder=9)
         ax.text(
             lx,
