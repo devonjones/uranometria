@@ -56,8 +56,13 @@ def dsos_in_field(center_ra, center_dec, radius_deg, catalog=None):
             continue
         key = (round(rec["ra"], 4), round(rec["dec"], 4))
         cur = best.get(key)
-        if cur is None or _designation_rank(rec["disp"]) < _designation_rank(cur["disp"]):
-            best[key] = dict(rec, sep_deg=d)
+        if cur is None:
+            best[key] = dict(rec, sep_deg=d, aliases=[])
+        elif _designation_rank(rec["disp"]) < _designation_rank(cur["disp"]):
+            aliases = [a for a in [cur["disp"]] + cur["aliases"] if a != rec["disp"]]
+            best[key] = dict(rec, sep_deg=d, aliases=aliases)
+        elif rec["disp"] != cur["disp"] and rec["disp"] not in cur["aliases"]:
+            cur["aliases"].append(rec["disp"])
     hits = sorted(best.values(), key=lambda r: r["sep_deg"])
     return hits
 
@@ -84,7 +89,7 @@ def stars_in_field(center_ra, center_dec, radius_deg, *, mag_limit=12.5, max_sta
     if gaia:
         for row in gaia[0]:
             plx = float(row["Plx"]) if row["Plx"] else None
-            dist = 1000.0 / plx if plx and plx > 0.5 else None
+            dist_pc = 1000.0 / plx if plx and plx > 0.5 else None
             stars.append(
                 {
                     "designation": f"Gaia DR3 {row['Source']}",
@@ -92,7 +97,7 @@ def stars_in_field(center_ra, center_dec, radius_deg, *, mag_limit=12.5, max_sta
                     "dec": float(row["DE_ICRS"]),
                     "mag": round(float(row["Gmag"]), 1),
                     "band": "G",
-                    "dist_pc": round(dist) if dist else None,
+                    "dist_ly": round(dist_pc * 3.26156) if dist_pc else None,
                 }
             )
     stars.sort(key=lambda s: s["mag"])
@@ -172,8 +177,44 @@ def named_bright_stars(center_ra, center_dec, radius_deg, *, mag_limit=8.5):
                 "mag": round(v, 2),
                 "band": "V",
                 "sp_type": _str_or_none(col(row, "sp_type")),
-                "dist_pc": round(1000.0 / plx) if plx and plx > 0.5 else None,
+                "dist_ly": round(1000.0 / plx * 3.26156) if plx and plx > 0.5 else None,
             }
         )
     out.sort(key=lambda s: s["mag"])
+    return out
+
+
+_DIST_LY_PER_UNIT = {"pc": 3.26156, "kpc": 3261.56, "mpc": 3.26156e6}
+
+
+def dso_distances(designations):
+    """SIMBAD mean distances in light-years, keyed by designation. Online only;
+    designations SIMBAD doesn't know or has no distance for are simply absent."""
+    from astroquery.simbad import Simbad
+
+    sim = Simbad()
+    sim.add_votable_fields("mesdistance")
+    out = {}
+    for desig in designations:
+        try:
+            t = sim.query_object(desig)
+        except Exception:
+            continue
+        if t is None or len(t) == 0:
+            continue
+        cols = {c.lower(): c for c in t.colnames}
+        dc, uc = cols.get("mesdistance.dist"), cols.get("mesdistance.unit")
+        if not dc or not uc:
+            continue
+        for row in t:
+            dist, unit = row[dc], row[uc]
+            try:
+                if hasattr(dist, "mask") and dist.mask:
+                    continue
+                factor = _DIST_LY_PER_UNIT.get(str(unit).strip().lower())
+                if factor and float(dist) > 0:
+                    out[desig] = float(dist) * factor
+                    break
+            except (TypeError, ValueError):
+                continue
     return out

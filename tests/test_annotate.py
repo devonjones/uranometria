@@ -165,7 +165,7 @@ def test_model_online_star_assembly(monkeypatch, tmp_path):
             "mag": 7.08,
             "band": "V",
             "sp_type": "A5",
-            "dist_pc": 112,
+            "dist_ly": 365,
         }
     ]
     field = [
@@ -176,7 +176,7 @@ def test_model_online_star_assembly(monkeypatch, tmp_path):
             "dec": 47.27,
             "mag": 7.1,
             "band": "G",
-            "dist_pc": 112,
+            "dist_ly": 365,
         },
         {
             "designation": "TYC 3463-582-1",
@@ -184,7 +184,7 @@ def test_model_online_star_assembly(monkeypatch, tmp_path):
             "dec": 47.1,
             "mag": 10.9,
             "band": "G",
-            "dist_pc": 980,
+            "dist_ly": 3196,
         },
         {
             "designation": "Gaia DR3 2",
@@ -192,7 +192,7 @@ def test_model_online_star_assembly(monkeypatch, tmp_path):
             "dec": 47.3,
             "mag": 12.0,
             "band": "G",
-            "dist_pc": None,
+            "dist_ly": None,
         },
     ]
     monkeypatch.setattr(model, "solve", lambda image, **kw: dict(M51_SOLUTION))
@@ -316,3 +316,425 @@ def test_cli_annotate_reports_os_errors(monkeypatch, tmp_path):
     assert result.exit_code != 0
     assert "permission denied" in result.output
     assert "Traceback" not in result.output
+
+
+# ---- PNG renderer (uranometria-2) ------------------------------------------
+
+
+def _tiny_model(w=80, h=60):
+    return {
+        "schema": 1,
+        "image": "tiny.jpg",
+        "image_size": [w, h],
+        "solved": {
+            "pixel_frame": "fits0",
+            "cd": [[-0.00033, 0.00001], [0.00001, 0.00033]],
+            "center_ra": 202.5,
+            "center_dec": 47.2,
+            "scale_arcsec_px": 1.19,
+            "fov_deg": [0.03, 0.02],
+            "rotation_deg": 178.0,
+            "solver": "ASTAP",
+        },
+        "generated": "2026-01-01T00:00:00+00:00",
+        "objects": [
+            {
+                "kind": "dso",
+                "designation": "M51",
+                "name": "Whirlpool Galaxy",
+                "type": "Galaxy",
+                "ra": 202.47,
+                "dec": 47.2,
+                "x": 30.0,
+                "y": 25.0,
+                "links": {},
+            },
+            {
+                "kind": "star",
+                "named": True,
+                "designation": "HD 1",
+                "type": "Star (A5)",
+                "ra": 202.6,
+                "dec": 47.3,
+                "x": 60.0,
+                "y": 15.0,
+                "mag": 7.0,
+                "band": "V",
+                "dist_ly": 326,
+                "links": {},
+            },
+            {
+                "kind": "star",
+                "named": False,
+                "key": 1,
+                "designation": "TYC 1-2-3",
+                "ra": 202.4,
+                "dec": 47.1,
+                "x": 20.0,
+                "y": 45.0,
+                "mag": 10.5,
+                "band": "G",
+                "dist_ly": 1631,
+                "links": {},
+            },
+        ],
+        "warnings": [],
+    }
+
+
+def test_compass_vectors():
+    from uranometria.annotate.render_png import compass_vectors
+
+    # identity CD: +y pixel = +north, +x pixel = +east IN ARRAY SPACE.
+    # With origin='upper' display, +y renders downward, so such an image
+    # correctly shows its N arrow pointing down — not a sign error.
+    north, east = compass_vectors([[1e-4, 0.0], [0.0, 1e-4]])
+    assert north == pytest.approx((0.0, 1.0))
+    assert east == pytest.approx((1.0, 0.0))
+    # mirrored x (typical sky image): east flips, north stays
+    north, east = compass_vectors([[-1e-4, 0.0], [0.0, 1e-4]])
+    assert north == pytest.approx((0.0, 1.0))
+    assert east == pytest.approx((-1.0, 0.0))
+
+
+def test_dso_color_classes():
+    from uranometria.annotate.render_png import COLORS, dso_color
+
+    assert dso_color("Galaxy") == COLORS["galaxy"]
+    assert dso_color("Planetary nebula") == COLORS["planetary"]
+    assert dso_color("Emission nebula (H II)") == COLORS["emission"]
+    assert dso_color("Dark nebula") == COLORS["dark"]
+    assert dso_color("Open cluster") == COLORS["cluster"]
+    # In the annotator, Cl+N reads as the cluster: the Sharpless nebula is
+    # separately labeled (NGC 7380 orange beside Sh2-142 pink)
+    assert dso_color("Cluster + nebula") == COLORS["cluster"]
+
+
+def test_render_png_smoke(tmp_path):
+    from PIL import Image
+
+    from uranometria.annotate.render_png import render_png
+
+    img = tmp_path / "tiny.jpg"
+    Image.new("RGB", (80, 60), (8, 10, 24)).save(img)
+    out = tmp_path / "tiny_annotated.png"
+    render_png(_tiny_model(), img, out)
+    with Image.open(out) as rendered:
+        w, h = rendered.size
+    assert w > 80  # legend panel added
+    assert h >= 59
+
+
+def test_render_png_size_mismatch(tmp_path):
+    from PIL import Image
+
+    from uranometria.annotate.render_png import render_png
+
+    img = tmp_path / "wrong.jpg"
+    Image.new("RGB", (50, 50)).save(img)
+    with pytest.raises(ValueError, match="same image"):
+        render_png(_tiny_model(), img, tmp_path / "x.png")
+
+
+def test_raster_model_uses_raster_frame(monkeypatch, tmp_path):
+    """JPEG-solved models convert ASTAP's bottom-up y into the raster's own
+    top-down frame (the NGC 7380 mirrored-circles bug)."""
+    import uranometria.annotate.model as model
+
+    H = 2192
+    monkeypatch.setattr(model, "solve", lambda image, **kw: dict(M51_SOLUTION))
+    monkeypatch.setattr(model, "_image_size", lambda image: (3872, H))
+
+    fits_m = model.build_model(tmp_path / "img.fit", allow_online=False)
+    jpg_m = model.build_model(tmp_path / "img.jpg", allow_online=False)
+    assert fits_m["solved"]["pixel_frame"] == "fits0"
+    assert jpg_m["solved"]["pixel_frame"] == "raster0"
+
+    f = {o["designation"]: o for o in fits_m["objects"]}
+    j = {o["designation"]: o for o in jpg_m["objects"]}
+    for name in f:
+        assert j[name]["x"] == pytest.approx(f[name]["x"])
+        assert j[name]["y"] == pytest.approx((H - 1) - f[name]["y"], abs=0.11)
+    # CD y-column negated so the compass renders truthfully in the new frame
+    assert jpg_m["solved"]["cd"][0][1] == pytest.approx(-fits_m["solved"]["cd"][0][1])
+    assert jpg_m["solved"]["cd"][1][1] == pytest.approx(-fits_m["solved"]["cd"][1][1])
+
+
+def test_cli_annotate_png_import_error(monkeypatch, tmp_path):
+    from click.testing import CliRunner
+
+    import uranometria.annotate as annotate_pkg
+    import uranometria.annotate.render_png as rp
+    from uranometria.cli import main
+
+    img = tmp_path / "s.fit"
+    img.write_bytes(b"x")
+    monkeypatch.setattr(annotate_pkg, "build_model", lambda image, **kw: _tiny_model())
+
+    def no_mpl(*a, **k):
+        raise ImportError("No module named 'matplotlib'")
+
+    monkeypatch.setattr(rp, "render_png", no_mpl)
+    result = CliRunner().invoke(main, ["annotate", str(img), "--offline", "--png"])
+    assert result.exit_code != 0
+    assert "[annotate] extra" in result.output
+    assert "Traceback" not in result.output
+
+
+# ---- PR #3 review round 1 ---------------------------------------------------
+
+
+def test_hms_dms_carry():
+    from uranometria.annotate.render_png import _dms, _hms
+
+    assert _hms(0.249975) == "00h01m00s"  # carries, not 00h00m60s
+    assert _hms(359.9999) == "00h00m00s"  # wraps at 24h
+    assert _hms(202.51666) == "13h30m04s"
+    assert _dms(10.34999) == "+10°21′00″"  # carries, not 10°20′60″
+    assert _dms(-5.39) == "−5°23′24″"
+
+
+def test_short_desig():
+    from uranometria.annotate.render_png import _short_desig
+
+    assert _short_desig("TYC 3463-582-1") == "TYC 3463-582-1"
+    short = _short_desig("Gaia DR3 2062360626011542272")
+    assert len(short) <= 20 and short.startswith("Gaia …") and short.endswith("2272")
+    assert len(_short_desig("X" * 30)) == 20
+
+
+def test_needs_flip():
+    from uranometria.annotate.render_png import needs_flip
+
+    assert needs_flip("fits0", "a.jpg") is True  # fits model onto raster export
+    assert needs_flip("fits0", "a.fit") is False
+    assert needs_flip("raster0", "a.jpg") is False
+    assert needs_flip("raster0", "a.fits") is True
+    assert needs_flip(None, "a.fit") is False  # pre-0.5 models default to fits0
+
+
+def test_default_title_picks_nearest_dso():
+    from uranometria.annotate.render_png import _default_title
+
+    m = _tiny_model()
+    m["objects"].append(
+        {
+            "kind": "dso",
+            "designation": "IC 999",
+            "name": None,
+            "type": "Galaxy",
+            "ra": 1,
+            "dec": 1,
+            "x": 41.0,
+            "y": 31.0,
+            "links": {},
+        }
+    )
+    # IC 999 sits at the exact center (80x60 image): it wins over M51 at (30,25)
+    assert _default_title(m) == "IC 999"
+    m["objects"] = [o for o in m["objects"] if o["designation"] != "IC 999"]
+    assert _default_title(m) == "M51 / Whirlpool Galaxy"
+
+
+def test_render_fits_branch_and_no_cd(tmp_path):
+    import numpy as np
+    from astropy.io import fits
+    from PIL import Image
+
+    from uranometria.annotate.render_png import render_png
+
+    rng = np.random.default_rng(7)
+    data = (rng.random((3, 60, 80)) * 1000).astype("float32")  # RGB planes
+    f = tmp_path / "t.fit"
+    fits.PrimaryHDU(data).writeto(f)
+    m = _tiny_model()
+    m["image"] = "t.fit"
+    del m["solved"]["cd"]  # pre-0.5 model: compass silently skipped
+    out = tmp_path / "t_annotated.png"
+    render_png(m, f, out)
+    with Image.open(out) as im:
+        assert im.size[0] > 80
+
+
+def test_cli_render_command(tmp_path):
+    import json
+
+    from click.testing import CliRunner
+    from PIL import Image
+
+    from uranometria.cli import main
+
+    img = tmp_path / "tiny.jpg"
+    Image.new("RGB", (80, 60), (5, 5, 20)).save(img)
+    model_path = tmp_path / "m.json"
+    m = _tiny_model()
+    m["solved"]["pixel_frame"] = "raster0"  # matches the jpg: no flip
+    model_path.write_text(json.dumps(m))
+    result = CliRunner().invoke(main, ["render", str(model_path), str(img)])
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "tiny_annotated.png").is_file()  # default output name
+
+
+def test_cli_annotate_png_success(monkeypatch, tmp_path):
+    from click.testing import CliRunner
+    from PIL import Image
+
+    import uranometria.annotate as annotate_pkg
+    from uranometria.cli import main
+
+    img = tmp_path / "tiny.jpg"
+    Image.new("RGB", (80, 60), (5, 5, 20)).save(img)
+    m = _tiny_model()
+    m["solved"]["pixel_frame"] = "raster0"
+    monkeypatch.setattr(annotate_pkg, "build_model", lambda image, **kw: m)
+    result = CliRunner().invoke(main, ["annotate", str(img), "--offline", "--png"])
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "tiny_annotated.png").is_file()
+
+
+def test_dso_aliases_collected():
+    from uranometria.annotate.field import dsos_in_field
+
+    hits = dsos_in_field(202.5167, 47.2064, 0.3)
+    m51 = next(h for h in hits if h["disp"] == "M51")
+    assert "NGC 5194" in m51["aliases"]
+
+
+def test_load_image_edge_cases(tmp_path):
+    import numpy as np
+    from astropy.io import fits
+
+    from uranometria.annotate.render_png import _load_image
+
+    # (1, H, W) singleton cube squeezes to mono
+    f1 = tmp_path / "mono.fit"
+    fits.PrimaryHDU(np.ones((1, 5, 8), dtype="float32")).writeto(f1)
+    assert _load_image(f1).shape == (5, 8)
+    # NaN borders (drizzle edges) don't poison the stretch
+    data = np.ones((6, 9), dtype="float32")
+    data[0, :] = np.nan
+    data[2, 3] = 50.0
+    f2 = tmp_path / "nan.fit"
+    fits.PrimaryHDU(data).writeto(f2)
+    out = _load_image(f2)
+    assert np.isfinite(out).all()
+    # header-only FITS reports a clear error
+    f3 = tmp_path / "empty.fit"
+    fits.PrimaryHDU().writeto(f3)
+    with pytest.raises(ValueError, match="no image data"):
+        _load_image(f3)
+
+
+def test_render_applies_cross_frame_flip(tmp_path):
+    """A fits0 model composited onto a JPEG must draw at flipped y — pins the
+    render-time flip block itself, not just the needs_flip helper."""
+    import numpy as np
+    from PIL import Image
+
+    from uranometria.annotate.render_png import render_png
+
+    W, H = 200, 150
+    img = tmp_path / "t.jpg"
+    Image.new("RGB", (W, H), (0, 0, 0)).save(img)
+    m = _tiny_model(W, H)
+    m["image"] = "t.jpg"
+    m["solved"]["pixel_frame"] = "fits0"  # jpg target => flip must apply
+    m["objects"] = [
+        {
+            "kind": "star",
+            "named": False,
+            "key": 1,
+            "designation": "T",
+            "ra": 0.0,
+            "dec": 0.0,
+            "x": 40.0,
+            "y": 20.0,
+            "mag": 10.0,
+            "band": "G",
+            "dist_ly": None,
+            "links": {},
+        }
+    ]
+    out = tmp_path / "o.png"
+    render_png(m, img, out)
+    a = np.asarray(Image.open(out).convert("RGB"), dtype=int)
+
+    def green_pixels(cy):
+        win = a[max(0, cy - 7) : cy + 8, 30:52]
+        return int(((win[:, :, 1] > 140) & (win[:, :, 0] < 140)).sum())
+
+    assert green_pixels((H - 1) - 20) > 0  # circle drawn at the flipped row
+    assert green_pixels(20) == 0  # nothing at the unflipped row
+
+
+def test_dso_redshift_distance_offline(monkeypatch, tmp_path):
+    import uranometria.annotate.model as model
+
+    monkeypatch.setattr(model, "solve", lambda image, **kw: dict(M51_SOLUTION))
+    monkeypatch.setattr(model, "_image_size", lambda image: (3872, 2192))
+    m = model.build_model(tmp_path / "f.fit", allow_online=False)
+    m51 = next(o for o in m["objects"] if o["designation"] == "M51")
+    # Hubble-flow from OpenNGC redshift: ~22 Mly for M51
+    assert 15e6 < m51["dist_ly"] < 32e6
+
+
+def test_dso_distances_merge_and_failure(monkeypatch, tmp_path):
+    import uranometria.annotate.model as model
+
+    monkeypatch.setattr(model, "solve", lambda image, **kw: dict(M51_SOLUTION))
+    monkeypatch.setattr(model, "_image_size", lambda image: (3872, 2192))
+    monkeypatch.setattr(model, "named_bright_stars", lambda *a, **k: [])
+    monkeypatch.setattr(model, "stars_in_field", lambda *a, **k: [])
+    monkeypatch.setattr(model, "dso_distances", lambda desigs: {"IC 4277": 500_000_000})
+    m = model.build_model(tmp_path / "f.fit", allow_online=True)
+    ic = next(o for o in m["objects"] if o["designation"] == "IC 4277")
+    assert ic["dist_ly"] == 500_000_000  # SIMBAD fill for redshift-less DSOs
+
+    def boom(desigs):
+        raise RuntimeError("simbad down")
+
+    monkeypatch.setattr(model, "dso_distances", boom)
+    m = model.build_model(tmp_path / "f.fit", allow_online=True)
+    assert any("distance lookup failed" in w for w in m["warnings"])
+
+
+def test_star_dist_ly_passthrough(monkeypatch, tmp_path):
+    import uranometria.annotate.model as model
+
+    monkeypatch.setattr(model, "solve", lambda image, **kw: dict(M51_SOLUTION))
+    monkeypatch.setattr(model, "_image_size", lambda image: (3872, 2192))
+    monkeypatch.setattr(model, "dso_distances", lambda desigs: {})
+    monkeypatch.setattr(model, "named_bright_stars", lambda *a, **k: [])
+    monkeypatch.setattr(
+        model,
+        "stars_in_field",
+        lambda *a, **k: [
+            {
+                "designation": "TYC 1-1-1",
+                "ra": 202.7,
+                "dec": 47.1,
+                "mag": 10.9,
+                "band": "G",
+                "dist_ly": 3196,
+            }
+        ],
+    )
+    m = model.build_model(tmp_path / "f.fit", allow_online=True)
+    star = next(o for o in m["objects"] if o["kind"] == "star")
+    assert star["dist_ly"] == 3196
+
+
+def test_place_label_never_flips_anchor():
+    """The strike-through invariant: anchor side always matches the leader
+    direction, even for objects hard against the frame edges."""
+    from uranometria.annotate.render_png import _place_label
+
+    W, H = 1000, 800
+
+    def no_crossings(*a):
+        return 0
+
+    for x, y in [(950, 400), (990, 100), (30, 400), (500, 30), (500, 770), (950, 770)]:
+        lx, ly, ha = _place_label(x, y, W, H, W / 2, H / 2, [], no_crossings)
+        assert (lx >= x) == (ha == "left"), (x, y, lx, ha)
+        assert 0.02 * W <= lx <= 0.98 * W

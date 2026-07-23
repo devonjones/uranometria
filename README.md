@@ -105,15 +105,36 @@ an annotated PNG and an interactive HTML page build on this model.
 It needs two things beyond the base install:
 
 1. The `annotate` extra: `pip install "uranometria[annotate] @ git+https://github.com/devonjones/uranometria"`
-   (astropy + astroquery).
+   (astropy, astroquery, pillow, matplotlib).
 2. The [ASTAP](https://www.hnsky.org/astap.htm) command-line solver with a
    local star database (D20 works for fields near 1°). Point at them with
    `--astap`/`--astap-db` or the `ASTAP_CLI`/`ASTAP_DB` environment variables.
 
-The model's object positions are 0-indexed pixels in the solved image's
-FITS frame (`solved.pixel_frame: "fits0"`); renderers drawing on top-left
-origin rasters flip y. Solving is fully offline through ASTAP's bundled
-database. Field-star
+The model's object positions are 0-indexed pixels in the frame named by
+`solved.pixel_frame`: `"fits0"` for FITS sources (FITS row order) and
+`"raster0"` for JPEG/PNG sources (top-down, drawn as-is). A renderer only
+flips y when compositing a model onto an image of the other kind — the
+bundled renderer does this automatically. Solving is fully offline through ASTAP's bundled
+database.
+
+Add `--png` to also render the annotated image: markers and leader labels
+colored by object class (galaxies blue, emission nebulae pink, planetaries
+teal, clusters orange, named stars yellow), numbered circles for field
+stars, a legend panel, N/E compass from the solved CD matrix, and a scale
+bar. `uranometria render model.json image.fit` re-renders from an existing
+model. Two samples from real Seestar data live in
+[`examples/annotated/`](examples/annotated/):
+
+![M51 annotated](examples/annotated/M51_annotated.jpg)
+
+The Whirlpool from a 1,411-sub drizzled stack: M51 and NGC 5195 called out,
+the IC companions labeled, HD 117815 identified with magnitude and distance,
+and Gaia field stars keyed to the legend table.
+
+![Sh2-142 annotated](examples/annotated/Sh2-142_annotated.jpg)
+
+The Wizard Nebula from a Seestar stack JPEG: NGC 7380 and Sh2-142 labeled at
+their own centroids, four named bright stars, and the field-star table. Field-star
 identification queries CDS services (VizieR for Gaia DR3 magnitudes and
 distances, Tycho-2 for designations, SIMBAD for named bright stars); pass
 `--offline` to skip those and keep only the bundled-catalog DSOs. Solve the

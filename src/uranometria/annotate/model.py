@@ -5,13 +5,14 @@ renderers (annotated PNG, interactive HTML, sky-map lightbox overlay): plain
 JSON, one file per image, with everything positioned in both sky and pixel
 coordinates.
 
-Pixel convention (`solved.pixel_frame` = "fits0"): object x/y are 0-indexed
-in the solved image's FITS frame — x grows rightward, y follows FITS row
-order, i.e. pixel (0, 0) is FITS pixel (1, 1). WCSAxes/matplotlib consume
-this directly. Renderers that draw on a top-left-origin raster (SVG/HTML,
-PIL) must flip: y_display = height - 1 - y — and should verify the source's
-row order (Siril writes a ROWORDER card) before compositing onto exported
-JPEG/PNG versions of the frame.
+Pixel convention (`solved.pixel_frame`): x grows rightward, 0-indexed.
+"fits0" (FITS sources): y follows FITS row order — draw directly onto the
+array as loaded by astropy. "raster0" (JPEG/PNG sources): y is top-down in
+the raster's own frame — draw directly onto the raster. The conversion from
+ASTAP's solver frame (always FITS row order; it converts rasters internally)
+happens at model build time, including the CD matrix's y-column, so the
+compass stays honest. Renderers compositing a fits0 model onto an exported
+top-down raster of the same data must flip: y_display = height - 1 - y.
 """
 
 import json
@@ -19,10 +20,14 @@ import math
 import os
 from datetime import datetime, timezone
 
-from .field import dsos_in_field, named_bright_stars, stars_in_field
+from .field import dso_distances, dsos_in_field, named_bright_stars, stars_in_field
 from .solver import solve, wcs_from_solution
 
 SCHEMA = 1
+
+
+def _is_fits(image):
+    return os.fspath(image).lower().endswith((".fit", ".fits", ".fts"))
 
 
 def _image_size(image):
@@ -59,6 +64,14 @@ def build_model(image, *, mag_limit=12.5, max_stars=15, allow_online=True, solve
     width, height = _image_size(image)
     solution = solve(image, **(solve_kwargs or {}))
     wcs = wcs_from_solution(solution, width, height)
+    # ASTAP converts raster inputs (JPEG/PNG/TIFF) to FITS row order before
+    # solving, so its pixel y is bottom-up relative to the raster file. For
+    # raster sources we convert everything into the raster's own top-down
+    # frame ("raster0") so renderers can draw coordinates directly.
+    raster = not _is_fits(image)
+
+    def to_frame(x, y):
+        return (x, (height - 1) - y) if raster else (x, y)
 
     # fallback derives scale from the CD matrix column norm, rotation-proof
     scale = solution.get("scale_arcsec_px") or (
@@ -75,13 +88,19 @@ def build_model(image, *, mag_limit=12.5, max_stars=15, allow_online=True, solve
     objects = []
 
     for rec in dsos_in_field(center_ra, center_dec, radius):
-        x, y = wcs.wcs_world2pix([[rec["ra"], rec["dec"]]], 0)[0]
+        x, y = to_frame(*wcs.wcs_world2pix([[rec["ra"], rec["dec"]]], 0)[0])
         if not in_frame(x, y):
             continue
+        # rough Hubble-flow distance for galaxies with a catalog redshift
+        dist_ly = None
+        if rec.get("z") and rec["z"] > 0 and "galaxy" in rec["type"].lower():
+            dist_ly = round(rec["z"] * 299792.458 / 70.0 * 3.26156e6)
         objects.append(
             {
                 "kind": "dso",
                 "designation": rec["disp"],
+                "aliases": rec.get("aliases") or [],
+                "dist_ly": dist_ly,
                 "name": rec["common"] or None,
                 "type": rec["type"],
                 "constellation": rec["constellation"] or None,
@@ -95,6 +114,15 @@ def build_model(image, *, mag_limit=12.5, max_stars=15, allow_online=True, solve
 
     warnings = []
     if allow_online:
+        missing = [o["designation"] for o in objects if o["kind"] == "dso" and not o["dist_ly"]]
+        if missing:
+            try:
+                found = dso_distances(missing)
+                for o in objects:
+                    if o["kind"] == "dso" and o["designation"] in found:
+                        o["dist_ly"] = round(found[o["designation"]])
+            except Exception as err:
+                warnings.append(f"SIMBAD distance lookup failed: {err}")
         try:
             named = named_bright_stars(center_ra, center_dec, radius)
         except Exception as err:  # network/service failure degrades, never crashes
@@ -113,7 +141,7 @@ def build_model(image, *, mag_limit=12.5, max_stars=15, allow_online=True, solve
 
     named_positions = []
     for s in named:
-        x, y = wcs.wcs_world2pix([[s["ra"], s["dec"]]], 0)[0]
+        x, y = to_frame(*wcs.wcs_world2pix([[s["ra"], s["dec"]]], 0)[0])
         if not in_frame(x, y):
             continue
         named_positions.append((s["ra"], s["dec"]))
@@ -129,7 +157,7 @@ def build_model(image, *, mag_limit=12.5, max_stars=15, allow_online=True, solve
                 "y": round(float(y), 1),
                 "mag": s["mag"],
                 "band": s["band"],
-                "dist_pc": s.get("dist_pc"),
+                "dist_ly": s.get("dist_ly"),
                 "links": _links(s["designation"]),
             }
         )
@@ -142,7 +170,7 @@ def build_model(image, *, mag_limit=12.5, max_stars=15, allow_online=True, solve
             break
         if any(sep_deg(s["ra"], s["dec"], ra, dec) < 3 / 3600 for ra, dec in named_positions):
             continue  # already labeled as a named bright star
-        x, y = wcs.wcs_world2pix([[s["ra"], s["dec"]]], 0)[0]
+        x, y = to_frame(*wcs.wcs_world2pix([[s["ra"], s["dec"]]], 0)[0])
         if not in_frame(x, y):
             continue
         objects.append(
@@ -157,7 +185,7 @@ def build_model(image, *, mag_limit=12.5, max_stars=15, allow_online=True, solve
                 "y": round(float(y), 1),
                 "mag": s["mag"],
                 "band": s["band"],
-                "dist_pc": s.get("dist_pc"),
+                "dist_ly": s.get("dist_ly"),
                 "links": _links(s["designation"]),
             }
         )
@@ -168,7 +196,14 @@ def build_model(image, *, mag_limit=12.5, max_stars=15, allow_online=True, solve
         "image": os.path.basename(os.fspath(image)),
         "image_size": [width, height],
         "solved": {
-            "pixel_frame": "fits0",  # see module docstring: 0-indexed, FITS row order
+            # "fits0": 0-indexed, FITS row order (FITS sources).
+            # "raster0": 0-indexed, top-left origin (JPEG/PNG sources) — the
+            # solver's y and the CD y-column are converted; see module docstring.
+            "pixel_frame": "raster0" if raster else "fits0",
+            "cd": [
+                [solution["cd1_1"], -solution["cd1_2"] if raster else solution["cd1_2"]],
+                [solution["cd2_1"], -solution["cd2_2"] if raster else solution["cd2_2"]],
+            ],
             "center_ra": center_ra,
             "center_dec": center_dec,
             "scale_arcsec_px": round(scale, 3),

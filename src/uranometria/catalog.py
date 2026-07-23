@@ -105,8 +105,8 @@ class Catalog:
         self._load_sharpless()
 
     @staticmethod
-    def _rec(disp, ra, dec, typ, con, common):
-        return dict(disp=disp, ra=ra, dec=dec, type=typ, constellation=con, common=common)
+    def _rec(disp, ra, dec, typ, con, common, z=None):
+        return dict(disp=disp, ra=ra, dec=dec, type=typ, constellation=con, common=common, z=z)
 
     def _load_openngc(self):
         rows = []
@@ -136,6 +136,10 @@ class Catalog:
             ra = parse_angle(r["RA"], is_ra=True)
             dec = parse_angle(r["Dec"], is_ra=False)
             common = (r.get("Common names") or "").split(",")[0].strip()
+            try:
+                z = float(r.get("Redshift") or "") or None
+            except ValueError:
+                z = None
             rec = self._rec(
                 self._display(r["Name"]),
                 ra,
@@ -143,6 +147,7 @@ class Catalog:
                 TYPE_NAMES.get(r["Type"], r["Type"]),
                 CONST_NAMES.get(r["Const"], r["Const"]),
                 common,
+                z=z,
             )
             self.by_key.setdefault(self._norm(r["Name"]), rec)
             if r.get("M"):

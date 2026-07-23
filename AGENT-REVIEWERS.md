@@ -224,6 +224,13 @@ Each reviewer runs independently and reports findings without coordination. A re
 
 Skip reviewers whose file scope doesn't match the PR diff.
 
+**Mutation testing runs in a worktree.** Any reviewer that mutates source to
+probe test coverage MUST do so in its own `git worktree` of the commit under
+review, never in the shared checkout — concurrent sessions edit that checkout,
+and `git checkout --` restores have twice wiped in-flight uncommitted work.
+Read-only reviewers may use the shared checkout but should verify claims
+against the committed blobs (`git show <sha>:<path>`) when the tree is dirty.
+
 ## Tooling assumed in CI
 
 CI (`.github/workflows/ci.yml`) runs on every PR and push to master, and `master` is branch-protected on the `check` job:

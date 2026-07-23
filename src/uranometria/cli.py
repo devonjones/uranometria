@@ -68,7 +68,18 @@ def chart(config, output, offline, mirror):
 @click.option(
     "--radius", default=30.0, show_default=True, help="search radius around the hint, degrees"
 )
-def annotate(image, output, mag_limit, max_stars, offline, astap, astap_db, ra, dec, radius):
+@click.option(
+    "--png",
+    "png_out",
+    is_flag=False,
+    flag_value="",
+    default=None,
+    help="also render the annotated PNG (optionally to PATH; default <image>_annotated.png)",
+)
+@click.option("--title", help="title for the rendered PNG (default: nearest DSO to center)")
+def annotate(
+    image, output, mag_limit, max_stars, offline, astap, astap_db, ra, dec, radius, png_out, title
+):
     """Plate-solve IMAGE and write its annotation model (JSON).
 
     Solve the star-rich stack, not a starless render. Requires the [annotate]
@@ -108,6 +119,43 @@ def annotate(image, output, mag_limit, max_stars, offline, astap, astap_db, ra, 
         f"{s['scale_arcsec_px']}\"/px · FOV {s['fov_deg'][0]}°×{s['fov_deg'][1]}°"
     )
     click.echo(f"wrote {out} ({dsos} DSOs, {stars} stars)")
+    if png_out is not None:
+        from .annotate.render_png import render_png
+
+        png_path = png_out or os.path.splitext(os.fspath(image))[0] + "_annotated.png"
+        try:
+            render_png(model, image, png_path, title=title)
+        except (ValueError, OSError) as e:
+            raise click.ClickException(str(e)) from None
+        except ImportError as err:
+            raise click.ClickException(f"rendering needs the [annotate] extra ({err}).") from None
+        click.echo(f"wrote {png_path}")
+
+
+@main.command("render")
+@click.argument("model", type=click.Path(exists=True, dir_okay=False))
+@click.argument("image", type=click.Path(exists=True, dir_okay=False))
+@click.option(
+    "-o",
+    "--output",
+    type=click.Path(dir_okay=False),
+    help="output PNG path (default: <image>_annotated.png)",
+)
+@click.option("--title", help="title bar text (default: nearest DSO to center)")
+def render(model, image, output, title):
+    """Render an annotated PNG from an existing annotation MODEL and its IMAGE."""
+    try:
+        from .annotate.render_png import render_png
+    except ImportError as err:
+        raise click.ClickException(f"rendering needs the [annotate] extra ({err}).") from None
+    out = output or os.path.splitext(os.fspath(image))[0] + "_annotated.png"
+    try:
+        render_png(model, image, out, title=title)
+    except (ValueError, OSError) as e:
+        raise click.ClickException(str(e)) from None
+    except ImportError as err:
+        raise click.ClickException(f"rendering needs the [annotate] extra ({err}).") from None
+    click.echo(f"wrote {out}")
 
 
 if __name__ == "__main__":
