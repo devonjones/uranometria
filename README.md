@@ -106,7 +106,7 @@ all raise `uranometria.SkymapError`; per-object problems (unresolvable id,
 missing image file) come back as warning strings and the object is skipped or
 rendered without its photo.
 
-## Integrating (e.g. m110)
+## Integrating into a host application
 
 A workflow manager that already knows each object's designation, coordinates,
 and hero image can bypass every lookup by passing fully-specified entries —
