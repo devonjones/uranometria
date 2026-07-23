@@ -12,3 +12,5 @@ wheels/
 # beads local state
 .beads/interactions.jsonl
 .beads/metadata.json
+.beads/last-touched
+.beads/.migration-hint-ts
