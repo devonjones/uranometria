@@ -1,0 +1,39 @@
+# Example uranometria config — regenerate the sample with:
+#   uv run uranometria examples/skymap.yaml
+#
+# Objects can be:
+#   - a bare designation:      - M31
+#   - a lookup with overrides: - {id: Sh2-142, label: NGC 7380}
+#   - a fully manual entry:    - {label: X, name: Y, type: Z, constellation: W,
+#                                 ra: "20h15m22s", dec: "+38 21 18"}
+# Optional per-object fields:
+#   image: path or http(s) URL — click the marker/legend entry to view it.
+#          Paths resolve relative to the output HTML and are checked at build.
+#   color: any CSS color for that object's marker + legend accent.
+# Designations resolved offline: Messier, NGC, IC, Sharpless (Sh2-),
+# Caldwell (C), Barnard (B), Melotte (Mel), and common names like "Pleiades".
+# Anything else falls back to the CDS Sesame online resolver (disable with
+# --offline). A southern-hemisphere chart is added automatically when any
+# object sits below declination −35°.
+
+title: The Northern Sky
+subtitle: Seven deep-sky objects · Seestar S50 · Epoch J2000
+objects:
+  - id: M31
+    image: images/M31.jpg
+  - id: M45
+    image: images/M45.jpg
+  - id: M1
+    image: images/M1.jpg
+  - id: M42
+    image: images/M42.jpg
+  - id: M51
+    image: images/M51.jpg
+  - id: M27
+    image: images/M27.jpg
+  - id: Sh2-142
+    label: NGC 7380
+    name: Wizard Nebula · Sh2-142
+    type: Emission nebula + cluster
+    constellation: Cepheus
+    image: images/Sh2-142.jpg

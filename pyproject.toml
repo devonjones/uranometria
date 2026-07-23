@@ -1,0 +1,27 @@
+[project]
+name = "uranometria"
+version = "0.2.0"
+description = "Star-atlas style HTML sky charts marking your deep-sky objects — Messier, NGC/IC, Sharpless, Caldwell, and more"
+readme = "README.md"
+license = "Apache-2.0"
+authors = [
+    { name = "Devon Jones", email = "devon.jones@gmail.com" }
+]
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Astronomy",
+]
+dependencies = [
+    "pyyaml>=6",
+]
+
+[project.scripts]
+uranometria = "uranometria.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8"]
+
+[build-system]
+requires = ["uv_build>=0.9.9,<0.10.0"]
+build-backend = "uv_build"
