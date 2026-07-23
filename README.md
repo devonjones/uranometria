@@ -110,7 +110,10 @@ It needs two things beyond the base install:
    local star database (D20 works for fields near 1°). Point at them with
    `--astap`/`--astap-db` or the `ASTAP_CLI`/`ASTAP_DB` environment variables.
 
-Solving is fully offline through ASTAP's bundled database. Field-star
+The model's object positions are 0-indexed pixels in the solved image's
+FITS frame (`solved.pixel_frame: "fits0"`); renderers drawing on top-left
+origin rasters flip y. Solving is fully offline through ASTAP's bundled
+database. Field-star
 identification queries CDS services (VizieR for Gaia DR3 magnitudes and
 distances, Tycho-2 for designations, SIMBAD for named bright stars); pass
 `--offline` to skip those and keep only the bundled-catalog DSOs. Solve the

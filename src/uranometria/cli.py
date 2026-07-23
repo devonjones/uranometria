@@ -74,13 +74,8 @@ def annotate(image, output, mag_limit, max_stars, offline, astap, astap_db, ra, 
     Solve the star-rich stack, not a starless render. Requires the [annotate]
     extra (astropy + astroquery) and the ASTAP command-line solver.
     """
-    try:
-        from .annotate import AstapError, build_model, write_model
-    except ImportError as err:
-        raise click.ClickException(
-            f"the annotate feature needs the [annotate] extra ({err}). "
-            'Install with: uv tool install "uranometria[annotate] @ git+https://github.com/devonjones/uranometria"'
-        ) from None
+    from .annotate import AstapError, build_model, write_model
+
     out = output or os.fspath(image) + ".annotations.json"
     solve_kwargs = {"astap": astap, "db_dir": astap_db, "radius": radius}
     if ra is not None and dec is not None:
@@ -93,8 +88,15 @@ def annotate(image, output, mag_limit, max_stars, offline, astap, astap_db, ra, 
             allow_online=not offline,
             solve_kwargs=solve_kwargs,
         )
-    except AstapError as e:
+    except (AstapError, ValueError, OSError) as e:
         raise click.ClickException(str(e)) from None
+    except ImportError as err:
+        # the annotate subpackage imports lazily, so a missing dependency
+        # surfaces here at first use rather than at `from .annotate import`
+        raise click.ClickException(
+            f"the annotate feature needs the [annotate] extra ({err}). "
+            'Install with: uv tool install "uranometria[annotate] @ git+https://github.com/devonjones/uranometria"'
+        ) from None
     write_model(model, out)
     for w in model["warnings"]:
         click.echo(f"note: {w}", err=True)

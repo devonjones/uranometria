@@ -23,7 +23,8 @@ uranometria = "uranometria.cli:main"
 [project.optional-dependencies]
 annotate = [
     "astropy>=6",
-    "astroquery>=0.4",
+    "astroquery>=0.4.8",
+    "pillow>=12.3.0",
 ]
 
 [dependency-groups]

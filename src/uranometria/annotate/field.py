@@ -15,6 +15,14 @@ from ..catalog import Catalog
 ARCSEC = 1.0 / 3600.0
 
 
+def _str_or_none(v):
+    """Stringify a catalog cell, mapping masked/empty sentinels to None."""
+    if v is None:
+        return None
+    text = str(v).strip()
+    return text if text and text not in ("None", "--") else None
+
+
 def sep_deg(ra1, dec1, ra2, dec2):
     r1, d1, r2, d2 = map(math.radians, (ra1, dec1, ra2, dec2))
     s = math.sin(d1) * math.sin(d2) + math.cos(d1) * math.cos(d2) * math.cos(r1 - r2)
@@ -33,8 +41,13 @@ def _designation_rank(disp):
 
 def dsos_in_field(center_ra, center_dec, radius_deg, catalog=None):
     """Bundled-catalog objects within radius of the field center (offline).
-    Aliases of the same object (M51 / NGC 5194) collapse to one entry, keeping
-    the best-known designation."""
+
+    The rounded-position collapse merges alias COPIES of one record (M51 /
+    NGC 5194 share bit-identical coordinates). Physically distinct objects at
+    distinct centroids stay separate on purpose, even overlapping pairs like
+    NGC 7380 and Sh2-142 (~4' apart): on an annotated image both centroids
+    are legitimate label targets, unlike the sky chart's marker-clutter
+    dedupe, which works at whole-sky scale."""
     catalog = catalog or Catalog()
     best = {}
     for rec in catalog.by_key.values():
@@ -65,7 +78,7 @@ def stars_in_field(center_ra, center_dec, radius_deg, *, mag_limit=12.5, max_sta
         catalog="I/355/gaiadr3",
         columns=["Source", "RA_ICRS", "DE_ICRS", "Gmag", "Plx", "e_Plx"],
         column_filters={"Gmag": f"<{mag_limit}"},
-        row_limit=500,
+        row_limit=5000,
     ).query_region(center, radius=radius)
     stars = []
     if gaia:
@@ -110,19 +123,15 @@ def named_bright_stars(center_ra, center_dec, radius_deg, *, mag_limit=8.5):
 
     sim = Simbad()
     sim.add_votable_fields("V", "sp_type", "plx_value", "otype")
-    try:
-        table = sim.query_region(
-            SkyCoord(center_ra * u.deg, center_dec * u.deg),
-            radius=radius_deg * u.deg,
-            # allfluxes.V is the TAP flux column; 'G..' excludes the whole
-            # galaxy otype hierarchy so bright Seyferts don't masquerade as stars
-            criteria=f"allfluxes.V < {mag_limit} AND otype != 'G..'",
-        )
-    except TypeError:
-        # older astroquery without criteria support: filter client-side
-        table = sim.query_region(
-            SkyCoord(center_ra * u.deg, center_dec * u.deg), radius=radius_deg * u.deg
-        )
+    table = sim.query_region(
+        SkyCoord(center_ra * u.deg, center_dec * u.deg),
+        radius=radius_deg * u.deg,
+        # allfluxes.V is the TAP flux column; 'G..' excludes the whole
+        # galaxy otype hierarchy so bright Seyferts don't masquerade as stars.
+        # criteria needs astroquery >= 0.4.8 (the TAP-based Simbad), which the
+        # [annotate] extra pins.
+        criteria=f"allfluxes.V < {mag_limit} AND otype != 'G..'",
+    )
     out = []
     if table is None:
         return out
@@ -162,7 +171,7 @@ def named_bright_stars(center_ra, center_dec, radius_deg, *, mag_limit=8.5):
                 "dec": dec,
                 "mag": round(v, 2),
                 "band": "V",
-                "sp_type": (str(col(row, "sp_type")) or None),
+                "sp_type": _str_or_none(col(row, "sp_type")),
                 "dist_pc": round(1000.0 / plx) if plx and plx > 0.5 else None,
             }
         )

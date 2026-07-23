@@ -4,9 +4,19 @@ The model is the contract between the solve/cross-match pipeline and the
 renderers (annotated PNG, interactive HTML, sky-map lightbox overlay): plain
 JSON, one file per image, with everything positioned in both sky and pixel
 coordinates.
+
+Pixel convention (`solved.pixel_frame` = "fits0"): object x/y are 0-indexed
+in the solved image's FITS frame — x grows rightward, y follows FITS row
+order, i.e. pixel (0, 0) is FITS pixel (1, 1). WCSAxes/matplotlib consume
+this directly. Renderers that draw on a top-left-origin raster (SVG/HTML,
+PIL) must flip: y_display = height - 1 - y — and should verify the source's
+row order (Siril writes a ROWORDER card) before compositing onto exported
+JPEG/PNG versions of the frame.
 """
 
 import json
+import math
+import math
 import os
 from datetime import datetime, timezone
 
@@ -51,7 +61,10 @@ def build_model(image, *, mag_limit=12.5, max_stars=15, allow_online=True, solve
     solution = solve(image, **(solve_kwargs or {}))
     wcs = wcs_from_solution(solution, width, height)
 
-    scale = solution.get("scale_arcsec_px") or abs(solution["cd2_2"]) * 3600.0
+    # fallback derives scale from the CD matrix column norm, rotation-proof
+    scale = solution.get("scale_arcsec_px") or (
+        math.hypot(solution["cd1_2"], solution["cd2_2"]) * 3600.0
+    )
     fov_h = height * scale / 3600.0
     fov_w = width * scale / 3600.0
     radius = 0.5 * (fov_w**2 + fov_h**2) ** 0.5
@@ -156,6 +169,7 @@ def build_model(image, *, mag_limit=12.5, max_stars=15, allow_online=True, solve
         "image": os.path.basename(os.fspath(image)),
         "image_size": [width, height],
         "solved": {
+            "pixel_frame": "fits0",  # see module docstring: 0-indexed, FITS row order
             "center_ra": center_ra,
             "center_dec": center_dec,
             "scale_arcsec_px": round(scale, 3),
