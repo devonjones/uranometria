@@ -1,37 +1,38 @@
 # uranometria
 
-Star-atlas style HTML sky charts marking the deep-sky objects *you* have
-photographed — with constellations, a coordinate grid, per-object colors, and
-click-to-view hero images. The generated page is interactive: scroll to zoom
-(markers stay readable and separate as the field spreads), drag to pan,
-double-click to reset, and a sidebar observing record with its own scrollbar
-and a search box that spotlights matches on the chart — built for lists from
-a handful of showpieces up to a hundred-plus targets.
+Star-atlas style HTML sky charts of the deep-sky objects you've photographed.
 
-Named for Johann Bayer's
+Each chart draws the constellations, a coordinate grid, and a marker for
+everything you've imaged. Objects can carry a photo (click the marker or the
+legend entry to see it), and markers can be colored however you like, say by
+object type or by how deep the stack is. The page itself is interactive:
+scroll to zoom, drag to pan, double-click to reset. A sidebar lists every
+object with a search box, and both search and zoom narrow the list to what
+you're actually looking at. Works fine with five objects or a hundred and
+fifty.
+
+The name comes from Johann Bayer's
 [*Uranometria*](https://en.wikipedia.org/wiki/Uranometria) (1603), the first
-atlas to chart the entire celestial sphere and the origin of the Greek-letter
-star names we still use. Bayer engraved every star anyone had ever measured;
-you only have to photograph yours — this tool does the engraving.
+atlas to chart the entire celestial sphere and the source of the Greek-letter
+star names we still use. Bayer engraved every star anyone had ever measured.
+You just have to photograph yours.
 
 ![Example chart](examples/skymap.png)
 
-**[View the live sample →](https://devonjones.github.io/uranometria/examples/skymap.html)**
-Click any marker or legend card to see the photograph behind it; scroll to
-zoom, drag to pan. The sample is generated from
-[`examples/skymap.yaml`](examples/skymap.yaml) — regenerate it with
-`uv run uranometria examples/skymap.yaml`.
+There's a **[live sample here](https://devonjones.github.io/uranometria/examples/skymap.html)**,
+built from [`examples/skymap.yaml`](examples/skymap.yaml). Click any marker
+or legend card to see the photograph behind it.
 
 ## Install
 
-Not on PyPI yet — install straight from git:
+Not on PyPI yet, so install from git:
 
 ```sh
 uv tool install git+https://github.com/devonjones/uranometria   # CLI on your PATH
 pip install git+https://github.com/devonjones/uranometria       # or plain pip
 ```
 
-Or as a dependency of another project:
+As a dependency of another project:
 
 ```sh
 uv add "uranometria @ git+https://github.com/devonjones/uranometria"
@@ -48,24 +49,22 @@ uranometria skymap.yaml --offline       # never call the online resolver
 uranometria skymap.yaml --mirror        # mirrored (celestial-globe) orientation
 ```
 
-Charts default to **sky view** — oriented as the sky actually appears from
-Earth (RA runs clockwise around a northern polar disc). `--mirror` /
-`mirror: true` flips to the celestial-globe orientation, which also matches
-the view through a telescope star diagonal.
+Charts default to sky view, oriented the way the sky actually looks from
+Earth (RA runs clockwise around a northern polar disc). If you want the
+mirrored orientation instead, which matches celestial globes and the view
+through a star diagonal, pass `--mirror` or set `mirror: true` in the config.
 
 ## Config
 
 ```yaml
 title: The Northern Sky        # optional
 subtitle: ...                  # optional
-mag_limit: 5.0                 # optional — faintest stars drawn
-show_ecliptic: true            # optional
-mirror: false                  # optional — true flips to the mirrored
-                               #   (celestial-globe) orientation, e.g. for
-                               #   observing through a star diagonal
+mag_limit: 5.0                 # faintest stars drawn (default 5.0)
+show_ecliptic: true
+mirror: false                  # true for the mirrored orientation
 objects:
   - M31                        # bare designation
-  - id: Sh2-142                # catalog lookup + overrides
+  - id: Sh2-142                # catalog lookup with overrides
     label: NGC 7380
     name: Wizard Nebula
   - label: PN G75.5+1.7        # fully manual entry
@@ -74,25 +73,24 @@ objects:
     constellation: Cygnus
     ra: "20h15m22s"            # or decimal degrees, or "20:15:22"
     dec: "+38 21 18"
-    image: images/soap.jpg     # optional — click marker/legend to view;
-                               #   resolved relative to the output HTML and
-                               #   validated at build time (http(s) also OK)
-    color: "#E06C75"           # optional — marker/legend accent, any CSS color
+    image: images/soap.jpg     # click to view; path is resolved relative to
+                               #   the output HTML and checked at build time
+    color: "#E06C75"           # marker/legend accent, any CSS color
 ```
 
-Designations resolved offline from bundled catalogs: **Messier** (including
-M40/M45/M102), **NGC/IC** (OpenNGC), **Sharpless** (Sh2-1…313),
-**Caldwell** (C1–C109), **Barnard 33**, **Melotte**, and common names OpenNGC
-knows ("Pleiades", "Horsehead Nebula"). Anything else (vdB, Collinder, Abell,
-Arp, …) falls back to the CDS Sesame online resolver, or can be entered
-manually with `ra`/`dec`.
+These designations resolve offline from bundled catalogs: Messier (including
+the M40/M45/M102 oddballs), NGC and IC (OpenNGC), Sharpless (Sh2-1 through
+313), Caldwell, Barnard 33, Melotte, and any common name OpenNGC knows, like
+"Pleiades" or "Horsehead Nebula". Anything else (vdB, Collinder, Abell, Arp,
+and so on) falls back to the CDS Sesame online resolver, or you can just
+enter coordinates yourself.
 
-If any object sits south of declination −35°, a southern-hemisphere chart is
-added automatically.
+If any object sits south of declination -35°, a southern-hemisphere chart is
+added automatically and the page gets a toggle to switch between the two.
 
 ## Library API
 
-YAML is only the CLI's concern — the library takes plain dicts, so a host
+YAML is only the CLI's concern. The library takes plain dicts, so a host
 application can build the config straight from its own object database:
 
 ```python
@@ -112,17 +110,17 @@ warnings = uranometria.generate(config, "out/map.html")   # writes the file
 html, warnings = uranometria.render(config, image_base="out")  # or just the HTML
 ```
 
-`generate`/`render` accept `allow_online=False` to forbid the Sesame fallback
-(useful for hosts that must stay offline). Errors that prevent any chart at
-all raise `uranometria.SkymapError`; per-object problems (unresolvable id,
-missing image file) come back as warning strings and the object is skipped or
+Pass `allow_online=False` to forbid the Sesame fallback if your host has to
+stay offline. When nothing can be charted at all you get a
+`uranometria.SkymapError`; smaller problems like an unresolvable id or a
+missing image file come back as warning strings, and the object is skipped or
 rendered without its photo.
 
 ## Integrating into a host application
 
 A workflow manager that already knows each object's designation, coordinates,
-and hero image can bypass every lookup by passing fully-specified entries —
-`generate` then works offline and deterministically. The suggested pattern is
+and hero image can skip every lookup by passing fully specified entries, at
+which point `generate` is offline and deterministic. A reasonable pattern is
 an optional dependency that degrades gracefully:
 
 ```python
@@ -143,10 +141,10 @@ def publish_skymap(objects, out_path):
 
 ## Data & licenses
 
-- [OpenNGC](https://github.com/mattiaverga/OpenNGC) (CC-BY-SA-4.0) — NGC/IC/Messier/Caldwell records
-- Sharpless (1959) via [VizieR VII/20](https://cdsarc.cds.unistra.fr/viz-bin/cat/VII/20) — Sh2 positions
-- [d3-celestial](https://github.com/ofrohn/d3-celestial) (BSD-3) — stars to mag 6, constellation lines & names
-- Fonts: Marcellus, IBM Plex Mono (SIL OFL), embedded as data URIs
-- Online fallback: [CDS Sesame](https://cds.unistra.fr/cgi-bin/Sesame) name resolver
+- [OpenNGC](https://github.com/mattiaverga/OpenNGC) (CC-BY-SA-4.0): NGC, IC, Messier, and Caldwell records
+- Sharpless (1959) via [VizieR VII/20](https://cdsarc.cds.unistra.fr/viz-bin/cat/VII/20): Sh2 positions
+- [d3-celestial](https://github.com/ofrohn/d3-celestial) (BSD-3): stars to mag 6, constellation lines and names
+- Fonts: Marcellus and IBM Plex Mono (SIL OFL), embedded as data URIs
+- Online fallback: the [CDS Sesame](https://cds.unistra.fr/cgi-bin/Sesame) name resolver
 
 Code: Apache-2.0.
