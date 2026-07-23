@@ -105,7 +105,7 @@ an annotated PNG and an interactive HTML page build on this model.
 It needs two things beyond the base install:
 
 1. The `annotate` extra: `pip install "uranometria[annotate] @ git+https://github.com/devonjones/uranometria"`
-   (astropy + astroquery).
+   (astropy, astroquery, pillow, matplotlib).
 2. The [ASTAP](https://www.hnsky.org/astap.htm) command-line solver with a
    local star database (D20 works for fields near 1°). Point at them with
    `--astap`/`--astap-db` or the `ASTAP_CLI`/`ASTAP_DB` environment variables.

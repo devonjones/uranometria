@@ -127,6 +127,8 @@ def annotate(
             render_png(model, image, png_path, title=title)
         except (ValueError, OSError) as e:
             raise click.ClickException(str(e)) from None
+        except ImportError as err:
+            raise click.ClickException(f"rendering needs the [annotate] extra ({err}).") from None
         click.echo(f"wrote {png_path}")
 
 
