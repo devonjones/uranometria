@@ -193,6 +193,14 @@ def publish_skymap(objects, out_path):
     return uranometria.generate(cfg, out_path)
 ```
 
+## Documentation
+
+Full documentation lives in [`docs/`](docs/): [sky charts](docs/charts.md),
+the [chart config reference](docs/chart-config.md),
+[annotating images](docs/annotate.md), and the
+[annotation model](docs/annotation-model.md) with its edit-and-re-render
+workflow.
+
 ## Data & licenses
 
 - [OpenNGC](https://github.com/mattiaverga/OpenNGC) (CC-BY-SA-4.0): NGC, IC, Messier, and Caldwell records
