@@ -1,7 +1,7 @@
 [project]
 name = "uranometria"
 version = "0.3.0"
-description = "Star-atlas style HTML sky charts marking your deep-sky objects — Messier, NGC/IC, Sharpless, Caldwell, and more"
+description = "Star-atlas style HTML sky charts of the deep-sky objects you have photographed"
 readme = "README.md"
 license = "Apache-2.0"
 authors = [
