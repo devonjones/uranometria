@@ -297,3 +297,22 @@ def test_cli_annotate_reports_value_errors(monkeypatch, tmp_path):
     assert result.exit_code != 0
     assert "no image data" in result.output
     assert "Traceback" not in result.output
+
+
+def test_cli_annotate_reports_os_errors(monkeypatch, tmp_path):
+    from click.testing import CliRunner
+
+    import uranometria.annotate as annotate_pkg
+    from uranometria.cli import main
+
+    img = tmp_path / "locked.fit"
+    img.write_bytes(b"x")
+
+    def boom(image, **kw):
+        raise OSError("permission denied reading locked.fit")
+
+    monkeypatch.setattr(annotate_pkg, "build_model", boom)
+    result = CliRunner().invoke(main, ["annotate", str(img)])
+    assert result.exit_code != 0
+    assert "permission denied" in result.output
+    assert "Traceback" not in result.output

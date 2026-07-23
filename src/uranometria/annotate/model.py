@@ -16,7 +16,6 @@ JPEG/PNG versions of the frame.
 
 import json
 import math
-import math
 import os
 from datetime import datetime, timezone
 
