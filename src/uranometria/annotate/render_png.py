@@ -155,6 +155,52 @@ def _short_desig(desig, width=20):
     return desig[: width - 1] + "…"
 
 
+def _place_label(x, y, W, H, cx, cy, exclusions, seg_crossings, r_gap=0.035):
+    """Choose a leader-label anchor. Invariant: the text anchor never flips
+    against the leader direction ((lx >= x) iff ha == 'left'), which is what
+    prevents the leader striking through its own text. Directions whose text
+    would run off the near edge are penalized rather than flipped."""
+    rx = ry = 0.0
+    for px, py, _ in exclusions:
+        ddx, ddy = x - px, y - py
+        d2 = ddx * ddx + ddy * ddy
+        if d2 < 1.0 or d2 > (0.30 * min(W, H)) ** 2:
+            continue
+        rx += ddx / d2
+        ry += ddy / d2
+    cands = []
+    if math.hypot(rx, ry) > 1e-9:
+        cands.append((rx / math.hypot(rx, ry), ry / math.hypot(rx, ry)))
+    ndx, ndy = x - cx, y - cy
+    nn = math.hypot(ndx, ndy)
+    if nn > 1e-9:
+        cands.append((ndx / nn, ndy / nn))
+    for k in range(8):
+        ang = k * math.pi / 4 + 0.4
+        cands.append((math.cos(ang), math.sin(ang)))
+
+    best = None
+    for i, (dx, dy) in enumerate(cands):
+        lx = x + dx * r_gap * W * 1.6 + (0.02 * W if dx >= 0 else -0.02 * W)
+        ly = y + dy * r_gap * H * 1.6
+        lx = min(max(lx, 0.03 * W), 0.97 * W)
+        ly = min(max(ly, 0.07 * H), 0.95 * H)
+        score = 10 * seg_crossings(x, y, lx, ly, (x, y)) + 0.1 * i
+        if (dx >= 0 and lx > 0.82 * W) or (dx < 0 and lx < 0.18 * W):
+            score += 5
+        if best is None or score < best[0]:
+            best = (score, lx, ly, dx)
+        if score < 0.5:
+            break
+    _, lx, ly, dx = best
+    ha = "left" if dx >= 0 else "right"
+    if ha == "left" and lx > 0.82 * W:
+        lx = 0.82 * W
+    elif ha == "right" and lx < 0.18 * W:
+        lx = 0.18 * W
+    return lx, ly, ha
+
+
 def render_png(model, image_path, output, *, title=None, max_width=2000):
     """Composite the annotation model onto the image and write a PNG."""
     import matplotlib
@@ -280,50 +326,7 @@ def render_png(model, image_path, output, *, title=None, max_width=2000):
         return hits
 
     def leader_label(x, y, text, color, r_gap=0.035):
-        # candidate directions: repulsion from neighbors first, then a fan;
-        # score each by exclusion-circle crossings and pick the cleanest
-        rx = ry = 0.0
-        for px, py, _ in exclusions:
-            ddx, ddy = x - px, y - py
-            d2 = ddx * ddx + ddy * ddy
-            if d2 < 1.0 or d2 > (0.30 * min(W, H)) ** 2:
-                continue
-            rx += ddx / d2
-            ry += ddy / d2
-        cands = []
-        if math.hypot(rx, ry) > 1e-9:
-            cands.append((rx / math.hypot(rx, ry), ry / math.hypot(rx, ry)))
-        ndx, ndy = x - cx, y - cy
-        nn = math.hypot(ndx, ndy)
-        if nn > 1e-9:
-            cands.append((ndx / nn, ndy / nn))
-        for k in range(8):
-            ang = k * math.pi / 4 + 0.4
-            cands.append((math.cos(ang), math.sin(ang)))
-
-        best = None
-        for i, (dx, dy) in enumerate(cands):
-            lx = x + dx * r_gap * W * 1.6 + (0.02 * W if dx >= 0 else -0.02 * W)
-            ly = y + dy * r_gap * H * 1.6
-            lx = min(max(lx, 0.03 * W), 0.97 * W)
-            ly = min(max(ly, 0.07 * H), 0.95 * H)
-            score = 10 * _seg_crossings(x, y, lx, ly, (x, y)) + 0.1 * i
-            # penalize directions whose text would run off the near edge, so
-            # the anchor never has to flip against the leader line
-            if (dx >= 0 and lx > 0.82 * W) or (dx < 0 and lx < 0.18 * W):
-                score += 5
-            if best is None or score < best[0]:
-                best = (score, lx, ly, dx)
-            if score < 0.5:
-                break
-        _, lx, ly, dx = best
-        ha = "left" if dx >= 0 else "right"
-        # clamp inward with the natural anchor rather than flipping it — a
-        # flipped anchor makes the leader strike through its own text
-        if ha == "left" and lx > 0.82 * W:
-            lx = 0.82 * W
-        elif ha == "right" and lx < 0.18 * W:
-            lx = 0.18 * W
+        lx, ly, ha = _place_label(x, y, W, H, cx, cy, exclusions, _seg_crossings, r_gap)
         ax.plot([x, lx], [y, ly], color=color, lw=1.0, alpha=0.9, zorder=9)
         ax.text(
             lx,

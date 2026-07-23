@@ -722,3 +722,19 @@ def test_star_dist_ly_passthrough(monkeypatch, tmp_path):
     m = model.build_model(tmp_path / "f.fit", allow_online=True)
     star = next(o for o in m["objects"] if o["kind"] == "star")
     assert star["dist_ly"] == 3196
+
+
+def test_place_label_never_flips_anchor():
+    """The strike-through invariant: anchor side always matches the leader
+    direction, even for objects hard against the frame edges."""
+    from uranometria.annotate.render_png import _place_label
+
+    W, H = 1000, 800
+
+    def no_crossings(*a):
+        return 0
+
+    for x, y in [(950, 400), (990, 100), (30, 400), (500, 30), (500, 770), (950, 770)]:
+        lx, ly, ha = _place_label(x, y, W, H, W / 2, H / 2, [], no_crossings)
+        assert (lx >= x) == (ha == "left"), (x, y, lx, ha)
+        assert 0.02 * W <= lx <= 0.98 * W
