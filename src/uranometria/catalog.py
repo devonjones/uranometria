@@ -22,16 +22,24 @@ def parse_angle(value, is_ra):
     s = str(value).strip()
     if re.fullmatch(r"[+-]?\d+(\.\d+)?", s):
         return float(s)
+    explicit_degrees = "d" in s.lower() or "°" in s
     t = re.sub(r"[hdms:°'′\"″]", " ", s.lower()).strip()
     parts = t.split()
     if not parts:
         raise ValueError(f"cannot parse angle {value!r}")
     sign = -1.0 if parts[0].startswith("-") else 1.0
-    nums = [abs(float(p)) for p in parts]
+    try:
+        nums = [abs(float(p)) for p in parts]
+    except ValueError:
+        raise ValueError(f"cannot parse angle {value!r}") from None
     deg = (
         nums[0] + (nums[1] if len(nums) > 1 else 0) / 60 + (nums[2] if len(nums) > 2 else 0) / 3600
     )
-    if is_ra and ("h" in s.lower() or ":" in s or deg <= 24 and len(nums) > 1):
+    if (
+        is_ra
+        and not explicit_degrees
+        and ("h" in s.lower() or ":" in s or deg <= 24 and len(nums) > 1)
+    ):
         deg *= 15.0
     return sign * deg
 
@@ -41,7 +49,7 @@ def fmt_coord(ra, dec):
     h = int(rh)
     m = int(round((rh - h) * 60))
     if m == 60:
-        h, m = h + 1, 0
+        h, m = (h + 1) % 24, 0
     sign = "+" if dec >= 0 else "−"
     ad = abs(dec)
     d = int(ad)
@@ -115,6 +123,10 @@ class Catalog:
                     )
                     if tgt in raw and raw[tgt]["RA"]:
                         r = dict(raw[tgt], Name=r["Name"], M=r["M"] or raw[tgt]["M"])
+                    elif r["RA"]:
+                        # Dup with no cross-reference but its own coordinates
+                        # (e.g. the addendum's M102 row) — chart it as-is.
+                        pass
                     else:
                         continue
                 else:
@@ -134,9 +146,13 @@ class Catalog:
             if r.get("M"):
                 self.by_key.setdefault(f"M{int(r['M'])}", dict(rec, disp=f"M{int(r['M'])}"))
             for ident in (r.get("Identifiers") or "").split(","):
-                m = re.fullmatch(r"C (\d{3})", ident.strip())
+                ident = ident.strip()
+                m = re.fullmatch(r"C (\d{3})", ident)
                 if m:
-                    self.by_key.setdefault(f"C{int(m.group(1))}", dict(rec, disp=rec["disp"]))
+                    self.by_key.setdefault(f"C{int(m.group(1))}", dict(rec))
+                m = re.fullmatch(r"Mel (\d+)", ident)
+                if m:
+                    self.by_key.setdefault(f"Mel{int(m.group(1))}", dict(rec))
             for cn in (r.get("Common names") or "").split(","):
                 if cn.strip():
                     self.by_common.setdefault(cn.strip().lower(), rec)
@@ -192,7 +208,7 @@ def sesame(desig, timeout=15):
     req = urllib.request.Request(url, headers={"User-Agent": "uranometria"})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         text = resp.read().decode("utf-8", "replace")
-    m = re.search(r"%J\s+([\d.+-]+)\s+([\d.+-]+)", text)
+    m = re.search(r"%J\s+([+-]?\d+(?:\.\d+)?)\s+([+-]?\d+(?:\.\d+)?)", text)
     if not m:
         return None
     return dict(

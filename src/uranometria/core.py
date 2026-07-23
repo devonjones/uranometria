@@ -20,6 +20,7 @@ Typical use from another project:
 `generate` also accepts a path to a YAML file as its first argument.
 """
 
+import http.client
 import os
 import re
 import urllib.parse
@@ -51,10 +52,18 @@ def resolve_objects(entries, *, allow_online=True):
             e = {"id": e}
         o = None
         if "ra" in e and "dec" in e:
+            try:
+                ra = parse_angle(e["ra"], True)
+                dec = parse_angle(e["dec"], False)
+            except ValueError as err:
+                warnings.append(
+                    f"{e.get('label') or e.get('id', '?')}: bad ra/dec ({err}) — skipped"
+                )
+                continue
             o = dict(
                 disp=e.get("label") or e.get("id", "?"),
-                ra=parse_angle(e["ra"], True),
-                dec=parse_angle(e["dec"], False),
+                ra=ra,
+                dec=dec,
                 type=e.get("type", "Deep-sky object"),
                 constellation=e.get("constellation", ""),
                 common=e.get("name", ""),
@@ -64,7 +73,7 @@ def resolve_objects(entries, *, allow_online=True):
             if o is None and allow_online:
                 try:
                     o = sesame(e["id"])
-                except OSError as err:
+                except (OSError, http.client.HTTPException) as err:
                     warnings.append(
                         f"{e['id']}: not in bundled catalogs and Sesame "
                         f"lookup failed ({err}) — skipped"
@@ -130,6 +139,10 @@ def render(config, *, image_base=None, allow_online=True):
     entries = cfg.get("objects") or []
     if not entries:
         raise SkymapError("config has no 'objects' list")
+    try:
+        float(cfg.get("mag_limit", 5.0))
+    except (TypeError, ValueError):
+        raise SkymapError(f"mag_limit must be a number, got {cfg.get('mag_limit')!r}") from None
     objects, warnings = resolve_objects(entries, allow_online=allow_online)
     if not objects:
         raise SkymapError("no objects could be resolved")

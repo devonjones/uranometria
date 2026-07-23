@@ -18,6 +18,10 @@
 
 title: The Northern Sky
 subtitle: Seven deep-sky objects · Seestar S50 · Epoch J2000
+# Chart-level options (defaults shown):
+# mag_limit: 5.0        # faintest stars drawn
+# show_ecliptic: true
+# mirror: false         # true for the mirrored (celestial-globe) orientation
 objects:
   - id: M31
     image: images/M31.jpg
@@ -36,4 +40,5 @@ objects:
     name: Wizard Nebula · Sh2-142
     type: Emission nebula + cluster
     constellation: Cepheus
+    color: "#D98A7E"     # per-object marker/legend accent
     image: images/Sh2-142.jpg

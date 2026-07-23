@@ -2,7 +2,7 @@
 
 import html
 
-from .chart import Chart, DEC_EDGE
+from .chart import Chart, DEC_EDGE, accent_value, photo_attrs
 from .resources import asset_text, sky_data
 
 
@@ -11,21 +11,17 @@ def _legend_html(objects):
     for i, o in enumerate(objects):
         meta = o["type"] + (f" — {o['constellation']}" if o["constellation"] else "")
         common = f'<span class="common">{html.escape(o["common"])}</span>' if o["common"] else ""
-        attrs = f' style="--accent:{html.escape(o["color"], quote=True)}"' if o.get("color") else ""
-        photo = ""
-        if o.get("href"):
-            attrs += (
-                f' data-img="{html.escape(o["href"], quote=True)}"'
-                f' data-cap="{html.escape(o["caption"], quote=True)}"'
-            )
-            photo = ' <span class="photo">PHOTO ↗</span>'
+        accent = accent_value(o)
+        attrs = f' style="--accent:{accent}"' if accent else ""
+        attrs += photo_attrs(o)
+        photo = ' <span class="photo">PHOTO ↗</span>' if o.get("href") else ""
         items.append(f"""<li data-target="mk-{i}"{attrs}>
   <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
     <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
     <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
   <div class="obj"><span class="desig">{html.escape(o["disp"])}{photo}</span>{common}
     <span class="meta">{html.escape(meta)}</span>
-    <span class="coord">{o["coord"]}</span></div>
+    <span class="coord">{html.escape(o["coord"])}</span></div>
 </li>""")
     return "".join(items)
 
@@ -67,14 +63,18 @@ def build_page(cfg, objects):
     default_title = (
         "THE NIGHT SKY" if two else ("THE SOUTHERN SKY" if charts[0].south else "THE NORTHERN SKY")
     )
-    title = html.escape(str(cfg.get("title", default_title))).upper()
+    # case-transform first, escape last — transforming escaped text corrupts
+    # the entity names themselves (&amp; -> &Amp;)
+    raw_title = str(cfg.get("title", default_title))
+    title = html.escape(raw_title.upper())
+    tab_title = html.escape(raw_title.title())
     default_sub = f"{n} DEEP-SKY OBJECT{'S' if n != 1 else ''} · EPOCH J2000"
-    subtitle = html.escape(str(cfg.get("subtitle", default_sub))).upper()
+    subtitle = html.escape(str(cfg.get("subtitle", default_sub)).upper())
 
     def b64(fn):
         return asset_text(fn + ".b64")
 
-    return f"""<title>{title.title()} — Photographed Objects</title>
+    return f"""<title>{tab_title} — Photographed Objects</title>
 <style>
 @font-face {{ font-family:'Marcellus'; font-style:normal; font-weight:400;
   src:url(data:font/woff2;base64,{b64("marcellus-normal-400.woff2")}) format('woff2'); }}

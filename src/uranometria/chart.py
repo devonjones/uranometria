@@ -29,6 +29,23 @@ def visible(dec, south):
     return dec >= -DEC_EDGE if not south else dec <= DEC_EDGE
 
 
+def accent_value(o):
+    """Escaped per-object accent color, or '' when the object has none."""
+    return html.escape(o["color"], quote=True) if o.get("color") else ""
+
+
+def photo_attrs(o):
+    """data-img/data-cap attribute pair for objects with a photo, escaped.
+    The single source of truth for these sinks — used by both the chart
+    markers and the legend so their escaping cannot drift apart."""
+    if not o.get("href"):
+        return ""
+    return (
+        f' data-img="{html.escape(o["href"], quote=True)}"'
+        f' data-cap="{html.escape(o["caption"], quote=True)}"'
+    )
+
+
 def star_color(bv):
     try:
         bv = float(bv)
@@ -232,14 +249,10 @@ class Chart:
                     f'x2="{13*math.cos(t):.2f}" y2="{13*math.sin(t):.2f}"/>'
                 )
             style = f"--tx:{x:.1f}px;--ty:{y:.1f}px"
-            if o.get("color"):
-                style += f';--accent:{html.escape(o["color"], quote=True)}'
-            attrs = f' style="{style}"'
-            if o.get("href"):
-                attrs += (
-                    f' data-img="{html.escape(o["href"], quote=True)}"'
-                    f' data-cap="{html.escape(o["caption"], quote=True)}"'
-                )
+            accent = accent_value(o)
+            if accent:
+                style += f";--accent:{accent}"
+            attrs = f' style="{style}"' + photo_attrs(o)
             out.append(
                 f'<g class="marker{" has-photo" if o.get("href") else ""}" id="mk-{uid}"{attrs}>'
                 f'<circle r="8.5" class="halo"/><circle r="8.5" class="ring"/>{"".join(ticks)}'
@@ -255,13 +268,13 @@ class Chart:
         return f"""{head}
 <div class="{cls}"{hemi_attr}><svg class="sky" viewBox="0 0 1000 1000" role="img"
      aria-label="Polar star chart of the {label} sky with photographed objects marked">
-  <circle cx="500" cy="500" r="470" fill="var(--sky)"/>
+  <circle cx="{CX:g}" cy="{CY:g}" r="{R_MAX:g}" fill="var(--sky)"/>
   <g class="grid">{self.grid_svg()}</g>
   {self.ecliptic_svg()}
   <g class="constellations">{self.lines_svg()}</g>
   <g class="stars">{self.stars_svg()}</g>
   <g class="connames">{self.names_svg()}</g>
-  <circle class="rim" cx="500" cy="500" r="470"/>
+  <circle class="rim" cx="{CX:g}" cy="{CY:g}" r="{R_MAX:g}"/>
   <g class="hours">{self.hours_svg()}</g>
   <g class="declabels">{self.declabels_svg()}</g>
   <g class="markers">{self.markers_svg()}</g>
