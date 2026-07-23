@@ -121,3 +121,23 @@ def test_hemisphere_toggle(tmp_path):
     assert 'class="chart hidden" data-hemi="south"' in html  # south starts hidden
     uranometria.generate({"objects": ["M31", "M42"]}, out, allow_online=False)
     assert 'id="hemitoggle"' not in out.read_text()  # no toggle when single
+
+
+def test_sky_view_orientation():
+    from uranometria.chart import CX, project
+
+    # Sky view: RA 6h sits right of center on a northern disc (RA clockwise
+    # from 0h at top), left of center on a southern disc.
+    assert project(90, 0)[0] > CX
+    assert project(90, 0, south=True)[0] < CX
+    # Mirror (celestial-globe) view flips both.
+    assert project(90, 0, mirror=True)[0] < CX
+    assert project(90, 0, south=True, mirror=True)[0] > CX
+
+
+def test_mirror_config(tmp_path):
+    out = tmp_path / "map.html"
+    uranometria.generate({"objects": ["M31"]}, out, allow_online=False)
+    assert "sky view" in out.read_text()
+    uranometria.generate({"objects": ["M31"], "mirror": True}, out, allow_online=False)
+    assert "mirrored (globe) view" in out.read_text()

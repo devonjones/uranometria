@@ -33,15 +33,16 @@ def _legend_html(objects):
 def build_page(cfg, objects):
     mag_limit = float(cfg.get("mag_limit", 5.0))
     show_ecl = bool(cfg.get("show_ecliptic", True))
+    mirror = bool(cfg.get("mirror", False))
     data = sky_data()
 
     need_south = any(o["dec"] < -DEC_EDGE for o in objects)
     need_north = any(o["dec"] > DEC_EDGE for o in objects) or not need_south
     charts = []
     if need_north:
-        charts.append(Chart(False, data, mag_limit, show_ecl))
+        charts.append(Chart(False, data, mag_limit, show_ecl, mirror=mirror))
     if need_south:
-        charts.append(Chart(True, data, mag_limit, show_ecl))
+        charts.append(Chart(True, data, mag_limit, show_ecl, mirror=mirror))
 
     for i, o in enumerate(objects):
         if len(charts) == 2:
@@ -208,7 +209,7 @@ footer {{ margin-top:14px; text-align:center; color:var(--dim); font-size:10px;
 {chart_html}
 <p class="zoomhint">SCROLL TO ZOOM · DRAG TO PAN · DOUBLE-CLICK TO RESET</p>
 <footer>
-  Azimuthal equidistant projection centered on the celestial pole{" (each hemisphere charted to decl. ±" + str(int(DEC_EDGE)) + "° past the equator)" if two else ""} · stars to magnitude {mag_limit:g}.<br>
+  Azimuthal equidistant projection centered on the celestial pole{" (each hemisphere charted to decl. ±" + str(int(DEC_EDGE)) + "° past the equator)" if two else ""} · stars to magnitude {mag_limit:g} · {"mirrored (globe) view" if mirror else "sky view, as seen from Earth"}.<br>
   Catalog data: OpenNGC (CC-BY-SA), Sharpless via VizieR · star &amp; constellation data: d3-celestial (BSD).
 </footer>
 </div>

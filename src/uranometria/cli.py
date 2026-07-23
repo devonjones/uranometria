@@ -4,6 +4,8 @@ import argparse
 import os
 import sys
 
+import yaml
+
 from .core import SkymapError, generate
 
 
@@ -18,11 +20,23 @@ def main(argv=None):
         action="store_true",
         help="never call the online Sesame resolver for unknown designations",
     )
+    ap.add_argument(
+        "--mirror",
+        action="store_true",
+        help="mirrored (celestial-globe) orientation instead of the default "
+        "sky view; same as 'mirror: true' in the config",
+    )
     args = ap.parse_args(argv)
 
     out = args.output or os.path.splitext(args.config)[0] + ".html"
     try:
-        warnings = generate(args.config, out, allow_online=not args.offline)
+        with open(args.config) as f:
+            cfg = yaml.safe_load(f)
+        if not isinstance(cfg, dict):
+            raise SkymapError(f"{args.config} is not a mapping")
+        if args.mirror:
+            cfg["mirror"] = True
+        warnings = generate(cfg, out, allow_online=not args.offline)
     except (SkymapError, FileNotFoundError, ValueError) as e:
         sys.exit(f"error: {e}")
     for w in warnings:

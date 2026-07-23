@@ -10,13 +10,19 @@ DEC_EDGE = 35.0  # how far past the equator each hemisphere chart reaches
 SCALE = R_MAX / (90.0 + DEC_EDGE)
 
 
-def project(ra_deg, dec_deg, south=False):
-    """Azimuthal equidistant about the celestial pole. Northern charts run RA
-    counterclockwise (0h at top); southern charts mirror it clockwise."""
+def ra_sign(south=False, mirror=False):
+    """Horizontal sense of increasing RA. Sky view (the default) shows the sky
+    as seen from Earth: RA runs clockwise on a northern polar disc and
+    counterclockwise on a southern one. Mirror view flips both — the
+    celestial-globe orientation, matching the view through a star diagonal."""
+    return 1.0 if south == mirror else -1.0
+
+
+def project(ra_deg, dec_deg, south=False, mirror=False):
+    """Azimuthal equidistant about the celestial pole, 0h at top."""
     r = (90.0 + dec_deg if south else 90.0 - dec_deg) * SCALE
     a = math.radians(ra_deg)
-    x = CX + r * math.sin(a) if south else CX - r * math.sin(a)
-    return x, CY - r * math.cos(a)
+    return CX + ra_sign(south, mirror) * r * math.sin(a), CY - r * math.cos(a)
 
 
 def visible(dec, south):
@@ -40,8 +46,10 @@ def star_color(bv):
 class Chart:
     """One hemisphere disc."""
 
-    def __init__(self, south, sky_data, mag_limit, show_ecliptic):
+    def __init__(self, south, sky_data, mag_limit, show_ecliptic, mirror=False):
         self.south = south
+        self.mirror = mirror
+        self.sign = ra_sign(south, mirror)
         self.data = sky_data
         self.mag_limit = mag_limit
         self.show_ecliptic = show_ecliptic
@@ -50,7 +58,7 @@ class Chart:
         self.name_boxes = []  # constellation-name boxes
 
     def p(self, ra, dec):
-        return project(ra, dec, self.south)
+        return project(ra, dec, self.south, self.mirror)
 
     def add_object(self, o, uid):
         x, y = self.p(o["ra"], o["dec"])
@@ -169,7 +177,7 @@ class Chart:
             out.append(f'<circle cx="{CX}" cy="{CY}" r="{r:.1f}" class="{cls}"/>')
         for h in range(0, 24, 2):
             a = math.radians(h * 15)
-            sx = -math.sin(a) if not self.south else math.sin(a)
+            sx = self.sign * math.sin(a)
             x1, y1 = CX + 12 * sx, CY - 12 * math.cos(a)
             x2, y2 = CX + R_MAX * sx, CY - R_MAX * math.cos(a)
             out.append(
@@ -181,7 +189,7 @@ class Chart:
         out = []
         for h in range(0, 24, 2):
             a = math.radians(h * 15)
-            sx = -math.sin(a) if not self.south else math.sin(a)
+            sx = self.sign * math.sin(a)
             x, y = CX + (R_MAX + 16) * sx, CY - (R_MAX + 16) * math.cos(a)
             out.append(f'<text x="{x:.1f}" y="{y:.1f}" dy="0.35em">{h}h</text>')
         return "".join(out)
@@ -192,7 +200,7 @@ class Chart:
         for dec in decs:
             r = (90 - dec if not self.south else 90 + dec) * SCALE
             a = math.radians(15)
-            sx = -math.sin(a) if not self.south else math.sin(a)
+            sx = self.sign * math.sin(a)
             x, y = CX + (r - 2) * sx, CY - (r - 2) * math.cos(a)
             t = f"{dec:+d}°" if dec else "0°"
             out.append(f'<text x="{x:.1f}" y="{y:.1f}" dy="-0.4em">{t}</text>')

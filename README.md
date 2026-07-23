@@ -45,7 +45,13 @@ From a local checkout: `uv tool install <path-to-checkout>`.
 uranometria skymap.yaml                 # writes skymap.html next to the config
 uranometria skymap.yaml -o map.html
 uranometria skymap.yaml --offline       # never call the online resolver
+uranometria skymap.yaml --mirror        # mirrored (celestial-globe) orientation
 ```
+
+Charts default to **sky view** — oriented as the sky actually appears from
+Earth (RA runs clockwise around a northern polar disc). `--mirror` /
+`mirror: true` flips to the celestial-globe orientation, which also matches
+the view through a telescope star diagonal.
 
 ## Config
 
@@ -54,6 +60,9 @@ title: The Northern Sky        # optional
 subtitle: ...                  # optional
 mag_limit: 5.0                 # optional — faintest stars drawn
 show_ecliptic: true            # optional
+mirror: false                  # optional — true flips to the mirrored
+                               #   (celestial-globe) orientation, e.g. for
+                               #   observing through a star diagonal
 objects:
   - M31                        # bare designation
   - id: Sh2-142                # catalog lookup + overrides
