@@ -21,6 +21,7 @@ Typical use from another project:
 """
 
 import http.client
+import math
 import os
 import re
 import urllib.parse
@@ -48,8 +49,10 @@ def resolve_objects(entries, *, allow_online=True):
     catalog = _get_catalog()
     objects, warnings = [], []
     for e in entries:
-        if isinstance(e, str):
-            e = {"id": e}
+        if not isinstance(e, dict):
+            e = {"id": str(e)}  # bare designations, incl. YAML numbers like `- 141`
+        elif "id" in e and not isinstance(e["id"], str):
+            e = dict(e, id=str(e["id"]))
         o = None
         if "ra" in e and "dec" in e:
             try:
@@ -60,9 +63,15 @@ def resolve_objects(entries, *, allow_online=True):
                     f"{e.get('label') or e.get('id', '?')}: bad ra/dec ({err}) — skipped"
                 )
                 continue
+            if not -90.0 <= dec <= 90.0:
+                warnings.append(
+                    f"{e.get('label') or e.get('id', '?')}: dec out of range "
+                    f"({e['dec']!r}) — skipped"
+                )
+                continue
             o = dict(
                 disp=e.get("label") or e.get("id", "?"),
-                ra=ra,
+                ra=ra % 360.0,
                 dec=dec,
                 type=e.get("type", "Deep-sky object"),
                 constellation=e.get("constellation", ""),
@@ -140,9 +149,11 @@ def render(config, *, image_base=None, allow_online=True):
     if not entries:
         raise SkymapError("config has no 'objects' list")
     try:
-        float(cfg.get("mag_limit", 5.0))
+        mag_limit = float(cfg.get("mag_limit", 5.0))
     except (TypeError, ValueError):
         raise SkymapError(f"mag_limit must be a number, got {cfg.get('mag_limit')!r}") from None
+    if math.isnan(mag_limit):
+        raise SkymapError("mag_limit must be a number, got NaN")
     objects, warnings = resolve_objects(entries, allow_online=allow_online)
     if not objects:
         raise SkymapError("no objects could be resolved")

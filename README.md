@@ -111,10 +111,12 @@ html, warnings = uranometria.render(config, image_base="out")  # or just the HTM
 ```
 
 Pass `allow_online=False` to forbid the Sesame fallback if your host has to
-stay offline. When nothing can be charted at all you get a
-`uranometria.SkymapError`; smaller problems like an unresolvable id or a
-missing image file come back as warning strings, and the object is skipped or
-rendered without its photo.
+stay offline. A `uranometria.SkymapError` means no chart was produced: either
+nothing could be charted at all (no objects, none resolvable) or a chart-level
+config value is invalid (say, a non-numeric `mag_limit`). Smaller problems
+like an unresolvable id, a malformed `ra`/`dec`, or a missing image file come
+back as warning strings, and the object is skipped or rendered without its
+photo.
 
 ## Integrating into a host application
 

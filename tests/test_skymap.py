@@ -31,6 +31,8 @@ def test_fmt_coord():
         ("C9", "C9", 62.5),  # Caldwell without an NGC number (Cave Nebula)
         ("Caldwell 14", "C14", 57.1),  # Double Cluster — Caldwell addendum entry
         ("B33", "B33", -2.46),  # Barnard 33 (Horsehead)
+        ("M102", "M102", 54.35),  # addendum Dup row with no cross-reference
+        ("Mel 25", "C41", 15.87),  # Melotte via OpenNGC Identifiers (Hyades)
     ],
 )
 def test_catalog_lookup(catalog, desig, disp, dec):
@@ -150,6 +152,7 @@ def test_m102_resolves_offline(catalog):
     rec = catalog.lookup("M102")
     assert rec is not None
     assert rec["dec"] == pytest.approx(54.35, abs=0.2)
+    assert rec["type"] != "Dup"  # raw CSV type string must not reach the legend
 
 
 def test_mel_identifier_lookup(catalog):
@@ -193,6 +196,8 @@ def test_parse_angle_explicit_degree_cue():
 def test_fmt_coord_rollover():
     assert fmt_coord(29.999, -29.9999) == "02h 00m  −30° 00′"
     assert fmt_coord(359.995, 0).startswith("00h 00m")  # not 24h
+    assert fmt_coord(360.0, 0).startswith("00h 00m")  # exactly 360 normalizes
+    assert fmt_coord(-10.0, 0).startswith("23h 20m")  # negative RA normalizes
 
 
 # ---- review-fixes: contract and error handling ----------------------------
@@ -334,3 +339,51 @@ def test_cli_non_mapping_yaml(tmp_path):
     cfg.write_text("- just\n- a list\n")
     with pytest.raises(SystemExit, match="not a mapping"):
         main([str(cfg)])
+
+
+# ---- pr-review-loop round 1 -------------------------------------------------
+
+
+def test_photo_and_accent_render_at_both_sites(tmp_path):
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg", "color": "#7EC8A0"}]}
+    out = tmp_path / "map.html"
+    uranometria.generate(cfg, out, allow_online=False)
+    html = out.read_text()
+    assert html.count('data-img="pic.jpg"') == 2  # chart marker AND legend card
+    assert html.count("--accent:#7EC8A0") == 2
+
+
+def test_sesame_surrogate_designation(monkeypatch):
+    import io
+    import urllib.request
+
+    from uranometria.catalog import sesame
+
+    class Resp(io.BytesIO):
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            pass
+
+    monkeypatch.setattr(urllib.request, "urlopen", lambda req, timeout=15: Resp(b"no match"))
+    assert sesame("\ud800bad") is None  # must not raise UnicodeEncodeError
+
+
+def test_non_string_entry_degrades(tmp_path):
+    warnings = uranometria.generate(
+        {"objects": ["M31", 141]}, tmp_path / "m.html", allow_online=False
+    )
+    assert any("could not resolve" in w for w in warnings)
+
+
+def test_dec_out_of_range_warns(tmp_path):
+    cfg = {"objects": ["M31", {"label": "X", "ra": "10 00 00", "dec": "+95"}]}
+    warnings = uranometria.generate(cfg, tmp_path / "m.html", allow_online=False)
+    assert any("dec out of range" in w for w in warnings)
+
+
+def test_nan_mag_limit_raises(tmp_path):
+    with pytest.raises(uranometria.SkymapError, match="NaN"):
+        uranometria.generate({"objects": ["M31"], "mag_limit": float("nan")}, tmp_path / "m.html")

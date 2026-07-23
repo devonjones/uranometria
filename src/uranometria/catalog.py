@@ -45,6 +45,7 @@ def parse_angle(value, is_ra):
 
 
 def fmt_coord(ra, dec):
+    ra = ra % 360.0  # normalize so 360°/negative RA display as 00h-23h
     rh = ra / 15.0
     h = int(rh)
     m = int(round((rh - h) * 60))
@@ -125,8 +126,9 @@ class Catalog:
                         r = dict(raw[tgt], Name=r["Name"], M=r["M"] or raw[tgt]["M"])
                     elif r["RA"]:
                         # Dup with no cross-reference but its own coordinates
-                        # (e.g. the addendum's M102 row) — chart it as-is.
-                        pass
+                        # (e.g. the addendum's M102 row) — chart it, but don't
+                        # let the raw "Dup" type string reach the legend.
+                        r = dict(r, Type="Other")
                     else:
                         continue
                 else:
@@ -204,7 +206,11 @@ class Catalog:
 
 def sesame(desig, timeout=15):
     """CDS Sesame name resolver — network fallback for unknown designations."""
-    url = "https://cds.unistra.fr/cgi-bin/nph-sesame/-oI/A?" + urllib.parse.quote(desig)
+    # errors="replace" so unencodable designations (lone surrogates from YAML
+    # escapes) degrade to a no-match lookup instead of raising UnicodeEncodeError
+    url = "https://cds.unistra.fr/cgi-bin/nph-sesame/-oI/A?" + urllib.parse.quote(
+        desig, errors="replace"
+    )
     req = urllib.request.Request(url, headers={"User-Agent": "uranometria"})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         text = resp.read().decode("utf-8", "replace")
