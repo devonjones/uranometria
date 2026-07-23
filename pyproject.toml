@@ -20,8 +20,14 @@ dependencies = [
 uranometria = "uranometria.cli:main"
 
 [dependency-groups]
-dev = ["pytest>=8"]
+dev = [
+    "black>=26.5.1",
+    "pytest>=8",
+]
 
 [build-system]
 requires = ["uv_build>=0.9.9,<0.10.0"]
 build-backend = "uv_build"
+
+[tool.black]
+line-length = 100

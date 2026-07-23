@@ -1,12 +1,14 @@
 """Polar hemisphere chart: projection, stars, constellation figures, markers."""
+
 import html
 import math
 
 # ---------------------------------------------------------------- geometry
 CX = CY = 500.0
 R_MAX = 470.0
-DEC_EDGE = 35.0            # how far past the equator each hemisphere chart reaches
+DEC_EDGE = 35.0  # how far past the equator each hemisphere chart reaches
 SCALE = R_MAX / (90.0 + DEC_EDGE)
+
 
 def project(ra_deg, dec_deg, south=False):
     """Azimuthal equidistant about the celestial pole. Northern charts run RA
@@ -16,18 +18,24 @@ def project(ra_deg, dec_deg, south=False):
     x = CX + r * math.sin(a) if south else CX - r * math.sin(a)
     return x, CY - r * math.cos(a)
 
+
 def visible(dec, south):
     return dec >= -DEC_EDGE if not south else dec <= DEC_EDGE
+
 
 def star_color(bv):
     try:
         bv = float(bv)
     except (TypeError, ValueError):
         return "#E9EDFB"
-    if bv < 0.0: return "#C7D9FF"
-    if bv < 0.6: return "#E9EDFB"
-    if bv < 1.2: return "#FFEDCF"
+    if bv < 0.0:
+        return "#C7D9FF"
+    if bv < 0.6:
+        return "#E9EDFB"
+    if bv < 1.2:
+        return "#FFEDCF"
     return "#FFD9AE"
+
 
 class Chart:
     """One hemisphere disc."""
@@ -37,9 +45,9 @@ class Chart:
         self.data = sky_data
         self.mag_limit = mag_limit
         self.show_ecliptic = show_ecliptic
-        self.markers = []       # dicts: x, y, o (object), uid
-        self.label_boxes = []   # placed text boxes for collision avoidance
-        self.name_boxes = []    # constellation-name boxes
+        self.markers = []  # dicts: x, y, o (object), uid
+        self.label_boxes = []  # placed text boxes for collision avoidance
+        self.name_boxes = []  # constellation-name boxes
 
     def p(self, ra, dec):
         return project(ra, dec, self.south)
@@ -49,9 +57,16 @@ class Chart:
         self.markers.append(dict(x=x, y=y, o=o, uid=uid))
 
     # ---- label placement -------------------------------------------------
-    CANDIDATES = [(16, 4, "start"), (-16, 4, "end"), (0, -14, "middle"),
-                  (0, 22, "middle"), (14, -9, "start"), (-14, -9, "end"),
-                  (14, 16, "start"), (-14, 16, "end")]
+    CANDIDATES = [
+        (16, 4, "start"),
+        (-16, 4, "end"),
+        (0, -14, "middle"),
+        (0, 22, "middle"),
+        (14, -9, "start"),
+        (-14, -9, "end"),
+        (14, 16, "start"),
+        (-14, 16, "end"),
+    ]
 
     @staticmethod
     def _box(x, y, dx, dy, anchor, text):
@@ -100,8 +115,10 @@ class Chart:
             x, y = self.p(lon % 360, lat)
             r = min(5.0, max(0.55, 0.65 + (self.mag_limit - mag) * 0.72))
             op = 1.0 if mag < 3.5 else (0.85 if mag < 4.5 else 0.7)
-            out.append(f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r:.2f}" '
-                       f'fill="{star_color(f["properties"].get("bv"))}" opacity="{op:.2f}"/>')
+            out.append(
+                f'<circle cx="{x:.1f}" cy="{y:.1f}" r="{r:.2f}" '
+                f'fill="{star_color(f["properties"].get("bv"))}" opacity="{op:.2f}"/>'
+            )
         return "".join(out)
 
     def lines_svg(self):
@@ -114,7 +131,9 @@ class Chart:
                         run.append(self.p(lon % 360, lat))
                     else:
                         if len(run) > 1:
-                            out.append('<path d="M' + " L".join(f"{x:.1f},{y:.1f}" for x, y in run) + '"/>')
+                            out.append(
+                                '<path d="M' + " L".join(f"{x:.1f},{y:.1f}" for x, y in run) + '"/>'
+                            )
                         run = []
                 if len(run) > 1:
                     out.append('<path d="M' + " L".join(f"{x:.1f},{y:.1f}" for x, y in run) + '"/>')
@@ -135,8 +154,10 @@ class Chart:
             label = f["properties"].get("la", f["properties"]["name"]).upper()
             w = len(label) * size * 0.9
             self.name_boxes.append((x - w / 2, y - size, x + w / 2, y + size * 0.3))
-            out.append(f'<text x="{x:.1f}" y="{y:.1f}" class="cn{rank}" opacity="{op}">'
-                       f'{html.escape(label)}</text>')
+            out.append(
+                f'<text x="{x:.1f}" y="{y:.1f}" class="cn{rank}" opacity="{op}">'
+                f"{html.escape(label)}</text>"
+            )
         return "".join(out)
 
     def grid_svg(self):
@@ -151,7 +172,9 @@ class Chart:
             sx = -math.sin(a) if not self.south else math.sin(a)
             x1, y1 = CX + 12 * sx, CY - 12 * math.cos(a)
             x2, y2 = CX + R_MAX * sx, CY - R_MAX * math.cos(a)
-            out.append(f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" class="declin"/>')
+            out.append(
+                f'<line x1="{x1:.1f}" y1="{y1:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" class="declin"/>'
+            )
         return "".join(out)
 
     def hours_svg(self):
@@ -196,19 +219,24 @@ class Chart:
             ticks = []
             for ang in (45, 135, 225, 315):
                 t = math.radians(ang)
-                ticks.append(f'<line x1="{8.5*math.cos(t):.2f}" y1="{8.5*math.sin(t):.2f}" '
-                             f'x2="{13*math.cos(t):.2f}" y2="{13*math.sin(t):.2f}"/>')
+                ticks.append(
+                    f'<line x1="{8.5*math.cos(t):.2f}" y1="{8.5*math.sin(t):.2f}" '
+                    f'x2="{13*math.cos(t):.2f}" y2="{13*math.sin(t):.2f}"/>'
+                )
             style = f"--tx:{x:.1f}px;--ty:{y:.1f}px"
             if o.get("color"):
                 style += f';--accent:{html.escape(o["color"], quote=True)}'
             attrs = f' style="{style}"'
             if o.get("href"):
-                attrs += (f' data-img="{html.escape(o["href"], quote=True)}"'
-                          f' data-cap="{html.escape(o["caption"], quote=True)}"')
+                attrs += (
+                    f' data-img="{html.escape(o["href"], quote=True)}"'
+                    f' data-cap="{html.escape(o["caption"], quote=True)}"'
+                )
             out.append(
                 f'<g class="marker{" has-photo" if o.get("href") else ""}" id="mk-{uid}"{attrs}>'
                 f'<circle r="8.5" class="halo"/><circle r="8.5" class="ring"/>{"".join(ticks)}'
-                f'<text x="{dx}" y="{dy}" text-anchor="{anchor}">{html.escape(o["disp"])}</text></g>')
+                f'<text x="{dx}" y="{dy}" text-anchor="{anchor}">{html.escape(o["disp"])}</text></g>'
+            )
         return "".join(out)
 
     def svg(self, heading, hemi=None, hidden=False):
@@ -216,7 +244,7 @@ class Chart:
         label = "southern" if self.south else "northern"
         cls = "chart hidden" if hidden else "chart"
         hemi_attr = f' data-hemi="{hemi}"' if hemi else ""
-        return f'''{head}
+        return f"""{head}
 <div class="{cls}"{hemi_attr}><svg class="sky" viewBox="0 0 1000 1000" role="img"
      aria-label="Polar star chart of the {label} sky with photographed objects marked">
   <circle cx="500" cy="500" r="470" fill="var(--sky)"/>
@@ -229,4 +257,4 @@ class Chart:
   <g class="hours">{self.hours_svg()}</g>
   <g class="declabels">{self.declabels_svg()}</g>
   <g class="markers">{self.markers_svg()}</g>
-</svg></div>'''
+</svg></div>"""

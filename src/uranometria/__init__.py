@@ -9,6 +9,7 @@ Library entry points:
 `config` is a dict (or a path to a YAML file) with an `objects` list of
 designations and/or fully-specified entries. See `uranometria.core` for the schema.
 """
+
 from .core import SkymapError, generate, render, resolve_objects
 
 __version__ = "0.2.0"
