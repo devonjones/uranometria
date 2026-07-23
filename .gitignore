@@ -8,3 +8,7 @@ wheels/
 
 # Virtual environments
 .venv
+
+# beads local state
+.beads/interactions.jsonl
+.beads/metadata.json
