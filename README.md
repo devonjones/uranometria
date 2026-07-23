@@ -16,10 +16,11 @@ you only have to photograph yours — this tool does the engraving.
 
 ![Example chart](examples/skymap.png)
 
-A full sample lives in [`examples/`](examples/) — open
-[`examples/skymap.html`](examples/skymap.html) in a browser (regenerate it with
-`uv run uranometria examples/skymap.yaml`). Click any marker or legend card to
-see the photograph behind it.
+**[View the live sample →](https://devonjones.github.io/uranometria/examples/skymap.html)**
+Click any marker or legend card to see the photograph behind it; scroll to
+zoom, drag to pan. The sample is generated from
+[`examples/skymap.yaml`](examples/skymap.yaml) — regenerate it with
+`uv run uranometria examples/skymap.yaml`.
 
 ## Install
 
