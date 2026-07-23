@@ -387,3 +387,19 @@ def test_dec_out_of_range_warns(tmp_path):
 def test_nan_mag_limit_raises(tmp_path):
     with pytest.raises(uranometria.SkymapError, match="NaN"):
         uranometria.generate({"objects": ["M31"], "mag_limit": float("nan")}, tmp_path / "m.html")
+
+
+def test_dict_entry_with_non_string_id(tmp_path):
+    warnings = uranometria.generate(
+        {"objects": ["M31", {"id": 141}]}, tmp_path / "m.html", allow_online=False
+    )
+    assert any("could not resolve" in w for w in warnings)
+
+
+def test_manual_ra_normalized_in_object():
+    from uranometria.core import resolve_objects
+
+    objs, _ = resolve_objects([{"label": "X", "ra": 370.0, "dec": 10.0}], allow_online=False)
+    assert objs[0]["ra"] == pytest.approx(10.0)
+    objs, _ = resolve_objects([{"label": "Y", "ra": -10.0, "dec": 10.0}], allow_online=False)
+    assert objs[0]["ra"] == pytest.approx(350.0)
