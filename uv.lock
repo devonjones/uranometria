@@ -953,6 +953,7 @@ dev = [
     { name = "astropy" },
     { name = "astroquery" },
     { name = "black" },
+    { name = "pillow" },
     { name = "pytest" },
 ]
 
@@ -971,6 +972,7 @@ dev = [
     { name = "astropy", specifier = ">=8.0.1" },
     { name = "astroquery", specifier = ">=0.4.11" },
     { name = "black", specifier = ">=26.5.1" },
+    { name = "pillow", specifier = ">=12.3.0" },
     { name = "pytest", specifier = ">=8" },
 ]
 
