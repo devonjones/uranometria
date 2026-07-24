@@ -26,11 +26,17 @@ COLORS = {
 }
 
 
-def fmt_dist_ly(ly):
-    """Human distance: plain ly inside the galaxy, Mly beyond."""
+def fmt_dist_ly(ly, approx=False):
+    """Human distance: plain ly inside the galaxy, Mly beyond. approx=True
+    rounds to two significant figures with a tilde (catalog estimates)."""
     if not ly:
         return None
     if ly < 1e5:
+        if approx:
+            import math as _math
+
+            mag = 10 ** (_math.floor(_math.log10(ly)) - 1)
+            return f"~{round(ly / mag) * mag:,.0f} ly"
         return f"{ly:,.0f} ly"
     m = ly / 1e6
     return f"~{m:.1f} Mly" if m < 10 else f"~{m:.0f} Mly"
@@ -72,14 +78,14 @@ def _load_image(path):
             data = data[0]
         if data.ndim == 3 and data.shape[0] in (3, 4):  # planes -> (H, W, 3)
             data = data[:3].transpose(1, 2, 0)
-        # processed stacks are already nonlinear: anchor black near the sky
-        # background (median) and white at the bright tail, mild gamma lift.
-        # nan-safe: drizzled stacks carry NaN borders
-        lo = float(np.nanpercentile(data, 45.0))
-        hi = float(np.nanpercentile(data, 99.85))
+        # processed stacks are already nonlinear: keep the black point low and
+        # lift the midtones hard so faint nebulosity survives the display
+        # (45th-percentile black crushed it). nan-safe: drizzle borders.
+        lo = float(np.nanpercentile(data, 15.0))
+        hi = float(np.nanpercentile(data, 99.9))
         if not np.isfinite(lo) or not np.isfinite(hi) or hi <= lo:
             lo, hi = 0.0, 1.0
-        out = np.clip((np.nan_to_num(data, nan=lo) - lo) / (hi - lo), 0.0, 1.0) ** 0.8
+        out = np.clip((np.nan_to_num(data, nan=lo) - lo) / (hi - lo), 0.0, 1.0) ** 0.5
         return out
     from PIL import Image
 
@@ -406,7 +412,7 @@ def render_png(model, image_path, output, *, title=None, max_width=2000):
                 dy=1.05,
             )
             detail = o.get("type") or "Deep-sky object"
-            dist = fmt_dist_ly(o.get("dist_ly"))
+            dist = fmt_dist_ly(o.get("dist_ly"), approx=True)
             if dist:
                 detail += f", {dist}"
             add(f"   {detail}", color, size=9.5, dy=1.35)

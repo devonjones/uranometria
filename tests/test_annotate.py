@@ -802,3 +802,56 @@ def test_cli_render_html(tmp_path):
     result = CliRunner().invoke(main, ["render", str(mp), str(img), "--html"])
     assert result.exit_code == 0, result.output
     assert (tmp_path / "tiny_annotated.html").is_file()
+
+
+def test_cluster_nebula_distance_harmonized(monkeypatch, tmp_path):
+    """Sh2-142 and NGC 7380 are one complex: the nebula inherits the
+    cluster's (better-measured) distance instead of a contradictory one."""
+    import uranometria.annotate.model as model
+
+    monkeypatch.setattr(model, "solve", lambda image, **kw: dict(M51_SOLUTION))
+    monkeypatch.setattr(model, "_image_size", lambda image: (3872, 2192))
+    monkeypatch.setattr(model, "named_bright_stars", lambda *a, **k: [])
+    monkeypatch.setattr(model, "stars_in_field", lambda *a, **k: [])
+
+    def fake_dsos(*a, **k):
+        return [
+            {
+                "disp": "NGC 7380",
+                "common": "",
+                "type": "Cluster + nebula",
+                "constellation": "Cepheus",
+                "ra": 202.5,
+                "dec": 47.2,
+                "z": None,
+                "aliases": [],
+                "sep_deg": 0.0,
+            },
+            {
+                "disp": "Sh2-142",
+                "common": "",
+                "type": "Emission nebula (H II)",
+                "constellation": "",
+                "ra": 202.55,
+                "dec": 47.25,
+                "z": None,
+                "aliases": [],
+                "sep_deg": 0.05,
+            },
+        ]
+
+    monkeypatch.setattr(model, "dsos_in_field", fake_dsos)
+    monkeypatch.setattr(model, "dso_distances", lambda d: {"NGC 7380": 7247, "Sh2-142": 11350})
+    m = model.build_model(tmp_path / "f.fit", allow_online=True)
+    dso = {o["designation"]: o for o in m["objects"] if o["kind"] == "dso"}
+    assert dso["NGC 7380"]["dist_ly"] == 7247
+    assert dso["Sh2-142"]["dist_ly"] == 7247  # inherited from the cluster
+
+
+def test_fmt_dist_ly_approx():
+    from uranometria.annotate.render_png import fmt_dist_ly
+
+    assert fmt_dist_ly(7247, approx=True) == "~7,200 ly"
+    assert fmt_dist_ly(7247) == "7,247 ly"
+    assert fmt_dist_ly(365) == "365 ly"
+    assert fmt_dist_ly(22_000_000, approx=True) == "~22 Mly"

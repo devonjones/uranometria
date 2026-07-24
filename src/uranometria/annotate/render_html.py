@@ -76,7 +76,7 @@ def _sidebar_cards(objects):
             bits.append(html.escape(o["type"]))
         if o.get("mag") is not None:
             bits.append(f"{html.escape(o.get('band', ''))}={o['mag']}")
-        dist = fmt_dist_ly(o.get("dist_ly"))
+        dist = fmt_dist_ly(o.get("dist_ly"), approx=o["kind"] == "dso")
         if dist:
             bits.append(html.escape(dist))
         links = []
