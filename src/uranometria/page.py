@@ -276,6 +276,7 @@ svg.focus .marker.lit .halo {{ opacity:0.35; }}
 }}
 .marker image.thumb {{ display:none; }}
 svg.sky.deepzoom .marker image.thumb {{ display:block; }}
+.marker.showthumb image.thumb {{ display:block; }}
 #thumbtip {{ position:fixed; z-index:20; display:none; cursor:zoom-in;
   border:1px solid var(--equator); background:var(--deep); padding:3px;
   box-shadow:0 6px 24px rgba(0,0,0,0.6); }}
@@ -456,8 +457,9 @@ function moveTip(ev) {{
   tip.style.top = y + 'px';
 }}
 if (Object.keys(THUMBS).length) {{
-  document.querySelectorAll('.marker, .legend li[data-target]').forEach(el => {{
-    const key = el.id || el.dataset.target;
+  // map markers: floating tooltip by the cursor (clickable)
+  document.querySelectorAll('.marker').forEach(el => {{
+    const key = el.id;
     if (!THUMBS[key]) return;
     el.addEventListener('mouseenter', ev => {{
       clearTimeout(tipHide);
@@ -468,6 +470,22 @@ if (Object.keys(THUMBS).length) {{
     }});
     el.addEventListener('mousemove', moveTip);
     el.addEventListener('mouseleave', hideTipSoon);
+  }});
+  // legend cards: pin the thumb at the object's marker on the chart, so
+  // the eye goes to the map instead of chasing a cursor tooltip
+  document.querySelectorAll('.legend li[data-target]').forEach(el => {{
+    const key = el.dataset.target;
+    if (!THUMBS[key]) return;
+    el.addEventListener('mouseenter', () => {{
+      const mk = document.getElementById(key);
+      if (!mk) return;
+      ensureMarkerThumbs(mk.closest('svg'));
+      mk.classList.add('showthumb');
+    }});
+    el.addEventListener('mouseleave', () => {{
+      const mk = document.getElementById(key);
+      if (mk) mk.classList.remove('showthumb');
+    }});
   }});
 }}
 
@@ -523,6 +541,10 @@ const ANN_LABEL_SCALE = {ann_label_scale};
 
 let openSeq = 0;
 function openLightbox(src, cap, ann, forceAnn) {{
+  if (typeof tip !== 'undefined') {{
+    clearTimeout(tipHide);
+    tip.style.display = 'none';
+  }}
   lbName.textContent = cap[0] || '';
   lbSub.textContent = cap[1] || '';
   const seq = ++openSeq;

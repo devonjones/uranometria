@@ -168,6 +168,7 @@ svg.focus .ann.lit { opacity:1; }
 }
 .marker image.thumb { display:none; }
 svg.sky.deepzoom .marker image.thumb { display:block; }
+.marker.showthumb image.thumb { display:block; }
 #thumbtip { position:fixed; z-index:20; display:none; cursor:zoom-in;
   border:1px solid var(--equator); background:var(--deep); padding:3px;
   box-shadow:0 6px 24px rgba(0,0,0,0.6); }
@@ -267,7 +268,7 @@ footer { margin-top:14px; text-align:center; color:var(--dim); font-size:10px;
     <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
   <div class="obj"><span class="desig">NGC 7380 <span class="photo">PHOTO ↗</span></span><span class="common">Wizard Nebula · Sh2-142</span>
     <span class="meta">Emission nebula + cluster — Cepheus</span>
-    <span class="linkrow"><a href="https://simbad.cds.unistra.fr/simbad/sim-id?Ident=NGC+7380" target="_blank" rel="noopener">SIMBAD</a><a href="https://en.wikipedia.org/wiki/Wizard_Nebula_·_Sh2-142" target="_blank" rel="noopener">Wikipedia</a></span>
+    <span class="linkrow"><a href="https://simbad.cds.unistra.fr/simbad/sim-id?Ident=NGC+7380" target="_blank" rel="noopener">SIMBAD</a><a href="https://en.wikipedia.org/wiki/Wizard_Nebula_%C2%B7_Sh2-142" target="_blank" rel="noopener">Wikipedia</a></span>
     <span class="coord">22h 48m  +58° 04′</span></div>
 </li></ul></div>
 </aside>
@@ -406,10 +407,11 @@ function attachPanZoom(svg, w, h, onChange) {
     clamp(); apply();
   }, { passive: false });
   svg.addEventListener('pointerdown', e => {
-    pan = [e.clientX, e.clientY, vb[0], vb[1]]; moved = 0;
+    pan = [e.clientX, e.clientY, vb[0], vb[1], e.pointerId]; moved = 0;
     const sel = window.getSelection ? window.getSelection() : null;
     if (sel && !sel.isCollapsed) sel.removeAllRanges();
-    svg.setPointerCapture(e.pointerId);
+    // capture waits until a real drag: capturing on pointerdown retargets
+    // the click to the svg, which made plain clicks on markers dead
   });
   svg.addEventListener('pointermove', e => {
     if (!pan) return;
@@ -417,6 +419,9 @@ function attachPanZoom(svg, w, h, onChange) {
     const s = Math.min(r.width / vb[2], r.height / vb[3]);
     const dx = e.clientX - pan[0], dy = e.clientY - pan[1];
     moved = Math.max(moved, Math.abs(dx) + Math.abs(dy));
+    if (moved > 4 && !svg.hasPointerCapture(pan[4])) {
+      svg.setPointerCapture(pan[4]);
+    }
     vb[0] = pan[2] - dx / s;
     vb[1] = pan[3] - dy / s;
     clamp(); apply();
@@ -495,8 +500,9 @@ function moveTip(ev) {
   tip.style.top = y + 'px';
 }
 if (Object.keys(THUMBS).length) {
-  document.querySelectorAll('.marker, .legend li[data-target]').forEach(el => {
-    const key = el.id || el.dataset.target;
+  // map markers: floating tooltip by the cursor (clickable)
+  document.querySelectorAll('.marker').forEach(el => {
+    const key = el.id;
     if (!THUMBS[key]) return;
     el.addEventListener('mouseenter', ev => {
       clearTimeout(tipHide);
@@ -507,6 +513,22 @@ if (Object.keys(THUMBS).length) {
     });
     el.addEventListener('mousemove', moveTip);
     el.addEventListener('mouseleave', hideTipSoon);
+  });
+  // legend cards: pin the thumb at the object's marker on the chart, so
+  // the eye goes to the map instead of chasing a cursor tooltip
+  document.querySelectorAll('.legend li[data-target]').forEach(el => {
+    const key = el.dataset.target;
+    if (!THUMBS[key]) return;
+    el.addEventListener('mouseenter', () => {
+      const mk = document.getElementById(key);
+      if (!mk) return;
+      ensureMarkerThumbs(mk.closest('svg'));
+      mk.classList.add('showthumb');
+    });
+    el.addEventListener('mouseleave', () => {
+      const mk = document.getElementById(key);
+      if (mk) mk.classList.remove('showthumb');
+    });
   });
 }
 
@@ -694,6 +716,10 @@ function buildAnnotationUI(opts) {
 
 let openSeq = 0;
 function openLightbox(src, cap, ann, forceAnn) {
+  if (typeof tip !== 'undefined') {
+    clearTimeout(tipHide);
+    tip.style.display = 'none';
+  }
   lbName.textContent = cap[0] || '';
   lbSub.textContent = cap[1] || '';
   const seq = ++openSeq;

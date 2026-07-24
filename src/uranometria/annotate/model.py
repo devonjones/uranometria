@@ -48,14 +48,18 @@ def _image_size(image):
 
 
 def _links(designation, common=None):
+    import urllib.parse
+
     links = {
         "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident="
-        + designation.replace(" ", "+")
+        + urllib.parse.quote_plus(designation)
     }
     if designation.startswith("M") and designation[1:].isdigit():
         links["wikipedia"] = f"https://en.wikipedia.org/wiki/Messier_{designation[1:]}"
     elif common:
-        links["wikipedia"] = "https://en.wikipedia.org/wiki/" + common.replace(" ", "_")
+        links["wikipedia"] = "https://en.wikipedia.org/wiki/" + urllib.parse.quote(
+            common.replace(" ", "_"), safe="_()'-,."
+        )
     return links
 
 

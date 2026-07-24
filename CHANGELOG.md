@@ -10,9 +10,13 @@ changes, so they move fast.
   per-object `links:` config key (http(s) only; anything else warns and
   is skipped). With the sidebar filtering to the zoomed view, the links
   for what you are looking at stay at hand.
-- The floating hover thumbnail is clickable and opens the photo in the
-  lightbox, matching what clicking the marker or its pinned deep-zoom
-  thumb already did.
+- Clicking objects on the chart works with a real mouse now: pan/zoom
+  captured the pointer on press, which silently retargeted every click
+  away from the markers. Capture now waits until a drag actually starts.
+- The floating hover thumbnail on map markers is clickable and opens the
+  photo in the lightbox. Hovering a legend card no longer chases the
+  cursor with an image; it pins the thumbnail at the object's marker on
+  the chart, where your eye is headed anyway.
 
 ## 0.10.2 (July 24)
 

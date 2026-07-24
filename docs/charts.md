@@ -51,11 +51,12 @@ The generated page is interactive:
   type, or constellation, and dims everything else on the chart.
 - **Zoom filtering**: when you zoom in, the sidebar narrows to the objects in
   the visible region (the count shows "N OF M OBJECTS · IN VIEW").
-- **Thumbnails** (`thumbnails: true` in the config): hovering a marker or
-  legend card floats a small preview of the object's photo by the cursor,
-  and zooming past 4x pins it beside the marker. Clicking the floating
-  preview (or the marker, or its pinned thumb) opens the photo in the
-  lightbox.
+- **Thumbnails** (`thumbnails: true` in the config): hovering a marker
+  floats a small preview of the object's photo by the cursor, hovering a
+  legend card pins the preview at the object's marker on the chart, and
+  zooming past 4x pins it beside the marker for every photographed object
+  in view. Clicking the floating preview, the marker, or its pinned thumb
+  opens the photo in the lightbox.
 - **Links**: every legend card links to SIMBAD, plus Wikipedia when the
   article name is a safe bet, plus any article links from the config's
   `links:` key. Zooming filters the sidebar, so the visible objects'

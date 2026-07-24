@@ -138,13 +138,19 @@ def _object_links(disp, common):
     links = [
         (
             "SIMBAD",
-            "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=" + disp.replace(" ", "+"),
+            "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=" + urllib.parse.quote_plus(disp),
         )
     ]
     if disp.startswith("M") and disp[1:].isdigit():
         links.append(("Wikipedia", f"https://en.wikipedia.org/wiki/Messier_{disp[1:]}"))
     elif common:
-        links.append(("Wikipedia", "https://en.wikipedia.org/wiki/" + common.replace(" ", "_")))
+        links.append(
+            (
+                "Wikipedia",
+                "https://en.wikipedia.org/wiki/"
+                + urllib.parse.quote(common.replace(" ", "_"), safe="_()'-,."),
+            )
+        )
     return links
 
 
@@ -164,7 +170,7 @@ def _custom_links(entry, disp, warnings):
     out = []
     for label, url in pairs:
         label, url = str(label or "").strip(), str(url or "").strip()
-        if not label or not re.match(r"https?://", url):
+        if not label or not re.match(r"https?://", url, re.IGNORECASE):
             warnings.append(f"{disp}: link {label or url!r} is not http(s) — skipped")
             continue
         out.append((label, url))

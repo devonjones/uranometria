@@ -638,6 +638,27 @@ def test_object_links_auto_and_custom(tmp_path):
     assert "https://en.wikipedia.org/wiki/_" not in html
 
 
+def test_object_links_url_quoting_and_scheme_case(tmp_path):
+    cfg = {
+        "objects": [
+            {
+                "label": "BD+30 3639",
+                "name": "Ne&bula #9",
+                "type": "Planetary nebula",
+                "ra": 200.0,
+                "dec": 30.0,
+                "links": {"Mirror": "HTTPS://Example.org/page"},
+            }
+        ]
+    }
+    out = tmp_path / "map.html"
+    assert uranometria.generate(cfg, out, allow_online=False) == []
+    html = out.read_text()
+    assert "Ident=BD%2B30+3639" in html  # + survives as %2B, space as +
+    assert "wiki/Ne%26bula_%239" in html  # & and # cannot reshape the path
+    assert 'href="HTTPS://Example.org/page"' in html  # scheme case accepted
+
+
 def test_object_link_labels_escaped(tmp_path):
     cfg = {"objects": [{"id": "M31", "links": {"<script>boom</script>": "https://example.org/x"}}]}
     out = tmp_path / "map.html"
@@ -669,6 +690,7 @@ def test_thumbnails_opt_in(tmp_path):
     assert 'id="thumbtip"' in html
     assert "ensureMarkerThumbs" in html
     assert "deepzoom" in html
+    assert "showthumb" in html  # legend hover pins the thumb at the marker
 
 
 def test_thumbnails_remote_and_broken_images(tmp_path):
@@ -749,6 +771,8 @@ def test_no_sidecar_means_empty_map(tmp_path):
     assert "userSelect" in html  # drag-to-pan never selects text (u-8)
     assert "const nz" in html  # wheel at the zoom clamp is a no-op (u-9)
     assert "removeAllRanges" in html  # pan start clears a live selection (u-8)
+    assert "hasPointerCapture" in html  # capture deferred until a real drag,
+    # so plain clicks on markers reach their handlers (u-13)
     assert 'id="lb-ann"' in html  # toggle exists (hidden until usable)
 
 
