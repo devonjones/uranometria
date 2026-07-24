@@ -3,6 +3,14 @@
 All dates 2026. Versions bump whenever behavior visible in the output
 changes, so they move fast.
 
+## 0.9.1 (July 24)
+
+- Dragging to pan no longer selects the chart text: the pan/zoom surfaces
+  suppress text selection and clear any live selection when a pan starts.
+- Wheeling past the zoom limit no longer drifts the view toward the
+  cursor. The scale is clamped before the origin moves, so at either
+  clamp the wheel is a clean no-op and the page never scrolls.
+
 ## 0.9.0 (July 23)
 
 - Sharpless entries now merge into their NGC/IC counterpart when both

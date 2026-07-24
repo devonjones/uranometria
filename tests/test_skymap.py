@@ -613,6 +613,8 @@ def test_no_sidecar_means_empty_map(tmp_path):
     html = out.read_text()
     assert 'id="lb-annotations">{}</script>' in html
     assert "attachPanZoom" in html  # shared pan/zoom present
+    assert "userSelect" in html  # drag-to-pan never selects text (u-8)
+    assert "const nz" in html  # wheel at the zoom clamp is a no-op (u-9)
     assert 'id="lb-ann"' in html  # toggle exists (hidden until usable)
 
 
