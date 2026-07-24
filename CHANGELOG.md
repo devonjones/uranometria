@@ -3,7 +3,7 @@
 All dates 2026. Versions bump whenever behavior visible in the output
 changes, so they move fast.
 
-## 0.11.0 (July 24)
+## 0.10.0 (July 24)
 
 One release for the whole develop cycle: the interactive chart grew up.
 
