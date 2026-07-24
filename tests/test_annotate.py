@@ -931,6 +931,68 @@ def test_distance_reaches_object_via_alias(monkeypatch, tmp_path):
     assert calls == [["IC 405"], ["Sh2-229"]]
 
 
+def test_propagate_matches_groombridge_displacement():
+    from uranometria.annotate.field import GAIA_EPOCH, TYCHO_EPOCH, _propagate, sep_deg
+
+    # Groombridge 1830 (Gaia DR3): pmRA* 4003 mas/yr, pmDE -5815 mas/yr.
+    # Over the 24.75 years back to the Tycho epoch that is ~175 arcsec,
+    # the failure the ticket measured live (~171 arcsec at 2 arcsec tol).
+    ra, dec = 178.232, 37.719
+    ra2, dec2 = _propagate(ra, dec, 4003.0, -5815.0, TYCHO_EPOCH - GAIA_EPOCH)
+    moved = sep_deg(ra, dec, ra2, dec2) * 3600
+    assert 170 < moved < 180
+
+
+def test_tycho_match_uses_epoch_position(monkeypatch):
+    import numpy as np
+    from astropy.table import Table
+
+    import uranometria.annotate.field as field
+    from uranometria.annotate.field import GAIA_EPOCH, TYCHO_EPOCH, _propagate
+
+    ra, dec = 178.232, 37.719
+    pmra, pmde = 4003.0, -5815.0
+    # where the star actually sat at the Tycho epoch
+    tra, tdec = _propagate(ra, dec, pmra, pmde, TYCHO_EPOCH - GAIA_EPOCH)
+
+    gaia_tbl = Table(
+        {
+            "Source": [1234],
+            "RA_ICRS": [ra],
+            "DE_ICRS": [dec],
+            "Gmag": [6.4],
+            "Plx": [109.0],
+            "e_Plx": [0.02],
+            "pmRA": [pmra],
+            "pmDE": [pmde],
+        }
+    )
+    tycho_tbl = Table(
+        {
+            "TYC1": [3020],
+            "TYC2": [2221],
+            "TYC3": [1],
+            "RA(ICRS)": [tra],
+            "DE(ICRS)": [tdec],
+            "VTmag": [6.6],
+        }
+    )
+
+    class FakeVizier:
+        def __init__(self, catalog=None, **kw):
+            self.catalog = catalog
+
+        def query_region(self, center, radius=None):
+            return [gaia_tbl if self.catalog == "I/355/gaiadr3" else tycho_tbl]
+
+    import astroquery.vizier
+
+    monkeypatch.setattr(astroquery.vizier, "Vizier", FakeVizier)
+    stars = field.stars_in_field(ra, dec, 0.5)
+    assert stars[0]["designation"] == "TYC 3020-2221-1"  # matched despite 175"
+    assert "_epoch_pos" not in stars[0]  # temp key stripped from the model
+
+
 def test_dso_aliases_collected():
     from uranometria.annotate.field import dsos_in_field
 

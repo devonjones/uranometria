@@ -112,6 +112,23 @@ def _merge_sharpless_duplicates(hits):
     return sorted(merged, key=lambda r: r["sep_deg"])
 
 
+# Gaia DR3 positions are epoch J2016.0; Tycho-2 observed positions sit near
+# the catalog's mean observation epoch J1991.25. High-proper-motion stars
+# move arcminutes between the two (Groombridge 1830: ~171 arcsec), so match
+# in the Tycho epoch, not Gaia's.
+GAIA_EPOCH = 2016.0
+TYCHO_EPOCH = 1991.25
+
+
+def _propagate(ra, dec, pmra_masyr, pmde_masyr, dt_years):
+    """Move an ICRS position by proper motion. pmra is the projected
+    mu_alpha* (mas/yr, already times cos dec), Gaia's convention."""
+    dec2 = dec + pmde_masyr * dt_years / 3.6e6
+    cosd = math.cos(math.radians(dec)) or 1e-9
+    ra2 = ra + pmra_masyr * dt_years / 3.6e6 / cosd
+    return ra2, dec2
+
+
 def stars_in_field(center_ra, center_dec, radius_deg, *, mag_limit=12.5, max_stars=100):
     """Gaia DR3 (via VizieR) stars in the search circle, brightest first, with
     Tycho-2 designations where available. Online only. Callers apply their own
@@ -126,7 +143,7 @@ def stars_in_field(center_ra, center_dec, radius_deg, *, mag_limit=12.5, max_sta
 
     gaia = Vizier(
         catalog="I/355/gaiadr3",
-        columns=["Source", "RA_ICRS", "DE_ICRS", "Gmag", "Plx", "e_Plx"],
+        columns=["Source", "RA_ICRS", "DE_ICRS", "Gmag", "Plx", "e_Plx", "pmRA", "pmDE"],
         column_filters={"Gmag": f"<{mag_limit}"},
         row_limit=5000,
     ).query_region(center, radius=radius)
@@ -135,11 +152,15 @@ def stars_in_field(center_ra, center_dec, radius_deg, *, mag_limit=12.5, max_sta
         for row in gaia[0]:
             plx = float(row["Plx"]) if row["Plx"] else None
             dist_pc = 1000.0 / plx if plx and plx > 0.5 else None
+            ra, dec = float(row["RA_ICRS"]), float(row["DE_ICRS"])
+            pmra = float(row["pmRA"]) if row["pmRA"] else 0.0
+            pmde = float(row["pmDE"]) if row["pmDE"] else 0.0
             stars.append(
                 {
                     "designation": f"Gaia DR3 {row['Source']}",
-                    "ra": float(row["RA_ICRS"]),
-                    "dec": float(row["DE_ICRS"]),
+                    "_epoch_pos": _propagate(ra, dec, pmra, pmde, TYCHO_EPOCH - GAIA_EPOCH),
+                    "ra": ra,
+                    "dec": dec,
                     "mag": round(float(row["Gmag"]), 1),
                     "band": "G",
                     "dist_ly": round(dist_pc * 3.26156) if dist_pc else None,
@@ -158,9 +179,12 @@ def stars_in_field(center_ra, center_dec, radius_deg, *, mag_limit=12.5, max_sta
             tyc = f"TYC {row['TYC1']}-{row['TYC2']}-{row['TYC3']}"
             tra, tdec = float(row["RA(ICRS)"]), float(row["DE(ICRS)"])
             for s in stars:
-                if sep_deg(s["ra"], s["dec"], tra, tdec) < 2 * ARCSEC:
+                era, edec = s["_epoch_pos"]
+                if sep_deg(era, edec, tra, tdec) < 2 * ARCSEC:
                     s["designation"] = tyc
                     break
+    for s in stars:
+        s.pop("_epoch_pos", None)
     return stars
 
 

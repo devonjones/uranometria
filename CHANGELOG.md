@@ -3,6 +3,15 @@
 All dates 2026. Versions bump whenever behavior visible in the output
 changes, so they move fast.
 
+## 0.10.1 (July 24)
+
+- High-proper-motion stars get their Tycho-2 designations again. Gaia DR3
+  positions are epoch J2016 while Tycho-2 observed positions sit near
+  J1991.25, so fast movers (Groombridge 1830 travels about 171 arcseconds
+  in that gap) always missed the 2 arcsecond match and fell back to the
+  raw Gaia id. Gaia proper motions now propagate the match position to
+  the Tycho epoch.
+
 ## 0.10.0 (July 24)
 
 - Photo thumbnails on the chart, opt-in with `thumbnails: true`. Hovering
