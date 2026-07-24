@@ -109,8 +109,12 @@ Paths with spaces are fine (they are URL-encoded).
 ## Annotations
 
 `annotations:` names an [annotation model](annotation-model.md) for the
-object's photo (path resolved like `image:`). Without it, a sidecar named
-`<image>.annotations.json` next to the photo is picked up automatically. When
+object's photo (relative paths resolve against the output directory, like
+`image:`; URLs are not accepted). Naming a file that does not exist is a
+warning, and unlike the automatic sidecar, an explicit model is honored
+even when `image:` is a remote URL: the lightbox checks dimensions at view
+time. Without the key, a sidecar named `<image>.annotations.json` next to
+the photo is picked up automatically. When
 present and matching the photo's dimensions, the lightbox draws the overlay
 and shows a searchable side panel listing every identified object with
 aliases, magnitude, distance, and SIMBAD/Wikipedia links, filtered to the

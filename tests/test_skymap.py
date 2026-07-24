@@ -505,6 +505,35 @@ def test_annotation_explicit_path_and_bad_json(tmp_path):
     assert any("sidecar unreadable" in w for w in warnings)
 
 
+def test_annotation_label_scale_must_be_finite(tmp_path):
+    import pytest
+
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    cfg = {
+        "objects": [{"id": "M31", "image": "pic.jpg"}],
+        "annotation_label_scale": float("inf"),
+    }
+    with pytest.raises(uranometria.SkymapError, match="finite"):
+        uranometria.generate(cfg, tmp_path / "map.html", allow_online=False)
+
+
+def test_annotations_json_escapes_all_angle_brackets(tmp_path):
+    import json
+
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    m = _sidecar_model()
+    m["objects"][0]["name"] = "<!--<script>evil"
+    (tmp_path / "pic.jpg.annotations.json").write_text(json.dumps(m))
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg"}]}
+    out = tmp_path / "map.html"
+    uranometria.generate(cfg, out, allow_online=False)
+    html = out.read_text()
+    start = html.index('id="lb-annotations">') + len('id="lb-annotations">')
+    payload = html[start : html.index("</script>", start)]
+    assert "<" not in payload  # every < is backslash-u003c escaped
+    assert r"\u003c!--\u003cscript" in payload
+
+
 def test_explicit_annotations_missing_warns(tmp_path):
     (tmp_path / "pic.jpg").write_bytes(b"x")
     cfg = {"objects": [{"id": "M31", "image": "pic.jpg", "annotations": "nope.json"}]}
@@ -524,6 +553,23 @@ def test_explicit_annotations_with_remote_image(tmp_path):
     out = tmp_path / "map.html"
     assert uranometria.generate(cfg, out, allow_online=False) == []
     assert '"mk-0"' in out.read_text()  # model embedded despite remote hero
+
+
+def test_remote_hero_without_annotations_key(tmp_path):
+    cfg = {"objects": [{"id": "M31", "image": "https://example.org/pic.jpg"}]}
+    out = tmp_path / "map.html"
+    assert uranometria.generate(cfg, out, allow_online=False) == []
+    assert 'id="lb-annotations">{}</script>' in out.read_text()
+
+
+def test_remote_annotated_url_passthrough(tmp_path):
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    cfg = {
+        "objects": [{"id": "M31", "image": "pic.jpg", "annotated": "https://example.org/m51.html"}]
+    }
+    out = tmp_path / "map.html"
+    assert uranometria.generate(cfg, out, allow_online=False) == []
+    assert 'href="https://example.org/m51.html"' in out.read_text()
 
 
 def test_no_sidecar_means_empty_map(tmp_path):

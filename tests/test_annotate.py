@@ -849,6 +849,20 @@ def test_render_html_tiff_reencoded_for_browser(tmp_path):
     assert "data:image/tiff" not in page
 
 
+def test_render_html_rejects_nonfinite_label_scale(tmp_path):
+    import pytest
+    from PIL import Image
+
+    from uranometria.annotate.render_html import render_html
+
+    img = tmp_path / "tiny.jpg"
+    Image.new("RGB", (80, 60)).save(img)
+    m = _tiny_model()
+    m["solved"]["pixel_frame"] = "raster0"
+    with pytest.raises(ValueError, match="finite"):
+        render_html(m, img, tmp_path / "p.html", label_scale=float("nan"))
+
+
 def test_render_html_rejects_mismatched_image(tmp_path):
     import pytest
     from PIL import Image
@@ -861,6 +875,57 @@ def test_render_html_rejects_mismatched_image(tmp_path):
     m["solved"]["pixel_frame"] = "raster0"
     with pytest.raises(ValueError, match="model was built for"):
         render_html(m, img, tmp_path / "page.html")
+
+
+def test_render_html_cross_frame_flip(tmp_path):
+    from PIL import Image
+
+    from uranometria.annotate.render_html import render_html
+
+    img = tmp_path / "tiny.jpg"
+    Image.new("RGB", (80, 60)).save(img)
+    m = _tiny_model()  # pixel_frame stays fits0: jpg display must flip y
+    out = tmp_path / "page.html"
+    render_html(m, img, out)
+    page = out.read_text()
+    assert '"y": 34.0' in page  # (60-1) - 25
+    assert '"y": 25.0' not in page
+
+
+def test_render_html_coerces_model_strings(tmp_path):
+    from PIL import Image
+
+    from uranometria.annotate.render_html import render_html
+
+    img = tmp_path / "tiny.jpg"
+    Image.new("RGB", (80, 60)).save(img)
+    m = _tiny_model()
+    m["solved"]["pixel_frame"] = "raster0"
+    m["image_size"] = ["80", "60"]  # hand-edited model: strings, not ints
+    out = tmp_path / "page.html"
+    render_html(m, img, out, label_scale="2")
+    page = out.read_text()
+    assert 'viewBox="0 0 80 60"' in page
+    assert "labelScale: 2.0" in page
+
+
+def test_cli_render_html_size_mismatch_clean_error(tmp_path):
+    import json
+
+    from click.testing import CliRunner
+    from PIL import Image
+
+    from uranometria.cli import main
+
+    img = tmp_path / "wrong.jpg"
+    Image.new("RGB", (100, 60)).save(img)
+    m = _tiny_model()
+    m["solved"]["pixel_frame"] = "raster0"
+    mp = tmp_path / "m.json"
+    mp.write_text(json.dumps(m))
+    result = CliRunner().invoke(main, ["render", str(mp), str(img), "--html"])
+    assert result.exit_code != 0
+    assert "model was built for" in result.output  # ClickException, not traceback
 
 
 def test_render_html_fits_source_flips_nothing(tmp_path):

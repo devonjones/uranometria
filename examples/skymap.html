@@ -596,7 +596,7 @@ function openLightbox(src, cap, ann, forceAnn) {
   lbSub.textContent = cap[1] || '';
   const seq = ++openSeq;
   const probe = new Image();
-  const show = (w, h) => {
+  const show = (w, h, failed) => {
     if (seq !== openSeq) return;  // a newer click already superseded this load
     const old = document.getElementById('lb-svg');
     const svg = document.createElementNS(SVGNS, 'svg');
@@ -607,7 +607,8 @@ function openLightbox(src, cap, ann, forceAnn) {
     im.setAttribute('width', w);
     im.setAttribute('height', h);
     svg.appendChild(im);
-    const usable = ann && ann.image_size && ann.image_size[0] === w && ann.image_size[1] === h;
+    const usable =
+      !failed && ann && ann.image_size && ann.image_size[0] === w && ann.image_size[1] === h;
     lbAnnBtn.hidden = !usable;
     lbPanel.hidden = !usable;
     old.replaceWith(svg);
@@ -635,7 +636,7 @@ function openLightbox(src, cap, ann, forceAnn) {
     lb.hidden = false;
   };
   probe.onload = () => show(probe.naturalWidth, probe.naturalHeight);
-  probe.onerror = () => show(800, 600);  // open anyway: caption + empty stage
+  probe.onerror = () => show(800, 600, true);  // open anyway: caption, empty stage
   probe.src = src;
 }
 
@@ -654,7 +655,10 @@ document.querySelectorAll('[data-img]').forEach(el => {
     openLightbox(el.dataset.img, cap, ANNOTATIONS[key], true);
   });
 });
-function closeLightbox() { lb.hidden = true; }
+function closeLightbox() {
+  openSeq++;  // a dismissal also invalidates any pending image load
+  lb.hidden = true;
+}
 lb.addEventListener('click', closeLightbox);
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape' || lb.hidden) return;

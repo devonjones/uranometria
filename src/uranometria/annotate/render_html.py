@@ -10,6 +10,7 @@ import base64
 import html
 import io
 import json
+import math
 import os
 
 from ..resources import asset_text
@@ -61,7 +62,11 @@ def render_html(model, image_path, output, *, title=None, label_scale=1.0):
             model = json.load(f)
     # models can come from hand-edited or third-party files: coerce the
     # values that land outside the JSON-escaped payload
+    label_scale = float(label_scale)
+    if not math.isfinite(label_scale):
+        raise ValueError("label scale must be a finite number")
     w, h = int(model["image_size"][0]), int(model["image_size"][1])
+    model = dict(model, image_size=[w, h])  # downstream helpers see ints too
 
     from .model import _image_size
 
@@ -89,7 +94,7 @@ def render_html(model, image_path, output, *, title=None, label_scale=1.0):
         f" · {solved.get('solver', 'ASTAP')}"
     )
     data_uri = _image_data_uri(image_path)
-    model_json = json.dumps({"image_size": [w, h], "objects": objects}).replace("</", "<\\/")
+    model_json = json.dumps({"image_size": [w, h], "objects": objects}).replace("<", "\\u003c")
 
     def b64(fn):
         return asset_text(fn + ".b64")

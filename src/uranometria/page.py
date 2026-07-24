@@ -88,7 +88,9 @@ def build_page(cfg, objects):
 
     annotations = {f"mk-{i}": o["annotation"] for i, o in enumerate(objects) if o.get("annotation")}
     # </script> can never appear inside the JSON payload
-    annotations_json = _json.dumps(annotations).replace("</", "<\\/")
+    # \u003c-escape every "<" so no payload string can toy with the HTML
+    # script-data parser states (e.g. "<!--<script" double-escape tricks)
+    annotations_json = _json.dumps(annotations).replace("<", "\\u003c")
     ann_label_scale = float(cfg.get("annotation_label_scale", 1.0))
 
     panzoom_js = PANZOOM_JS
@@ -427,7 +429,7 @@ function openLightbox(src, cap, ann, forceAnn) {{
   lbSub.textContent = cap[1] || '';
   const seq = ++openSeq;
   const probe = new Image();
-  const show = (w, h) => {{
+  const show = (w, h, failed) => {{
     if (seq !== openSeq) return;  // a newer click already superseded this load
     const old = document.getElementById('lb-svg');
     const svg = document.createElementNS(SVGNS, 'svg');
@@ -438,7 +440,8 @@ function openLightbox(src, cap, ann, forceAnn) {{
     im.setAttribute('width', w);
     im.setAttribute('height', h);
     svg.appendChild(im);
-    const usable = ann && ann.image_size && ann.image_size[0] === w && ann.image_size[1] === h;
+    const usable =
+      !failed && ann && ann.image_size && ann.image_size[0] === w && ann.image_size[1] === h;
     lbAnnBtn.hidden = !usable;
     lbPanel.hidden = !usable;
     old.replaceWith(svg);
@@ -466,7 +469,7 @@ function openLightbox(src, cap, ann, forceAnn) {{
     lb.hidden = false;
   }};
   probe.onload = () => show(probe.naturalWidth, probe.naturalHeight);
-  probe.onerror = () => show(800, 600);  // open anyway: caption + empty stage
+  probe.onerror = () => show(800, 600, true);  // open anyway: caption, empty stage
   probe.src = src;
 }}
 
@@ -485,7 +488,10 @@ document.querySelectorAll('[data-img]').forEach(el => {{
     openLightbox(el.dataset.img, cap, ANNOTATIONS[key], true);
   }});
 }});
-function closeLightbox() {{ lb.hidden = true; }}
+function closeLightbox() {{
+  openSeq++;  // a dismissal also invalidates any pending image load
+  lb.hidden = true;
+}}
 lb.addEventListener('click', closeLightbox);
 document.addEventListener('keydown', e => {{
   if (e.key !== 'Escape' || lb.hidden) return;

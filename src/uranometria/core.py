@@ -228,6 +228,14 @@ def render(config, *, image_base=None, allow_online=True):
         raise SkymapError(f"mag_limit must be a number, got {cfg.get('mag_limit')!r}") from None
     if math.isnan(mag_limit):
         raise SkymapError("mag_limit must be a number, got NaN")
+    try:
+        ann_scale = float(cfg.get("annotation_label_scale", 1.0))
+    except (TypeError, ValueError):
+        raise SkymapError(
+            f"annotation_label_scale must be a number, got {cfg.get('annotation_label_scale')!r}"
+        ) from None
+    if not math.isfinite(ann_scale):
+        raise SkymapError("annotation_label_scale must be a finite number")
     objects, warnings = resolve_objects(entries, allow_online=allow_online)
     if not objects:
         raise SkymapError("no objects could be resolved")
