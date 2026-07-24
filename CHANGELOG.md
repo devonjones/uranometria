@@ -3,6 +3,13 @@
 All dates 2026. Versions bump whenever behavior visible in the output
 changes, so they move fast.
 
+## 0.10.2 (July 24)
+
+- DSO distance lookups go to SIMBAD as one batched request for the whole
+  field instead of one query per object, cutting several round-trips per
+  annotation run. The per-object loop remains as a fallback if the batch
+  request fails.
+
 ## 0.10.1 (July 24)
 
 - High-proper-motion stars get their Tycho-2 designations again. Gaia DR3

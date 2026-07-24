@@ -616,6 +616,70 @@ def test_cli_annotate_html_success(monkeypatch, tmp_path):
     assert "labelScale: 2.0" in page  # --label-scale reaches the page
 
 
+def test_dso_distances_batch_single_request(monkeypatch):
+    from astropy.table import MaskedColumn, Table
+
+    import uranometria.annotate.field as field
+
+    calls = []
+    batch = Table(
+        {
+            "user_specified_id": ["ODD", "ODD", "ODD", "EVEN", "EVEN", "EVEN", "STRAY"],
+            "mesdistance.dist": MaskedColumn(
+                [3.0, 1.0, 2.0, 2.0, 4.0, 9.0, 5.0],
+                mask=[False, False, False, False, False, True, False],
+            ),
+            "mesdistance.unit": ["pc", "pc", "pc", "kpc", "kpc", "kpc", "pc"],
+        }
+    )
+
+    class FakeSimbad:
+        def add_votable_fields(self, *a, **k):
+            pass
+
+        def query_objects(self, desigs):
+            calls.append(list(desigs))
+            return batch
+
+        def query_object(self, desig):
+            raise AssertionError("batch path must not fall back")
+
+    import astroquery.simbad
+
+    monkeypatch.setattr(astroquery.simbad, "Simbad", FakeSimbad)
+    out = field.dso_distances(["ODD", "EVEN"])
+    assert calls == [["ODD", "EVEN"]]  # exactly one request
+    assert out["ODD"] == 2.0 * 3.26156  # median of three
+    assert out["EVEN"] == 4.0 * 3261.56  # masked row dropped, upper median
+    assert "STRAY" not in out  # ids we never asked about are ignored
+
+
+def test_dso_distances_batch_falls_back_serial(monkeypatch):
+    from astropy.table import Table
+
+    import uranometria.annotate.field as field
+
+    serial = {
+        "A": Table({"mesdistance.dist": [2.0], "mesdistance.unit": ["pc"]}),
+    }
+
+    class FakeSimbad:
+        def add_votable_fields(self, *a, **k):
+            pass
+
+        def query_objects(self, desigs):
+            raise RuntimeError("TAP down")
+
+        def query_object(self, desig):
+            return serial.get(desig)
+
+    import astroquery.simbad
+
+    monkeypatch.setattr(astroquery.simbad, "Simbad", FakeSimbad)
+    out = field.dso_distances(["A", "B"])
+    assert out == {"A": 2.0 * 3.26156}
+
+
 def test_dso_distances_median(monkeypatch):
     from astropy.table import Table
 
@@ -645,6 +709,9 @@ def test_dso_distances_median(monkeypatch):
     class FakeSimbad:
         def add_votable_fields(self, *a, **k):
             pass
+
+        def query_objects(self, desigs):
+            return None  # push the median test down the serial path
 
         def query_object(self, desig):
             return tables.get(desig)

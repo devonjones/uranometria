@@ -267,14 +267,70 @@ def named_bright_stars(center_ra, center_dec, radius_deg, *, mag_limit=8.5):
 _DIST_LY_PER_UNIT = {"pc": 3.26156, "kpc": 3261.56, "mpc": 3.26156e6}
 
 
+def _distance_ly(dist, unit):
+    """One measurement row to light-years, or None."""
+    try:
+        if hasattr(dist, "mask") and dist.mask:
+            return None
+        factor = _DIST_LY_PER_UNIT.get(str(unit).strip().lower())
+        if factor and float(dist) > 0:
+            return float(dist) * factor
+    except (TypeError, ValueError):
+        pass
+    return None
+
+
+def _median_by_key(rows):
+    """{key: median-of-values} from (key, ly) pairs; the literature usually
+    holds several measurements, and the median beats whichever row happens
+    to come back first."""
+    groups = {}
+    for key, ly in rows:
+        groups.setdefault(key, []).append(ly)
+    out = {}
+    for key, values in groups.items():
+        values.sort()
+        out[key] = values[len(values) // 2]
+    return out
+
+
 def dso_distances(designations):
     """SIMBAD mean distances in light-years, keyed by designation. Online only;
-    designations SIMBAD doesn't know or has no distance for are simply absent."""
+    designations SIMBAD doesn't know or has no distance for are simply absent.
+    All designations go out as ONE query_objects request (a field can hold
+    half a dozen DSOs; serial round-trips dominated the wall time), with the
+    old per-object loop kept as a fallback."""
     from astroquery.simbad import Simbad
 
     sim = Simbad()
     sim.add_votable_fields("mesdistance")
-    out = {}
+    designations = list(designations)
+    if not designations:
+        return {}
+    try:
+        t = sim.query_objects(designations)
+    except Exception:
+        t = None
+    if t is not None and len(t) > 0:
+        cols = {c.lower(): c for c in t.colnames}
+        idc = cols.get("user_specified_id") or cols.get("typed_id")
+        dc, uc = cols.get("mesdistance.dist"), cols.get("mesdistance.unit")
+        if idc and dc and uc:
+            wanted = set(designations)
+            rows = []
+            for row in t:
+                key = str(row[idc]).strip()
+                ly = _distance_ly(row[dc], row[uc])
+                if key in wanted and ly is not None:
+                    rows.append((key, ly))
+            return _median_by_key(rows)
+    return _dso_distances_serial(designations, sim)
+
+
+def _dso_distances_serial(designations, sim):
+    """Per-object fallback when the batch request fails or the service
+    changes its column names."""
+    rows = []
     for desig in designations:
         try:
             t = sim.query_object(desig)
@@ -286,20 +342,8 @@ def dso_distances(designations):
         dc, uc = cols.get("mesdistance.dist"), cols.get("mesdistance.unit")
         if not dc or not uc:
             continue
-        values = []
         for row in t:
-            dist, unit = row[dc], row[uc]
-            try:
-                if hasattr(dist, "mask") and dist.mask:
-                    continue
-                factor = _DIST_LY_PER_UNIT.get(str(unit).strip().lower())
-                if factor and float(dist) > 0:
-                    values.append(float(dist) * factor)
-            except (TypeError, ValueError):
-                continue
-        if values:
-            # the literature usually holds several measurements; the median
-            # beats whichever row happens to come back first
-            values.sort()
-            out[desig] = values[len(values) // 2]
-    return out
+            ly = _distance_ly(row[dc], row[uc])
+            if ly is not None:
+                rows.append((desig, ly))
+    return _median_by_key(rows)

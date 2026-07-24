@@ -26,5 +26,5 @@ Module map:
 
 from .core import SkymapError, generate, render, resolve_objects
 
-__version__ = "0.10.1"
+__version__ = "0.10.2"
 __all__ = ["generate", "render", "resolve_objects", "SkymapError", "__version__"]
