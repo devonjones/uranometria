@@ -47,13 +47,22 @@ The generated page is interactive:
 - **Sidebar**: every object appears in the observing record on the right,
   with its own scrollbar so the list scrolls independently of the chart.
   Hovering an entry spotlights its marker.
+- The list sorts naturally by designation (M1 before M2 before M110).
 - **Search**: the box above the list filters by designation, common name,
   type, or constellation, and dims everything else on the chart.
 - **Zoom filtering**: when you zoom in, the sidebar narrows to the objects in
   the visible region (the count shows "N OF M OBJECTS · IN VIEW").
-- **Thumbnails** (`thumbnails: true` in the config): hovering a marker or
-  legend card floats a small preview of the object's photo by the cursor,
-  and zooming past 4x pins it beside the marker.
+- **Thumbnails** (`thumbnails: true` in the config): hovering a marker
+  floats a small preview of the object's photo by the cursor, hovering a
+  legend card shows the same full-size preview anchored at the object's
+  marker on the chart, and
+  zooming past 4x pins it beside the marker for every photographed object
+  in view. Clicking the floating preview, the marker, or its pinned thumb
+  opens the photo in the lightbox.
+- **Links**: every legend card links to SIMBAD, plus Wikipedia when the
+  article name is a safe bet, plus any article links from the config's
+  `links:` key. Zooming filters the sidebar, so the visible objects'
+  links follow the view.
 - **Photos**: objects with an `image:` in the config get a "PHOTO" tag; click
   the marker or the card to open the photo in a lightbox. The photo zooms and
   pans like the chart (wheel, drag, double-click to reset); clicking the

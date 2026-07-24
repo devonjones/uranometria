@@ -3,40 +3,41 @@
 All dates 2026. Versions bump whenever behavior visible in the output
 changes, so they move fast.
 
-## 0.10.2 (July 24)
+## 0.11.0 (July 24)
 
-- DSO distance lookups go to SIMBAD as one batched request for the whole
-  field instead of one query per object, cutting several round-trips per
-  annotation run. The per-object loop remains as a fallback if the batch
-  request fails.
+One release for the whole develop cycle: the interactive chart grew up.
 
-## 0.10.1 (July 24)
-
-- High-proper-motion stars get their Tycho-2 designations again. Gaia DR3
-  positions are epoch J2016 while Tycho-2 observed positions sit near
-  J1991.25, so fast movers (Groombridge 1830 travels about 171 arcseconds
-  in that gap) always missed the 2 arcsecond match and fell back to the
-  raw Gaia id. Gaia proper motions now propagate the match position to
-  each Tycho row's own observation epochs (they vary star by star, which
-  is why even a fixed catalog-mean epoch left fast movers several
-  arcseconds out).
-
-## 0.10.0 (July 24)
-
-- Photo thumbnails on the chart, opt-in with `thumbnails: true`. Hovering
-  a marker or a legend card floats a small preview by the cursor, and
-  zooming a disc past 4x pins the thumb beside the marker. Thumbs are
-  built with Pillow at generation time and embedded as data URIs, so the
-  page stays self-contained; remote images are never fetched and simply
-  go without.
-
-## 0.9.1 (July 24)
-
-- Dragging to pan no longer selects the chart text: the pan/zoom surfaces
-  suppress text selection and clear any live selection when a pan starts.
-- Wheeling past the zoom limit no longer drifts the view toward the
-  cursor. The scale is clamped before the origin moves, so at either
+- Clicking objects on the chart works with a real mouse now: pan/zoom
+  captured the pointer on press, which silently retargeted every click
+  away from the markers, so marker clicks had never actually worked
+  outside synthetic tests. Capture now waits until a drag moves 4px.
+- Dragging to pan no longer selects the chart text, and wheeling past
+  the zoom limit no longer drifts the view toward the cursor; at either
   clamp the wheel is a clean no-op and the page never scrolls.
+- Photo thumbnails on the chart, opt-in with `thumbnails: true`:
+  hovering a marker floats a preview by the cursor (clickable, opens
+  the lightbox), hovering a legend card shows the same full-size
+  preview anchored at the object's marker, and zooming past 4x pins a
+  small thumb beside every photographed marker in view. Thumbs are
+  EXIF-aware Pillow downscales embedded as data URIs, so pages stay
+  self-contained; remote images are never fetched.
+- Legend cards link out: SIMBAD on every object, Wikipedia when the
+  article name is a safe bet, plus your own article links via the new
+  per-object `links:` config key (http(s) only, everything escaped and
+  percent-encoded). One shared link policy serves the chart and the
+  annotated pages.
+- The observing-record list sorts naturally by designation (M1 before
+  M2 before M110) instead of config order.
+- High-proper-motion stars keep their Tycho-2 designations: Gaia
+  positions now propagate to each Tycho row's own observation epochs
+  before the 2 arcsecond match (Groombridge 1830 was 171 arcseconds
+  adrift; it now matches at 0.07).
+- DSO distance lookups go to SIMBAD as one batched request per field
+  instead of one query per object, with the serial loop as fallback.
+- API documentation, generated from docstrings on every push to master,
+  publishes to GitHub Pages under /api alongside the live samples.
+- The example chart types its objects with the annotation palette and
+  uses the finished processed images as heroes.
 
 ## 0.9.0 (July 23)
 

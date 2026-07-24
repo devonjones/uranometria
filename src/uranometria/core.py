@@ -27,7 +27,7 @@ import os
 import re
 import urllib.parse
 
-from .catalog import Catalog, fmt_coord, parse_angle, sesame
+from .catalog import Catalog, fmt_coord, parse_angle, sesame, object_links
 from .page import build_page
 
 
@@ -110,6 +110,7 @@ def resolve_objects(entries, *, allow_online=True):
         o["annotated"] = e.get("annotated")
         o["color"] = e.get("color")
         o["coord"] = fmt_coord(o["ra"], o["dec"])
+        o["links"] = _object_links(o["disp"], o["common"]) + _custom_links(e, o["disp"], warnings)
         objects.append(o)
     return objects, warnings
 
@@ -128,6 +129,33 @@ def resolve_image(url, base_dir):
     if os.path.isabs(path):
         return "file://" + urllib.parse.quote(path), None
     return urllib.parse.quote(path), None
+
+
+def _object_links(disp, common):
+    return object_links(disp, common)
+
+
+def _custom_links(entry, disp, warnings):
+    """User-supplied article links from the config: a mapping of label to
+    url, or a list of {label, url} items. Only http(s) targets survive."""
+    raw = entry.get("links")
+    if not raw:
+        return []
+    if isinstance(raw, dict):
+        pairs = list(raw.items())
+    elif isinstance(raw, list):
+        pairs = [(d.get("label"), d.get("url")) for d in raw if isinstance(d, dict)]
+    else:
+        warnings.append(f"{disp}: links must be a mapping or a list — ignored")
+        return []
+    out = []
+    for label, url in pairs:
+        label, url = str(label or "").strip(), str(url or "").strip()
+        if not label or not re.match(r"https?://", url, re.IGNORECASE):
+            warnings.append(f"{disp}: link {label or url!r} is not http(s) — skipped")
+            continue
+        out.append((label, url))
+    return out
 
 
 def _thumbnail(href, base_dir, size=112):

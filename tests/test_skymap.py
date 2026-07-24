@@ -605,6 +605,115 @@ def test_remote_annotated_url_passthrough(tmp_path):
     assert 'href="https://example.org/m51.html"' in out.read_text()
 
 
+def test_legend_sorted_naturally(tmp_path):
+    cfg = {"objects": ["M110", "M2", "M27", "M1"]}
+    out = tmp_path / "map.html"
+    uranometria.generate(cfg, out, allow_online=False)
+    html = out.read_text()
+    legend = html.split("OBSERVING RECORD")[1]
+    positions = [legend.index(f">{d}<") for d in ("M1", "M2", "M27", "M110")]
+    assert positions == sorted(positions)  # M1 < M2 < M27 < M110, not lexicographic
+
+
+def test_object_links_auto_and_custom(tmp_path):
+    cfg = {
+        "objects": [
+            {"id": "M31"},
+            {"id": "M51", "links": {"SEDS": "https://www.messier.seds.org/m/m051.html"}},
+            {
+                "id": "M1",
+                "links": [
+                    {"label": "APOD", "url": "https://apod.nasa.gov/apod/astropix.html"},
+                    {"label": "evil", "url": "javascript:alert(1)"},
+                ],
+            },
+            {"label": "X-1", "name": "", "type": "Other", "ra": 10.0, "dec": 20.0},
+        ]
+    }
+    out = tmp_path / "map.html"
+    warnings = uranometria.generate(cfg, out, allow_online=False)
+    assert any("is not http(s)" in w and "M1" in w for w in warnings)
+    html = out.read_text()
+    # every object gets SIMBAD; Messier objects get Wikipedia
+    assert "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=M31" in html
+    assert "https://en.wikipedia.org/wiki/Messier_31" in html
+    # custom article links survive in both config shapes
+    assert 'href="https://www.messier.seds.org/m/m051.html"' in html
+    assert ">SEDS</a>" in html
+    assert 'href="https://apod.nasa.gov/apod/astropix.html"' in html
+    # the javascript: link is gone entirely
+    assert "javascript:" not in html
+    # nameless manual entry: SIMBAD only, no guessed Wikipedia article
+    assert "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=X-1" in html
+    assert "https://en.wikipedia.org/wiki/_" not in html
+
+
+def test_object_links_common_name_and_dot_designation(tmp_path):
+    cfg = {
+        "objects": [
+            {
+                "label": "NGC 7380",
+                "name": "Wizard Nebula \u00b7 Sh2-142",
+                "type": "Emission nebula",
+                "ra": 341.8,
+                "dec": 58.1,
+            }
+        ]
+    }
+    out = tmp_path / "map.html"
+    assert uranometria.generate(cfg, out, allow_online=False) == []
+    html = out.read_text()
+    # the alt designation never belongs in the article guess
+    assert "https://en.wikipedia.org/wiki/Wizard_Nebula" in html
+    assert "Sh2-142" not in html.split("wiki/")[1][:40]
+
+
+def test_object_links_scalar_config_warns(tmp_path):
+    cfg = {"objects": [{"id": "M31", "links": "https://example.org"}]}
+    out = tmp_path / "map.html"
+    warnings = uranometria.generate(cfg, out, allow_online=False)
+    assert any("must be a mapping or a list" in w for w in warnings)
+
+
+def test_object_link_href_quote_escaped(tmp_path):
+    cfg = {"objects": [{"id": "M31", "links": {"x": 'https://example.org/"onmouseover="a'}}]}
+    out = tmp_path / "map.html"
+    uranometria.generate(cfg, out, allow_online=False)
+    html = out.read_text()
+    assert "https://example.org/&quot;onmouseover=&quot;a" in html
+    assert '" onmouseover=' not in html
+
+
+def test_object_links_url_quoting_and_scheme_case(tmp_path):
+    cfg = {
+        "objects": [
+            {
+                "label": "BD+30 3639",
+                "name": "Ne&bula #9",
+                "type": "Planetary nebula",
+                "ra": 200.0,
+                "dec": 30.0,
+                "links": {"Mirror": "HTTPS://Example.org/page"},
+            }
+        ]
+    }
+    out = tmp_path / "map.html"
+    assert uranometria.generate(cfg, out, allow_online=False) == []
+    html = out.read_text()
+    assert "Ident=BD%2B30+3639" in html  # + survives as %2B, space as +
+    assert "wiki/Ne%26bula_%239" in html  # & and # cannot reshape the path
+    assert 'href="HTTPS://Example.org/page"' in html  # scheme case accepted
+
+
+def test_object_link_labels_escaped(tmp_path):
+    cfg = {"objects": [{"id": "M31", "links": {"<script>boom</script>": "https://example.org/x"}}]}
+    out = tmp_path / "map.html"
+    uranometria.generate(cfg, out, allow_online=False)
+    html = out.read_text()
+    assert "<script>boom" not in html
+    assert "&lt;script&gt;boom" in html
+
+
 def test_thumbnails_opt_in(tmp_path):
     from PIL import Image
 
@@ -627,6 +736,8 @@ def test_thumbnails_opt_in(tmp_path):
     assert 'id="thumbtip"' in html
     assert "ensureMarkerThumbs" in html
     assert "deepzoom" in html
+    assert "anchorTipToMarker" in html  # legend hover anchors the big tip
+    # at the object's marker on the chart
 
 
 def test_thumbnails_remote_and_broken_images(tmp_path):
@@ -707,6 +818,8 @@ def test_no_sidecar_means_empty_map(tmp_path):
     assert "userSelect" in html  # drag-to-pan never selects text (u-8)
     assert "const nz" in html  # wheel at the zoom clamp is a no-op (u-9)
     assert "removeAllRanges" in html  # pan start clears a live selection (u-8)
+    assert "hasPointerCapture" in html  # capture deferred until a real drag,
+    # so plain clicks on markers reach their handlers (u-13)
     assert 'id="lb-ann"' in html  # toggle exists (hidden until usable)
 
 
