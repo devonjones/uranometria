@@ -443,7 +443,7 @@ def render_png(model, image_path, output, *, title=None, max_width=2000):
     # compact top-aligned lines at fixed physical size; shrink only when the
     # content would genuinely overflow the panel
     total_dy = sum(e[3] for e in entries)
-    lh = (15.5 * 1.5) / fig_h_px  # ~11pt line at dpi 100, in axes fraction
+    lh = (20.0 * 1.5) / fig_h_px  # ~14pt line at dpi 100, in axes fraction
     fscale = 1.0
     if lh * total_dy > 0.90:
         fscale = 0.90 / (lh * total_dy)
@@ -455,7 +455,7 @@ def render_png(model, image_path, output, *, title=None, max_width=2000):
             yc,
             text,
             color=color,
-            fontsize=size * fscale,
+            fontsize=size * 1.3 * fscale,
             family="monospace",
             fontweight=weight,
             va="top",

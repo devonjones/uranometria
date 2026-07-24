@@ -738,3 +738,67 @@ def test_place_label_never_flips_anchor():
         lx, ly, ha = _place_label(x, y, W, H, W / 2, H / 2, [], no_crossings)
         assert (lx >= x) == (ha == "left"), (x, y, lx, ha)
         assert 0.02 * W <= lx <= 0.98 * W
+
+
+# ---- standalone HTML page (uranometria-3) -----------------------------------
+
+
+def test_render_html_standalone(tmp_path):
+    from PIL import Image
+
+    from uranometria.annotate.render_html import render_html
+
+    img = tmp_path / "tiny.jpg"
+    Image.new("RGB", (80, 60), (5, 5, 20)).save(img)
+    m = _tiny_model()
+    m["solved"]["pixel_frame"] = "raster0"
+    m["objects"][0]["aliases"] = ["NGC 5194"]
+    m["objects"][0]["dist_ly"] = 22_000_000
+    m["objects"][0]["links"] = {"simbad": "https://simbad/x", "wikipedia": "https://wiki/x"}
+    out = tmp_path / "page.html"
+    render_html(m, img, out)
+    page = out.read_text()
+    assert "data:image/jpeg;base64," in page  # image embedded, self-contained
+    assert "attachPanZoom" in page
+    assert 'id="labels"' in page  # LABELS toggle
+    assert "M51 · NGC 5194" in page  # aliases in the sidebar
+    assert "~22 Mly" in page  # distance formatted
+    assert 'href="https://simbad/x"' in page and "Wikipedia" in page
+    assert 'id="search"' in page
+
+
+def test_render_html_fits_source_flips_nothing(tmp_path):
+    import numpy as np
+    from astropy.io import fits
+
+    from uranometria.annotate.render_html import render_html
+
+    data = (np.ones((3, 60, 80)) * 500).astype("float32")
+    f = tmp_path / "t.fit"
+    fits.PrimaryHDU(data).writeto(f)
+    m = _tiny_model()
+    m["image"] = "t.fit"  # fits0 model + fits render: direct coordinates
+    out = tmp_path / "page.html"
+    render_html(m, f, out)
+    page = out.read_text()
+    assert "--ty:25.0px" in page  # M51 y unchanged
+    assert "data:image/jpeg;base64," in page  # stretched render embedded
+
+
+def test_cli_render_html(tmp_path):
+    import json
+
+    from click.testing import CliRunner
+    from PIL import Image
+
+    from uranometria.cli import main
+
+    img = tmp_path / "tiny.jpg"
+    Image.new("RGB", (80, 60)).save(img)
+    m = _tiny_model()
+    m["solved"]["pixel_frame"] = "raster0"
+    mp = tmp_path / "m.json"
+    mp.write_text(json.dumps(m))
+    result = CliRunner().invoke(main, ["render", str(mp), str(img), "--html"])
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "tiny_annotated.html").is_file()

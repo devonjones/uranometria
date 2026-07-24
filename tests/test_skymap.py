@@ -409,3 +409,82 @@ def test_manual_ra_normalized_in_object():
     assert objs[0]["ra"] == pytest.approx(10.0)
     objs, _ = resolve_objects([{"label": "Y", "ra": -10.0, "dec": 10.0}], allow_online=False)
     assert objs[0]["ra"] == pytest.approx(350.0)
+
+
+# ---- annotation overlays in the chart lightbox (uranometria-4/5) -----------
+
+
+def _sidecar_model(pixel_frame="raster0", h=60):
+    return {
+        "schema": 1,
+        "image": "pic.jpg",
+        "image_size": [80, h],
+        "solved": {"pixel_frame": pixel_frame},
+        "objects": [
+            {"kind": "dso", "designation": "M51", "type": "Galaxy", "x": 30.0, "y": 10.0},
+            {
+                "kind": "star",
+                "named": False,
+                "key": 1,
+                "designation": "TYC 1",
+                "x": 50.0,
+                "y": 20.0,
+            },
+        ],
+        "warnings": [],
+    }
+
+
+def test_annotation_sidecar_discovery_and_flip(tmp_path):
+    import json
+
+    (tmp_path / "pic.jpg").write_bytes(b"\xff\xd8fake")
+    (tmp_path / "pic.jpg.annotations.json").write_text(
+        json.dumps(_sidecar_model(pixel_frame="fits0"))
+    )
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg"}]}
+    out = tmp_path / "map.html"
+    warnings = uranometria.generate(cfg, out, allow_online=False)
+    assert warnings == []
+    html = out.read_text()
+    assert 'id="lb-annotations"' in html
+    assert '"mk-0"' in html  # the annotation map carries this object
+    assert '"y": 49.0' in html or '"y": 49' in html  # fits0 flipped: 59 - 10
+
+
+def test_annotation_sidecar_raster_no_flip(tmp_path):
+    import json
+
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    (tmp_path / "pic.jpg.annotations.json").write_text(json.dumps(_sidecar_model()))
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg"}]}
+    out = tmp_path / "map.html"
+    uranometria.generate(cfg, out, allow_online=False)
+    assert '"y": 10' in out.read_text()
+
+
+def test_annotation_explicit_path_and_bad_json(tmp_path):
+    import json
+
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    (tmp_path / "custom.json").write_text(json.dumps(_sidecar_model()))
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg", "annotations": "custom.json"}]}
+    out = tmp_path / "map.html"
+    assert uranometria.generate(cfg, out, allow_online=False) == []
+    assert '"mk-0"' in out.read_text()
+
+    (tmp_path / "pic.jpg.annotations.json").write_text("{not json")
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg"}]}
+    warnings = uranometria.generate(cfg, out, allow_online=False)
+    assert any("sidecar unreadable" in w for w in warnings)
+
+
+def test_no_sidecar_means_empty_map(tmp_path):
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg"}]}
+    out = tmp_path / "map.html"
+    uranometria.generate(cfg, out, allow_online=False)
+    html = out.read_text()
+    assert 'id="lb-annotations">{}</script>' in html
+    assert "attachPanZoom" in html  # shared pan/zoom present
+    assert 'id="lb-labels"' in html  # toggle exists (hidden until usable)

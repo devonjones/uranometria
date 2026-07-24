@@ -106,6 +106,14 @@ be:
 
 Paths with spaces are fine (they are URL-encoded).
 
+## Annotations
+
+`annotations:` names an [annotation model](annotation-model.md) for the
+object's photo (path resolved like `image:`). Without it, a sidecar named
+`<image>.annotations.json` next to the photo is picked up automatically. When
+present and matching the photo's dimensions, the lightbox draws the overlay
+with a LABELS toggle. An unreadable sidecar is a warning, never a failure.
+
 ## Colors
 
 `color:` accepts any CSS color and tints that object's marker, chart label,

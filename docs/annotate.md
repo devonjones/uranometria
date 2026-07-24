@@ -79,6 +79,26 @@ network. `-o/--output` names the PNG (default `<image>_annotated.png`),
 generate / edit / re-render workflow described in
 [annotation-model.md](annotation-model.md).
 
+## The interactive HTML page
+
+`--html` (on `annotate`) or `render --html` produces one self-contained HTML
+file: the photograph embedded as a data URI, the overlay drawn in SVG with
+counter-scaled markers, wheel zoom and drag pan, a LABELS toggle, and a
+searchable sidebar where every object links to SIMBAD (and Wikipedia when an
+article is likely). FITS sources are rendered through the same display
+stretch as the PNG before embedding.
+
+## The sky-map lightbox overlay
+
+If a chart object's photo has an annotation model sitting next to it as
+`<image>.annotations.json` (or named explicitly with an `annotations:` key in
+the chart config), the sky map's lightbox draws the overlay on the photo with
+a LABELS toggle (off by default, remembered per session). The overlay only
+engages when the model's `image_size` matches the displayed photo, so a model
+built from a different crop is ignored rather than misdrawn. The lightbox
+itself zooms and pans like the chart discs; clicking the photo never closes
+it, only the backdrop or Esc does.
+
 ## What gets identified
 
 - **Deep-sky objects**: everything from the bundled OpenNGC + Sharpless

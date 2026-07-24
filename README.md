@@ -117,6 +117,13 @@ flips y when compositing a model onto an image of the other kind — the
 bundled renderer does this automatically. Solving is fully offline through ASTAP's bundled
 database.
 
+Add `--html` for an interactive page: the photo with pan/zoom, a LABELS
+toggle, and a searchable sidebar linking each object to SIMBAD and
+Wikipedia, all in one self-contained file
+([live sample](https://devonjones.github.io/uranometria/examples/annotated/M51_annotated.html)).
+Drop the model JSON next to a chart image as `<image>.annotations.json` and
+the sky map's photo lightbox gains the same overlay with a labels toggle.
+
 Add `--png` to also render the annotated image: markers and leader labels
 colored by object class (galaxies blue, emission nebulae pink, planetaries
 teal, clusters orange, named stars yellow), numbered circles for field

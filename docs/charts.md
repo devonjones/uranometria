@@ -52,8 +52,11 @@ The generated page is interactive:
 - **Zoom filtering**: when you zoom in, the sidebar narrows to the objects in
   the visible region (the count shows "N OF M OBJECTS · IN VIEW").
 - **Photos**: objects with an `image:` in the config get a "PHOTO" tag; click
-  the marker or the card to open the photo in a lightbox. Esc or clicking
-  outside closes it.
+  the marker or the card to open the photo in a lightbox. The photo zooms and
+  pans like the chart (wheel, drag, double-click to reset); clicking the
+  photo never dismisses it, only the backdrop or Esc does. If the photo has
+  an annotation model beside it, a LABELS toggle draws the identified objects
+  over the image.
 
 ## Self-contained output
 

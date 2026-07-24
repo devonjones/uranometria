@@ -2,8 +2,11 @@
 
 import html
 
+import json as _json
+
 from .chart import Chart, DEC_EDGE, accent_value, photo_attrs
 from .resources import asset_text, sky_data
+from .webui import DSO_COLOR_JS, PANZOOM_JS, js_color_map
 
 
 def _legend_html(objects):
@@ -73,6 +76,14 @@ def build_page(cfg, objects):
 
     def b64(fn):
         return asset_text(fn + ".b64")
+
+    annotations = {f"mk-{i}": o["annotation"] for i, o in enumerate(objects) if o.get("annotation")}
+    # </script> can never appear inside the JSON payload
+    annotations_json = _json.dumps(annotations).replace("</", "<\\/")
+
+    panzoom_js = PANZOOM_JS
+    dso_color_js = DSO_COLOR_JS
+    ann_colors = js_color_map()
 
     return f"""<title>{tab_title} — Photographed Objects</title>
 <style>
@@ -186,10 +197,23 @@ svg.focus .marker.lit .halo {{ opacity:0.35; }}
 .lightbox {{ position:fixed; inset:0; z-index:10; display:flex; align-items:center;
   justify-content:center; background:rgba(4,6,16,0.93); cursor:zoom-out; }}
 .lightbox[hidden] {{ display:none; }}
-.lightbox figure {{ margin:0; display:flex; flex-direction:column; align-items:center; gap:16px;
-  max-width:94vw; }}
-.lightbox img {{ max-width:94vw; max-height:80vh; border:1px solid var(--equator);
-  box-shadow:0 12px 60px rgba(0,0,0,0.7); }}
+.lb-stage {{ display:flex; flex-direction:column; align-items:center; gap:12px;
+  max-width:94vw; cursor:auto; }}
+#lb-svg {{ max-width:94vw; max-height:78vh; border:1px solid var(--equator);
+  box-shadow:0 12px 60px rgba(0,0,0,0.7); background:#000; cursor:grab;
+  touch-action:none; display:block; }}
+#lb-svg:active {{ cursor:grabbing; }}
+.lb-tools {{ display:flex; gap:10px; min-height:26px; align-items:center; }}
+.lb-btn {{ font-family:'Plex Mono',monospace; font-size:10px; letter-spacing:0.16em;
+  color:var(--dim); background:var(--sky); border:1px solid var(--grid);
+  padding:5px 14px; cursor:pointer; }}
+.lb-btn.on {{ color:var(--gold); border-color:var(--gold); }}
+.lb-hint {{ color:var(--dim); font-size:9px; letter-spacing:0.1em; }}
+.ann {{ transform:translate(var(--tx),var(--ty)) scale(calc(1 / var(--z,1))); }}
+.ann circle {{ fill:none; stroke:currentColor; stroke-width:1.6; }}
+.ann text {{ fill:currentColor; font-family:'Plex Mono',monospace; font-size:13px;
+  font-weight:500; paint-order:stroke; stroke:rgba(0,0,0,0.8); stroke-width:3px; }}
+.lb-hide-labels #lb-overlay {{ display:none; }}
 .lightbox figcaption {{ text-align:center; }}
 .lightbox .cap-name {{ font-family:'Marcellus',serif; color:var(--star); font-size:18px;
   letter-spacing:0.08em; }}
@@ -222,11 +246,16 @@ footer {{ margin-top:14px; text-align:center; color:var(--dim); font-size:10px;
 </aside>
 </div>
 <div class="lightbox" id="lightbox" hidden>
-  <figure>
-    <img id="lb-img" src="" alt="">
+  <div class="lb-stage">
+    <div class="lb-tools">
+      <button id="lb-labels" class="lb-btn" hidden>LABELS OFF</button>
+      <span class="lb-hint">SCROLL TO ZOOM \u00b7 DRAG TO PAN \u00b7 CLICK OUTSIDE OR ESC TO CLOSE</span>
+    </div>
+    <svg id="lb-svg" viewBox="0 0 1 1" role="img" aria-label="photograph"></svg>
     <figcaption><div class="cap-name" id="lb-name"></div><div class="cap-sub" id="lb-sub"></div></figcaption>
-  </figure>
+  </div>
 </div>
+<script type="application/json" id="lb-annotations">{annotations_json}</script>
 </div>
 <script>
 // ---- filtering: search text AND current zoom viewport ----------------
@@ -294,70 +323,99 @@ cards.forEach(c => {{
   c.li.addEventListener('mouseleave', applyFilter);
 }});
 
-// ---- pan & zoom ------------------------------------------------------
+// ---- pan & zoom (shared) ---------------------------------------------
+{panzoom_js}
+{dso_color_js}
 document.querySelectorAll('svg.sky').forEach(svg => {{
-  let vb = [0, 0, 1000, 1000], pan = null, moved = 0;
-  svg._vb = vb;
-  const apply = () => {{
-    svg.setAttribute('viewBox', vb.join(' '));
-    svg.style.setProperty('--z', 1000 / vb[2]);
-    svg._vb = vb;
-    applyFilter();
-  }};
-  const clamp = () => {{
-    vb[2] = vb[3] = Math.min(1000, Math.max(125, vb[2]));
-    vb[0] = Math.max(0, Math.min(1000 - vb[2], vb[0]));
-    vb[1] = Math.max(0, Math.min(1000 - vb[3], vb[1]));
-  }};
-  const toSvg = (cx, cy) => {{
-    const r = svg.getBoundingClientRect();
-    return [vb[0] + (cx - r.left) / r.width * vb[2],
-            vb[1] + (cy - r.top) / r.height * vb[3]];
-  }};
-  svg.addEventListener('wheel', e => {{
-    e.preventDefault();
-    const [px, py] = toSvg(e.clientX, e.clientY);
-    const f = e.deltaY < 0 ? 1 / 1.25 : 1.25;
-    vb[0] = px - (px - vb[0]) * f;
-    vb[1] = py - (py - vb[1]) * f;
-    vb[2] *= f; vb[3] = vb[2];
-    clamp(); apply();
-  }}, {{ passive: false }});
-  svg.addEventListener('pointerdown', e => {{
-    pan = [e.clientX, e.clientY, vb[0], vb[1]]; moved = 0;
-    svg.setPointerCapture(e.pointerId);
-  }});
-  svg.addEventListener('pointermove', e => {{
-    if (!pan) return;
-    const r = svg.getBoundingClientRect();
-    const dx = e.clientX - pan[0], dy = e.clientY - pan[1];
-    moved = Math.max(moved, Math.abs(dx) + Math.abs(dy));
-    vb[0] = pan[2] - dx / r.width * vb[2];
-    vb[1] = pan[3] - dy / r.height * vb[3];
-    clamp(); apply();
-  }});
-  svg.addEventListener('pointerup', () => {{ pan = null; }});
-  svg.addEventListener('click', e => {{
-    if (moved > 5) e.stopPropagation();   // a drag is not a marker click
-    moved = 0;
-  }}, true);
-  svg.addEventListener('dblclick', () => {{ vb = [0, 0, 1000, 1000]; apply(); }});
+  attachPanZoom(svg, 1000, 1000, applyFilter);
 }});
+
+// ---- lightbox: zoom/pan image, optional annotation overlay -------------
+const ANN_COLORS = {ann_colors};
+const ANNOTATIONS = JSON.parse(document.getElementById('lb-annotations').textContent);
 const lb = document.getElementById('lightbox');
-const lbImg = document.getElementById('lb-img');
+const lbStage = lb.querySelector('.lb-stage');
 const lbName = document.getElementById('lb-name');
 const lbSub = document.getElementById('lb-sub');
+const lbLabelsBtn = document.getElementById('lb-labels');
+const SVGNS = 'http://www.w3.org/2000/svg';
+let labelsOn = sessionStorage.getItem('uranometria-labels') === 'on';
+
+function setLabels(on) {{
+  labelsOn = on;
+  sessionStorage.setItem('uranometria-labels', on ? 'on' : 'off');
+  lbStage.classList.toggle('lb-hide-labels', !on);
+  lbLabelsBtn.textContent = on ? 'LABELS ON' : 'LABELS OFF';
+  lbLabelsBtn.classList.toggle('on', on);
+}}
+lbLabelsBtn.addEventListener('click', () => setLabels(!labelsOn));
+lbStage.addEventListener('click', e => e.stopPropagation());
+
+function annColor(o) {{
+  if (o.kind === 'dso') return dsoColor(o.type, ANN_COLORS);
+  return o.named ? ANN_COLORS.named_star : ANN_COLORS.field_star;
+}}
+
+function buildOverlay(gEl, ann, w, h) {{
+  const r = 0.02 * Math.min(w, h);
+  ann.objects.forEach(o => {{
+    const g = document.createElementNS(SVGNS, 'g');
+    g.setAttribute('class', 'ann');
+    g.style.setProperty('--tx', o.x + 'px');
+    g.style.setProperty('--ty', o.y + 'px');
+    g.style.color = annColor(o);
+    const c = document.createElementNS(SVGNS, 'circle');
+    c.setAttribute('r', o.kind === 'dso' ? r * 1.4 : o.named ? r : r * 0.6);
+    g.appendChild(c);
+    const t = document.createElementNS(SVGNS, 'text');
+    t.setAttribute('x', r * 1.6);
+    t.setAttribute('y', -r * 0.8);
+    t.textContent = o.kind === 'star' && !o.named ? String(o.key) : o.designation;
+    g.appendChild(t);
+    gEl.appendChild(g);
+  }});
+}}
+
+function openLightbox(src, cap, ann) {{
+  lbName.textContent = cap[0] || '';
+  lbSub.textContent = cap[1] || '';
+  const probe = new Image();
+  probe.onload = () => {{
+    const w = probe.naturalWidth, h = probe.naturalHeight;
+    const old = document.getElementById('lb-svg');
+    const svg = document.createElementNS(SVGNS, 'svg');
+    svg.setAttribute('id', 'lb-svg');
+    svg.setAttribute('role', 'img');
+    const im = document.createElementNS(SVGNS, 'image');
+    im.setAttribute('href', src);
+    im.setAttribute('width', w);
+    im.setAttribute('height', h);
+    svg.appendChild(im);
+    const usable = ann && ann.image_size && ann.image_size[0] === w && ann.image_size[1] === h;
+    if (usable) {{
+      const gEl = document.createElementNS(SVGNS, 'g');
+      gEl.setAttribute('id', 'lb-overlay');
+      buildOverlay(gEl, ann, w, h);
+      svg.appendChild(gEl);
+    }}
+    lbLabelsBtn.hidden = !usable;
+    setLabels(usable && labelsOn);
+    old.replaceWith(svg);
+    attachPanZoom(svg, w, h, null);
+    lb.hidden = false;
+  }};
+  probe.src = src;
+}}
+
 document.querySelectorAll('[data-img]').forEach(el => {{
   el.addEventListener('click', () => {{
     const cap = (el.dataset.cap || '').split('|');
-    lbImg.src = el.dataset.img;
-    lbImg.alt = cap[0] || '';
-    lbName.textContent = cap[0] || '';
-    lbSub.textContent = cap[1] || '';
-    lb.hidden = false;
+    const key = el.id || el.dataset.target;
+    openLightbox(el.dataset.img, cap, ANNOTATIONS[key]);
   }});
 }});
-lb.addEventListener('click', () => {{ lb.hidden = true; lbImg.src = ''; }});
-document.addEventListener('keydown', e => {{ if (e.key === 'Escape') {{ lb.hidden = true; lbImg.src = ''; }} }});
+function closeLightbox() {{ lb.hidden = true; }}
+lb.addEventListener('click', closeLightbox);
+document.addEventListener('keydown', e => {{ if (e.key === 'Escape') closeLightbox(); }});
 </script>
 """

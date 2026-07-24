@@ -21,6 +21,7 @@ Typical use from another project:
 """
 
 import http.client
+import json
 import math
 import os
 import re
@@ -105,6 +106,7 @@ def resolve_objects(entries, *, allow_online=True):
             warnings.append(f"entry {e!r} has neither 'id' nor ra/dec — skipped")
             continue
         o["image"] = e.get("image")
+        o["annotations"] = e.get("annotations")
         o["color"] = e.get("color")
         o["coord"] = fmt_coord(o["ra"], o["dec"])
         objects.append(o)
@@ -125,6 +127,44 @@ def resolve_image(url, base_dir):
     if os.path.isabs(path):
         return "file://" + urllib.parse.quote(path), None
     return urllib.parse.quote(path), None
+
+
+def _annotation_sidecar(o, base_dir):
+    """Load and normalize an annotation model for an object's photo: the
+    explicit `annotations:` path, or `<image>.annotations.json` beside the
+    image. Returns a compact display-frame dict, or None."""
+    img = str(o.get("image") or "")
+    if not img or re.match(r"https?://", img):
+        return None
+    img_path = img[7:] if img.startswith("file://") else img
+    if not os.path.isabs(img_path):
+        img_path = os.path.join(base_dir, img_path)
+    if o.get("annotations"):
+        ann_path = str(o["annotations"])
+        if not os.path.isabs(ann_path):
+            ann_path = os.path.join(base_dir, ann_path)
+    else:
+        ann_path = img_path + ".annotations.json"
+    if not os.path.isfile(ann_path):
+        return None
+    with open(ann_path) as f:
+        model = json.load(f)
+    width, height = model["image_size"]
+    flip = model.get("solved", {}).get("pixel_frame", "fits0") == "fits0"
+    objects = []
+    for a in model.get("objects", []):
+        objects.append(
+            {
+                "kind": a.get("kind"),
+                "designation": a.get("designation"),
+                "type": a.get("type"),
+                "named": a.get("named"),
+                "key": a.get("key"),
+                "x": a["x"],
+                "y": ((height - 1) - a["y"]) if flip else a["y"],
+            }
+        )
+    return {"image_size": [width, height], "objects": objects}
 
 
 def _load_config(config):
@@ -180,6 +220,12 @@ def render(config, *, image_base=None, allow_online=True):
             o["href"] = href
             name = f" — {o['common']}" if o["common"] else ""
             o["caption"] = f"{o['disp']}{name}|{o['type']}   ·   {o['coord']}"
+            try:
+                o["annotation"] = _annotation_sidecar(o, image_base or "")
+            except (OSError, ValueError, KeyError, TypeError) as err:
+                warnings.append(
+                    f"{o['disp']}: annotation sidecar unreadable ({err}) — photo shown without overlay"
+                )
 
     return build_page(cfg, objects), warnings
 

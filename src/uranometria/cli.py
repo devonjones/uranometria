@@ -76,9 +76,29 @@ def chart(config, output, offline, mirror):
     default=None,
     help="also render the annotated PNG (optionally to PATH; default <image>_annotated.png)",
 )
-@click.option("--title", help="title for the rendered PNG (default: nearest DSO to center)")
+@click.option(
+    "--html",
+    "html_out",
+    is_flag=False,
+    flag_value="",
+    default=None,
+    help="also render the interactive HTML page (optionally to PATH; default <image>_annotated.html)",
+)
+@click.option("--title", help="title for rendered outputs (default: nearest DSO to center)")
 def annotate(
-    image, output, mag_limit, max_stars, offline, astap, astap_db, ra, dec, radius, png_out, title
+    image,
+    output,
+    mag_limit,
+    max_stars,
+    offline,
+    astap,
+    astap_db,
+    ra,
+    dec,
+    radius,
+    png_out,
+    html_out,
+    title,
 ):
     """Plate-solve IMAGE and write its annotation model (JSON).
 
@@ -130,6 +150,17 @@ def annotate(
         except ImportError as err:
             raise click.ClickException(f"rendering needs the [annotate] extra ({err}).") from None
         click.echo(f"wrote {png_path}")
+    if html_out is not None:
+        from .annotate.render_html import render_html
+
+        html_path = html_out or os.path.splitext(os.fspath(image))[0] + "_annotated.html"
+        try:
+            render_html(model, image, html_path, title=title)
+        except (ValueError, OSError) as e:
+            raise click.ClickException(str(e)) from None
+        except ImportError as err:
+            raise click.ClickException(f"rendering needs the [annotate] extra ({err}).") from None
+        click.echo(f"wrote {html_path}")
 
 
 @main.command("render")
@@ -142,15 +173,23 @@ def annotate(
     help="output PNG path (default: <image>_annotated.png)",
 )
 @click.option("--title", help="title bar text (default: nearest DSO to center)")
-def render(model, image, output, title):
-    """Render an annotated PNG from an existing annotation MODEL and its IMAGE."""
+@click.option(
+    "--html", "as_html", is_flag=True, help="render the interactive HTML page instead of a PNG"
+)
+def render(model, image, output, title, as_html):
+    """Render an annotated PNG (or, with --html, the interactive page) from an
+    existing annotation MODEL and its IMAGE."""
+    ext = ".html" if as_html else ".png"
+    out = output or os.path.splitext(os.fspath(image))[0] + "_annotated" + ext
     try:
-        from .annotate.render_png import render_png
-    except ImportError as err:
-        raise click.ClickException(f"rendering needs the [annotate] extra ({err}).") from None
-    out = output or os.path.splitext(os.fspath(image))[0] + "_annotated.png"
-    try:
-        render_png(model, image, out, title=title)
+        if as_html:
+            from .annotate.render_html import render_html
+
+            render_html(model, image, out, title=title)
+        else:
+            from .annotate.render_png import render_png
+
+            render_png(model, image, out, title=title)
     except (ValueError, OSError) as e:
         raise click.ClickException(str(e)) from None
     except ImportError as err:
