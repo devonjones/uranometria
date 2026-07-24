@@ -166,6 +166,24 @@ thumbs if Pillow is missing); remote `http(s)` images are never fetched, so
 they simply have no thumbnail. Costs roughly 4 to 8 KB per object, which is
 why it is opt-in.
 
+## Links
+
+Every object's legend card carries a SIMBAD link, plus a Wikipedia link
+when the article name is a safe bet (all Messier numbers, and any object
+with a common name). `links:` adds your own article links after those, as
+a mapping of label to url or a list of `{label, url}` items:
+
+```yaml
+  - id: M51
+    links:
+      SEDS: https://www.messier.seds.org/m/m051.html
+      My writeup: https://example.org/m51-processing-notes
+```
+
+Only `http(s)` targets are accepted; anything else is a warning and the
+link is skipped. Because the sidebar filters to the objects in view as you
+zoom, the links for whatever you are looking at are always at hand.
+
 ## Colors
 
 `color:` accepts any CSS color and tints that object's marker, chart label,

@@ -53,7 +53,13 @@ The generated page is interactive:
   the visible region (the count shows "N OF M OBJECTS · IN VIEW").
 - **Thumbnails** (`thumbnails: true` in the config): hovering a marker or
   legend card floats a small preview of the object's photo by the cursor,
-  and zooming past 4x pins it beside the marker.
+  and zooming past 4x pins it beside the marker. Clicking the floating
+  preview (or the marker, or its pinned thumb) opens the photo in the
+  lightbox.
+- **Links**: every legend card links to SIMBAD, plus Wikipedia when the
+  article name is a safe bet, plus any article links from the config's
+  `links:` key. Zooming filters the sidebar, so the visible objects'
+  links follow the view.
 - **Photos**: objects with an `image:` in the config get a "PHOTO" tag; click
   the marker or the card to open the photo in a lightbox. The photo zooms and
   pans like the chart (wheel, drag, double-click to reset); clicking the

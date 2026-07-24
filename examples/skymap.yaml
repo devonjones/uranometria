@@ -44,6 +44,9 @@ objects:
   - id: M51
     image: images/M51.jpg
     color: "#82B4F5"     # galaxy
+    links:               # article links shown on the legend card, next to
+      SEDS: https://www.messier.seds.org/m/m051.html  # the automatic
+                                              # SIMBAD/Wikipedia pair
     annotations: annotated/m51.annotations.json  # annotation model from
                                               # `uranometria annotate`; powers the
                                               # in-lightbox overlay and object list

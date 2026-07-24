@@ -605,6 +605,48 @@ def test_remote_annotated_url_passthrough(tmp_path):
     assert 'href="https://example.org/m51.html"' in out.read_text()
 
 
+def test_object_links_auto_and_custom(tmp_path):
+    cfg = {
+        "objects": [
+            {"id": "M31"},
+            {"id": "M51", "links": {"SEDS": "https://www.messier.seds.org/m/m051.html"}},
+            {
+                "id": "M1",
+                "links": [
+                    {"label": "APOD", "url": "https://apod.nasa.gov/apod/astropix.html"},
+                    {"label": "evil", "url": "javascript:alert(1)"},
+                ],
+            },
+            {"label": "X-1", "name": "", "type": "Other", "ra": 10.0, "dec": 20.0},
+        ]
+    }
+    out = tmp_path / "map.html"
+    warnings = uranometria.generate(cfg, out, allow_online=False)
+    assert any("is not http(s)" in w and "M1" in w for w in warnings)
+    html = out.read_text()
+    # every object gets SIMBAD; Messier objects get Wikipedia
+    assert "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=M31" in html
+    assert "https://en.wikipedia.org/wiki/Messier_31" in html
+    # custom article links survive in both config shapes
+    assert 'href="https://www.messier.seds.org/m/m051.html"' in html
+    assert ">SEDS</a>" in html
+    assert 'href="https://apod.nasa.gov/apod/astropix.html"' in html
+    # the javascript: link is gone entirely
+    assert "javascript:" not in html
+    # nameless manual entry: SIMBAD only, no guessed Wikipedia article
+    assert "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=X-1" in html
+    assert "https://en.wikipedia.org/wiki/_" not in html
+
+
+def test_object_link_labels_escaped(tmp_path):
+    cfg = {"objects": [{"id": "M31", "links": {"<script>boom</script>": "https://example.org/x"}}]}
+    out = tmp_path / "map.html"
+    uranometria.generate(cfg, out, allow_online=False)
+    html = out.read_text()
+    assert "<script>boom" not in html
+    assert "&lt;script&gt;boom" in html
+
+
 def test_thumbnails_opt_in(tmp_path):
     from PIL import Image
 

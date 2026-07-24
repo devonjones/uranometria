@@ -3,6 +3,17 @@
 All dates 2026. Versions bump whenever behavior visible in the output
 changes, so they move fast.
 
+## 0.11.0 (July 24)
+
+- Legend cards link out: SIMBAD on every object, Wikipedia when the
+  article name is a safe bet, and your own article links via the new
+  per-object `links:` config key (http(s) only; anything else warns and
+  is skipped). With the sidebar filtering to the zoomed view, the links
+  for what you are looking at stay at hand.
+- The floating hover thumbnail is clickable and opens the photo in the
+  lightbox, matching what clicking the marker or its pinned deep-zoom
+  thumb already did.
+
 ## 0.10.2 (July 24)
 
 - DSO distance lookups go to SIMBAD as one batched request for the whole
