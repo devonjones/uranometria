@@ -277,12 +277,18 @@ def render_png(model, image_path, output, *, title=None, max_width=2000):
         arm = 0.045 * min(W, H)
         ox, oy = max(1.6 * arm, 0.04 * W), 0.10 * H + 1.6 * arm
         if mirrored_display(north, east):
-            # opposite the arms' bisector: no arm direction can collide
+            # opposite the arms' bisector: no arm direction can collide.
+            # Text size is fixed in points, so clamp the anchor by the
+            # word's data-unit extent to keep it on canvas at any rotation.
             tx, ty = -(north[0] + east[0]), -(north[1] + east[1])
             norm = math.hypot(tx, ty) or 1.0
+            half_w = 34.0 / s_scale
+            half_h = 8.0 / s_scale
+            mx = min(max(ox + tx / norm * arm * 1.5, half_w), W - half_w)
+            my = min(max(oy + ty / norm * arm * 1.5, 0.06 * H + half_h), H - half_h)
             ax.text(
-                ox + tx / norm * arm * 1.5,
-                oy + ty / norm * arm * 1.5,
+                mx,
+                my,
                 "MIRRORED",
                 color="#FFD54F",
                 fontsize=9,

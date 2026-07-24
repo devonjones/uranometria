@@ -790,6 +790,33 @@ def test_mirrored_tag_drawn_only_for_mirrored_cd(tmp_path):
     assert amber_pixels(out_plain) == 0  # no tag on a standard frame
 
 
+def test_mirrored_tag_stays_on_canvas_when_bisector_points_right(tmp_path):
+    import math
+
+    import numpy as np
+    from PIL import Image
+
+    from uranometria.annotate.render_png import render_png
+
+    # mirrored frame rotated 45 degrees: the arms' bisector points +x, so
+    # the tag goes toward -x, the worst case for left-edge clipping
+    img = tmp_path / "t.jpg"
+    Image.new("RGB", (800, 600), (5, 5, 20)).save(img)
+    m = _tiny_model(800, 600)
+    m["solved"]["pixel_frame"] = "raster0"
+    m["objects"] = [m["objects"][0]]  # DSO only: no amber star circles
+    s2 = 0.0006 / math.sqrt(2)
+    m["solved"]["cd"] = [[s2, s2], [s2, -s2]]
+    out = tmp_path / "o.png"
+    render_png(m, img, out)
+    arr = np.asarray(Image.open(out).convert("RGB")).astype(int)
+    target = np.array([255, 213, 79])
+    ys, xs = np.where(np.abs(arr - target).sum(axis=-1) < 90)
+    assert len(xs) > 0
+    assert xs.min() >= 1  # nothing bleeds off the left edge
+    assert xs.max() - xs.min() >= 50  # the full word rendered, not "RORED"
+
+
 def test_sharpless_complex_merges_one_to_one():
     from uranometria.annotate.field import dsos_in_field
 
@@ -804,14 +831,33 @@ def test_sharpless_complex_merges_one_to_one():
 
 
 def test_sharpless_never_hosts_sharpless():
-    from uranometria.annotate.field import dsos_in_field
+    from uranometria.annotate.field import _merge_sharpless_duplicates
 
-    # Cepheus Sh2-147..153 complex: no pure-nebula NGC/IC host in range, so
-    # every Sharpless entry stays its own object
-    hits = dsos_in_field(344.0, 59.05, 0.6)
-    for h in hits:
-        if h["disp"].startswith("Sh2-"):
-            assert not any(a.startswith("Sh2-") for a in h["aliases"])
+    # two Sharpless entries 4.8' apart and no NGC/IC entry anywhere: both
+    # must survive standalone — a Sharpless entry is never a merge host
+    hits = [
+        {
+            "disp": "Sh2-1",
+            "ra": 100.0,
+            "dec": 30.0,
+            "type": "Emission nebula (H II)",
+            "z": None,
+            "aliases": [],
+            "sep_deg": 0.1,
+        },
+        {
+            "disp": "Sh2-2",
+            "ra": 100.0,
+            "dec": 30.08,
+            "type": "Emission nebula (H II)",
+            "z": None,
+            "aliases": [],
+            "sep_deg": 0.2,
+        },
+    ]
+    out = _merge_sharpless_duplicates(hits)
+    assert sorted(h["disp"] for h in out) == ["Sh2-1", "Sh2-2"]
+    assert all(h["aliases"] == [] for h in out)
 
 
 def test_dark_nebula_never_hosts_sharpless():
