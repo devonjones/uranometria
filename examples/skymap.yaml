@@ -33,6 +33,9 @@ objects:
     image: images/M42.jpg
   - id: M51
     image: images/M51.jpg
+    annotations: annotated/m51.annotations.json  # annotation model from
+                                              # `uranometria annotate`; powers the
+                                              # in-lightbox overlay and object list
     annotated: annotated/M51_annotated.html   # OPEN INTERACTIVE link in the
                                               # lightbox and on the legend card
   - id: M27

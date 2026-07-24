@@ -158,9 +158,15 @@ def _annotation_sidecar(o, base_dir):
             {
                 "kind": a.get("kind"),
                 "designation": a.get("designation"),
+                "aliases": a.get("aliases") or [],
+                "name": a.get("name"),
                 "type": a.get("type"),
                 "named": a.get("named"),
                 "key": a.get("key"),
+                "mag": a.get("mag"),
+                "band": a.get("band"),
+                "dist_ly": a.get("dist_ly"),
+                "links": a.get("links") or {},
                 "x": a["x"],
                 "y": ((height - 1) - a["y"]) if flip else a["y"],
             }

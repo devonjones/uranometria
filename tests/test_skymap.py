@@ -421,7 +421,19 @@ def _sidecar_model(pixel_frame="raster0", h=60):
         "image_size": [80, h],
         "solved": {"pixel_frame": pixel_frame},
         "objects": [
-            {"kind": "dso", "designation": "M51", "type": "Galaxy", "x": 30.0, "y": 10.0},
+            {
+                "kind": "dso",
+                "designation": "M51",
+                "aliases": ["NGC 5194"],
+                "name": "Whirlpool Galaxy",
+                "type": "Galaxy",
+                "mag": 8.4,
+                "band": "V",
+                "dist_ly": 31000000,
+                "links": {"simbad": "https://simbad.example/M51"},
+                "x": 30.0,
+                "y": 10.0,
+            },
             {
                 "kind": "star",
                 "named": False,
@@ -450,6 +462,13 @@ def test_annotation_sidecar_discovery_and_flip(tmp_path):
     assert 'id="lb-annotations"' in html
     assert '"mk-0"' in html  # the annotation map carries this object
     assert '"y": 49.0' in html or '"y": 49' in html  # fits0 flipped: 59 - 10
+    # enriched payload for the lightbox panel survives the embed
+    assert "NGC 5194" in html
+    assert "Whirlpool Galaxy" in html
+    assert '"dist_ly": 31000000' in html
+    assert "simbad.example/M51" in html
+    assert 'id="lb-panel"' in html
+    assert 'id="lb-cards"' in html
 
 
 def test_annotation_sidecar_raster_no_flip(tmp_path):

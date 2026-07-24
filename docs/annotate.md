@@ -94,11 +94,28 @@ stretch as the PNG before embedding.
 If a chart object's photo has an annotation model sitting next to it as
 `<image>.annotations.json` (or named explicitly with an `annotations:` key in
 the chart config), the sky map's lightbox draws the overlay on the photo with
-a LABELS toggle (off by default, remembered per session). The overlay only
-engages when the model's `image_size` matches the displayed photo, so a model
-built from a different crop is ignored rather than misdrawn. The lightbox
-itself zooms and pans like the chart discs; clicking the photo never closes
-it, only the backdrop or Esc does.
+a LABELS toggle (off by default, remembered per session) and shows a side
+panel listing every identified object: designations with aliases, common
+name, type, magnitude, distance, and SIMBAD/Wikipedia links. Zooming the
+photo filters the panel to the objects in view. The model is embedded in the
+chart page when the chart is built, so the annotation viewer travels with the
+page and does not depend on the standalone annotated HTML existing or staying
+put; an `annotated:` link is still offered as an OPEN INTERACTIVE button when
+configured. The overlay only engages when the model's `image_size` matches
+the displayed photo, so a model built from a different crop is ignored rather
+than misdrawn. The lightbox itself zooms and pans like the chart discs;
+clicking the photo never closes it, only the backdrop or Esc does.
+
+To wire the pipelines together by hand: solve once, save the model with the
+sidecar name, and rebuild the chart.
+
+```bash
+uranometria annotate stack.fit -o heroes/M51.jpg.annotations.json
+uranometria chart skymap.yaml -o skymap.html
+```
+
+See [chart configuration](chart-config.md#annotations) for the `annotations:`
+key when the model lives elsewhere.
 
 ## What gets identified
 

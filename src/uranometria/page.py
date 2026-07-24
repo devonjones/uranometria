@@ -208,8 +208,8 @@ svg.focus .marker.lit .halo {{ opacity:0.35; }}
 .lightbox {{ position:fixed; inset:0; z-index:10; display:flex; align-items:center;
   justify-content:center; background:rgba(4,6,16,0.93); cursor:zoom-out; }}
 .lightbox[hidden] {{ display:none; }}
-.lb-stage {{ display:flex; flex-direction:column; align-items:center; gap:12px;
-  max-width:94vw; cursor:auto; }}
+.lb-stage {{ display:flex; flex-direction:row; align-items:stretch; gap:14px;
+  max-width:96vw; cursor:auto; }}
 #lb-svg {{ max-width:94vw; max-height:78vh; border:1px solid var(--equator);
   box-shadow:0 12px 60px rgba(0,0,0,0.7); background:#000; cursor:grab;
   touch-action:none; display:block; }}
@@ -225,6 +225,26 @@ svg.focus .marker.lit .halo {{ opacity:0.35; }}
 .ann text {{ fill:currentColor; font-family:'Plex Mono',monospace;
   font-weight:500; paint-order:stroke; stroke:rgba(0,0,0,0.8); }}
 .lb-hide-labels #lb-overlay {{ display:none; }}
+.lb-viewer {{ display:flex; flex-direction:column; align-items:center; gap:12px; min-width:0; }}
+#lb-panel {{ width:270px; max-height:82vh; display:flex; flex-direction:column;
+  background:var(--deep); border:1px solid var(--grid); padding:12px; }}
+#lb-panel[hidden] {{ display:none; }}
+.lb-count {{ color:var(--dim); font-size:9.5px; letter-spacing:0.1em; margin:0 0 8px 2px; }}
+.lb-scroll {{ flex:1 1 0; overflow-y:auto; min-height:0; scrollbar-width:thin;
+  scrollbar-color:var(--grid) transparent; }}
+#lb-cards {{ list-style:none; margin:0; padding:0 4px 0 0; display:grid; gap:6px; }}
+#lb-cards li {{ padding:8px 10px; border:1px solid var(--grid); background:var(--sky); }}
+#lb-cards li:hover {{ border-color:var(--accent); }}
+#lb-cards .desig {{ color:var(--accent); font-weight:500; font-size:11.5px; display:block; }}
+#lb-cards .lbname {{ font-family:'Marcellus',serif; color:var(--star); font-size:13px; display:block; }}
+#lb-cards .lbmeta {{ color:var(--ink); font-size:10px; display:block; }}
+#lb-cards .lblinks a {{ color:var(--dim); font-size:9.5px; letter-spacing:0.08em;
+  text-decoration:none; border-bottom:1px dotted var(--dim); margin-right:8px; }}
+#lb-cards .lblinks a:hover {{ color:var(--gold); border-color:var(--gold); }}
+@media (max-width:900px) {{
+  .lb-stage {{ flex-direction:column; overflow-y:auto; max-height:94vh; }}
+  #lb-panel {{ width:auto; max-height:30vh; }}
+}}
 .lightbox figcaption {{ text-align:center; }}
 .lightbox .cap-name {{ font-family:'Marcellus',serif; color:var(--star); font-size:18px;
   letter-spacing:0.08em; }}
@@ -258,13 +278,19 @@ footer {{ margin-top:14px; text-align:center; color:var(--dim); font-size:10px;
 </div>
 <div class="lightbox" id="lightbox" hidden>
   <div class="lb-stage">
-    <div class="lb-tools">
-      <button id="lb-labels" class="lb-btn" hidden>LABELS OFF</button>
-      <a id="lb-annpage" class="lb-btn lb-btn-link" hidden target="_blank" rel="noopener">OPEN INTERACTIVE \u2197</a>
-      <span class="lb-hint">SCROLL TO ZOOM \u00b7 DRAG TO PAN \u00b7 CLICK OUTSIDE OR ESC TO CLOSE</span>
+    <div class="lb-viewer">
+      <div class="lb-tools">
+        <button id="lb-labels" class="lb-btn" hidden>LABELS OFF</button>
+        <a id="lb-annpage" class="lb-btn lb-btn-link" hidden target="_blank" rel="noopener">OPEN INTERACTIVE \u2197</a>
+        <span class="lb-hint">SCROLL TO ZOOM \u00b7 DRAG TO PAN \u00b7 CLICK OUTSIDE OR ESC TO CLOSE</span>
+      </div>
+      <svg id="lb-svg" viewBox="0 0 1 1" role="img" aria-label="photograph"></svg>
+      <figcaption><div class="cap-name" id="lb-name"></div><div class="cap-sub" id="lb-sub"></div></figcaption>
     </div>
-    <svg id="lb-svg" viewBox="0 0 1 1" role="img" aria-label="photograph"></svg>
-    <figcaption><div class="cap-name" id="lb-name"></div><div class="cap-sub" id="lb-sub"></div></figcaption>
+    <aside id="lb-panel" hidden>
+      <p class="lb-count" id="lb-count"></p>
+      <div class="lb-scroll"><ul id="lb-cards"></ul></div>
+    </aside>
   </div>
 </div>
 <script type="application/json" id="lb-annotations">{annotations_json}</script>
@@ -393,6 +419,77 @@ function buildOverlay(gEl, ann, w, h) {{
 }}
 
 const lbAnnPage = document.getElementById('lb-annpage');
+const lbPanel = document.getElementById('lb-panel');
+const lbCards = document.getElementById('lb-cards');
+const lbCount = document.getElementById('lb-count');
+
+function fmtLy(ly) {{
+  if (!ly) return null;
+  if (ly >= 1e5) {{ const m = ly / 1e6; return '~' + (m < 10 ? m.toFixed(1) : Math.round(m)) + ' Mly'; }}
+  return ly.toLocaleString() + ' ly';
+}}
+
+function buildPanel(ann, svg) {{
+  lbCards.textContent = '';
+  const entries = [];
+  ann.objects.forEach((o, i) => {{
+    const li = document.createElement('li');
+    li.style.setProperty('--accent', annColor(o));
+    const desigs = [o.designation].concat(o.aliases || []).join(' \u00b7 ');
+    const keyTag = o.kind === 'star' && !o.named ? o.key + ' \u00b7 ' : '';
+    let inner = '<span class="desig"></span>';
+    li.innerHTML = inner;
+    li.querySelector('.desig').textContent = keyTag + desigs;
+    if (o.name) {{
+      const n = document.createElement('span');
+      n.className = 'lbname'; n.textContent = o.name; li.appendChild(n);
+    }}
+    const bits = [];
+    if (o.type) bits.push(o.type);
+    if (o.mag != null) bits.push((o.band || '') + '=' + o.mag);
+    const d = fmtLy(o.dist_ly);
+    if (d) bits.push(d);
+    if (bits.length) {{
+      const m = document.createElement('span');
+      m.className = 'lbmeta'; m.textContent = bits.join(' \u00b7 '); li.appendChild(m);
+    }}
+    const linkRow = document.createElement('span');
+    linkRow.className = 'lblinks';
+    for (const [label, key] of [['SIMBAD', 'simbad'], ['Wikipedia', 'wikipedia']]) {{
+      const url = (o.links || {{}})[key];
+      if (!url) continue;
+      const a = document.createElement('a');
+      a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = label;
+      linkRow.appendChild(a);
+    }}
+    if (linkRow.childNodes.length) li.appendChild(linkRow);
+    lbCards.appendChild(li);
+    entries.push({{ li, x: o.x, y: o.y, i }});
+    li.addEventListener('mouseenter', () => {{
+      svg.classList.add('focus');
+      const mk = svg.querySelectorAll('#lb-overlay .ann')[i];
+      if (mk) mk.classList.add('lit');
+    }});
+    li.addEventListener('mouseleave', () => {{
+      svg.classList.remove('focus');
+      svg.querySelectorAll('#lb-overlay .ann.lit').forEach(el => el.classList.remove('lit'));
+    }});
+  }});
+  return vb => {{
+    const zoomed = vb && vb[2] < ann.image_size[0] - 1;
+    let shown = 0;
+    entries.forEach(en => {{
+      const vis = !zoomed || (en.x >= vb[0] - 20 && en.x <= vb[0] + vb[2] + 20 &&
+                              en.y >= vb[1] - 20 && en.y <= vb[1] + vb[3] + 20);
+      en.li.style.display = vis ? '' : 'none';
+      if (vis) shown++;
+    }});
+    lbCount.textContent = zoomed
+      ? shown + ' OF ' + entries.length + ' OBJECTS \u00b7 IN VIEW'
+      : entries.length + ' OBJECTS';
+  }};
+}}
+
 function openLightbox(src, cap, ann, annPage) {{
   lbName.textContent = cap[0] || '';
   lbSub.textContent = cap[1] || '';
@@ -420,7 +517,14 @@ function openLightbox(src, cap, ann, annPage) {{
     lbLabelsBtn.hidden = !usable;
     setLabels(usable && labelsOn);
     old.replaceWith(svg);
-    attachPanZoom(svg, w, h, null);
+    lbPanel.hidden = !usable;
+    let onChange = null;
+    if (usable) {{
+      onChange = buildPanel(ann, svg);
+    }} else {{
+      lbCards.textContent = '';
+    }}
+    attachPanZoom(svg, w, h, onChange);
     lb.hidden = false;
   }};
   probe.src = src;

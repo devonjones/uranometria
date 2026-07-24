@@ -121,8 +121,12 @@ Add `--html` for an interactive page: the photo with pan/zoom, a LABELS
 toggle, and a searchable sidebar linking each object to SIMBAD and
 Wikipedia, all in one self-contained file
 (**[live sample](https://devonjones.github.io/uranometria/examples/annotated/M51_annotated.html)**).
-Drop the model JSON next to a chart image as `<image>.annotations.json` and
-the sky map's photo lightbox gains the same overlay with a labels toggle.
+Drop the model JSON next to a chart image as `<image>.annotations.json`
+(or name it with an `annotations:` key in the chart config) and the sky
+map's photo lightbox becomes the annotation viewer itself: the overlay with
+a labels toggle plus a panel of every identified object with links and
+distances, embedded in the chart page so it works even if the standalone
+annotated HTML moves.
 
 Add `--png` to also render the annotated image: markers and leader labels
 colored by object class (galaxies blue, emission nebulae pink, planetaries
@@ -226,6 +230,18 @@ the `astap`/`db_dir` entries in `solve_kwargs`); rendering from an existing
 model needs neither the solver nor the network. Solver problems raise
 `uranometria.annotate.AstapError`; per-object lookup failures degrade to
 warning strings, same as the chart pipeline.
+
+The two pipelines meet in the chart config. Save the model as
+`<hero image>.annotations.json` next to the photo (or set `annotations:` on
+the object) and `generate` embeds it, so the sky map's lightbox shows the
+full annotation overlay and object panel with no external files to keep
+track of:
+
+```python
+write_model(model, hero_path.with_name(hero_path.name + ".annotations.json"))
+cfg["objects"][i]["image"] = os.path.relpath(hero_path, out_path.parent)
+uranometria.generate(cfg, out_path)
+```
 
 ## Documentation
 

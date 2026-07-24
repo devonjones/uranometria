@@ -112,7 +112,31 @@ Paths with spaces are fine (they are URL-encoded).
 object's photo (path resolved like `image:`). Without it, a sidecar named
 `<image>.annotations.json` next to the photo is picked up automatically. When
 present and matching the photo's dimensions, the lightbox draws the overlay
-with a LABELS toggle. An unreadable sidecar is a warning, never a failure.
+with a LABELS toggle and shows a side panel listing every identified object
+with aliases, magnitude, distance, and SIMBAD/Wikipedia links, filtered to
+the region in view as you zoom. The model is embedded in the chart page at
+build time, so the viewer works wherever the page goes. An unreadable
+sidecar is a warning, never a failure.
+
+This is the bridge between the two pipelines. Generate the model once with
+the annotate command, then point the chart at it:
+
+```bash
+uranometria annotate Images/M51/stack.fit -o Images/M51/finished/M51.jpg.annotations.json
+```
+
+```yaml
+objects:
+  - id: M51
+    image: Images/M51/finished/M51.jpg
+    annotations: Images/M51/finished/M51.jpg.annotations.json  # or omit: the
+                                                # sidecar name above is found
+                                                # automatically
+```
+
+The model must be built from the same pixels as the photo it annotates (same
+image or an unscaled export of it); a size mismatch quietly disables the
+overlay instead of drawing circles in the wrong place.
 
 `annotation_label_scale:` (chart-level, default 1.0) multiplies the size of
 overlay labels drawn in the lightbox.
