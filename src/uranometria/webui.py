@@ -156,7 +156,7 @@ function buildAnnotationUI(opts) {
   const w = model.image_size[0], h = model.image_size[1];
   const r = 0.02 * Math.min(w, h);
   const fs = Math.max(12, 0.016 * Math.min(w, h)) * (opts.labelScale || 1);
-  const anns = [], cards = [];
+  const anns = [], cards = [], texts = [];
   opts.listEl.textContent = '';
   model.objects.forEach((o, i) => {
     const color = annColor(o, C);
@@ -214,7 +214,7 @@ function buildAnnotationUI(opts) {
     linkRow.className = 'linkrow';
     for (const [label, key] of [['SIMBAD', 'simbad'], ['Wikipedia', 'wikipedia']]) {
       const url = (o.links || {})[key];
-      if (!url || !/^https?:\/\//i.test(url)) continue;
+      if (!url || !/^https?:\\/\\//i.test(url)) continue;
       const a = document.createElement('a');
       a.href = url;
       a.target = '_blank';
@@ -226,6 +226,10 @@ function buildAnnotationUI(opts) {
     li.appendChild(box);
     opts.listEl.appendChild(li);
     cards.push(li);
+    // searchable text excludes the link labels: SIMBAD appears on every
+    // card, so junk queries like 'sim' would otherwise match everything
+    texts.push(
+      (desig.textContent + ' ' + (o.name || '') + ' ' + bits.join(' ')).toLowerCase());
     li.addEventListener('mouseenter', () => {
       opts.svg.classList.add('focus');
       g.classList.add('lit');
@@ -246,7 +250,7 @@ function buildAnnotationUI(opts) {
     const zoomed = vb && vb[2] < w - 1;
     let shown = 0;
     cards.forEach((li, i) => {
-      const hit = (!q || li.textContent.toLowerCase().includes(q)) && inView(i);
+      const hit = (!q || texts[i].includes(q)) && inView(i);
       li.style.display = hit ? '' : 'none';
       if (hit) shown++;
       anns[i].classList.toggle('lit', !!q && hit);

@@ -615,6 +615,38 @@ def test_legend_sorted_naturally(tmp_path):
     assert positions == sorted(positions)  # M1 < M2 < M27 < M110, not lexicographic
 
 
+def test_sorted_legend_keeps_original_marker_indices(tmp_path):
+    import json
+
+    from PIL import Image
+
+    # config order M110 then M1; natural sort displays M1 first, but every
+    # data-target/thumb/annotation key must stay the ORIGINAL index
+    Image.new("RGB", (80, 60), (9, 9, 30)).save(tmp_path / "pic.jpg")
+    (tmp_path / "pic.jpg.annotations.json").write_text(json.dumps(_sidecar_model()))
+    cfg = {
+        "objects": [
+            {"id": "M110", "image": "pic.jpg"},  # original index 0
+            {"id": "M1"},  # original index 1, sorts first
+        ],
+        "thumbnails": True,
+    }
+    out = tmp_path / "map.html"
+    uranometria.generate(cfg, out, allow_online=False)
+    html = out.read_text()
+    legend = html.split("OBSERVING RECORD")[1]
+    m1_card = legend.split(">M1<")[0].rsplit("<li ", 1)[1]
+    m110_card = legend.split(">M110 ")[0].rsplit("<li ", 1)[1]  # PHOTO tag follows
+    assert 'data-target="mk-1"' in m1_card  # M1 shows first, keeps index 1
+    assert 'data-target="mk-0"' in m110_card
+    assert legend.index(">M1<") < legend.index(">M110 ")  # sorted display
+    # thumbs and annotations stay keyed to the original index too
+    thumbs = html.split('id="chart-thumbs">')[1].split("</script>")[0]
+    assert '"mk-0"' in thumbs and '"mk-1"' not in thumbs
+    anns = html.split('id="lb-annotations">')[1].split("</script>")[0]
+    assert '"mk-0"' in anns
+
+
 def test_object_links_auto_and_custom(tmp_path):
     cfg = {
         "objects": [
@@ -855,6 +887,10 @@ def test_annotated_link_prefers_embedded_viewer(tmp_path):
     html = out.read_text()
     assert '<span class="annlink" role="button"' in html  # in-page viewer wins
     assert 'href="m51_page.html"' not in html  # external link not emitted
+    assert 'class="linkrow"' in html  # article links coexist on the card
+    # the anchor guard exists in BOTH the click and keydown handlers, so a
+    # SIMBAD link click can never also open the lightbox
+    assert html.count("e.target.closest('a[href]')) return") == 2
 
 
 def test_annotated_page_auto_discovery_and_missing(tmp_path):

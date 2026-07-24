@@ -13,6 +13,7 @@ from .webui import ANNOTATION_UI_CSS, ANNOTATION_UI_JS, DSO_COLOR_JS, PANZOOM_JS
 def _linkrow(o):
     links = o.get("links") or []
     if not links:
+        # defensive only: object_links always emits at least SIMBAD
         return ""
     anchors = "".join(
         f'<a href="{html.escape(url, quote=True)}" target="_blank"'
@@ -348,12 +349,19 @@ const searchBox = document.getElementById('search');
 const countEl = document.getElementById('count');
 const cards = Array.from(document.querySelectorAll('.legend li')).map(li => {{
   const mk = document.getElementById(li.dataset.target);
+  const desig = li.querySelector('.desig');
+  const desigText = desig && desig.firstChild ? desig.firstChild.textContent : '';
+  const rest = Array.from(li.querySelectorAll('.common, .meta, .coord'))
+    .map(el => el.textContent)
+    .join(' ');
   return {{
     li, mk,
     svg: mk ? mk.closest('svg') : null,
     x: mk ? parseFloat(mk.style.getPropertyValue('--tx')) : 0,
     y: mk ? parseFloat(mk.style.getPropertyValue('--ty')) : 0,
-    text: li.textContent.toLowerCase(),
+    // designation + name + type + coords only: the SIMBAD/PHOTO/ANNOTATED
+    // labels appear on every card and would make junk queries match all
+    text: (desigText + ' ' + rest).toLowerCase(),
   }};
 }});
 function inView(c) {{
@@ -551,10 +559,8 @@ const ANN_LABEL_SCALE = {ann_label_scale};
 
 let openSeq = 0;
 function openLightbox(src, cap, ann, forceAnn) {{
-  if (typeof tip !== 'undefined') {{
-    clearTimeout(tipHide);
-    tip.style.display = 'none';
-  }}
+  clearTimeout(tipHide);
+  tip.style.display = 'none';
   lbName.textContent = cap[0] || '';
   lbSub.textContent = cap[1] || '';
   const seq = ++openSeq;
@@ -625,6 +631,10 @@ function closeLightbox() {{
 }}
 lb.addEventListener('click', closeLightbox);
 document.addEventListener('keydown', e => {{
+  if (e.key === 'Escape' && lb.hidden) {{
+    openSeq++;  // cancel any still-probing open (slow remote image)
+    return;
+  }}
   if (e.key !== 'Escape' || lb.hidden) return;
   if (e.target === lbSearch && lbSearch.value) {{
     lbSearch.value = '';

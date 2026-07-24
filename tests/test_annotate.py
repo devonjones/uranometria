@@ -702,11 +702,12 @@ def test_dso_distances_median(monkeypatch):
     import uranometria.annotate.field as field
 
     tables = {
-        # three usable pc rows -> median is the middle value (2 pc)
+        # three usable pc rows -> median is the middle value (2 pc);
+        # the None row cannot float() and is dropped by _distance_ly
         "ODD": Table(
             {
-                "mesdistance.dist": [3.0, 1.0, 2.0],
-                "mesdistance.unit": ["pc", "pc", "pc"],
+                "mesdistance.dist": [3.0, 1.0, 2.0, None],
+                "mesdistance.unit": ["pc", "pc", "pc", "pc"],
             }
         ),
         # four rows: one masked, one junk unit; two usable -> len//2 picks

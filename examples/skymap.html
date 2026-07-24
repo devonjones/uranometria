@@ -301,12 +301,19 @@ const searchBox = document.getElementById('search');
 const countEl = document.getElementById('count');
 const cards = Array.from(document.querySelectorAll('.legend li')).map(li => {
   const mk = document.getElementById(li.dataset.target);
+  const desig = li.querySelector('.desig');
+  const desigText = desig && desig.firstChild ? desig.firstChild.textContent : '';
+  const rest = Array.from(li.querySelectorAll('.common, .meta, .coord'))
+    .map(el => el.textContent)
+    .join(' ');
   return {
     li, mk,
     svg: mk ? mk.closest('svg') : null,
     x: mk ? parseFloat(mk.style.getPropertyValue('--tx')) : 0,
     y: mk ? parseFloat(mk.style.getPropertyValue('--ty')) : 0,
-    text: li.textContent.toLowerCase(),
+    // designation + name + type + coords only: the SIMBAD/PHOTO/ANNOTATED
+    // labels appear on every card and would make junk queries match all
+    text: (desigText + ' ' + rest).toLowerCase(),
   };
 });
 function inView(c) {
@@ -607,7 +614,7 @@ function buildAnnotationUI(opts) {
   const w = model.image_size[0], h = model.image_size[1];
   const r = 0.02 * Math.min(w, h);
   const fs = Math.max(12, 0.016 * Math.min(w, h)) * (opts.labelScale || 1);
-  const anns = [], cards = [];
+  const anns = [], cards = [], texts = [];
   opts.listEl.textContent = '';
   model.objects.forEach((o, i) => {
     const color = annColor(o, C);
@@ -677,6 +684,10 @@ function buildAnnotationUI(opts) {
     li.appendChild(box);
     opts.listEl.appendChild(li);
     cards.push(li);
+    // searchable text excludes the link labels: SIMBAD appears on every
+    // card, so junk queries like 'sim' would otherwise match everything
+    texts.push(
+      (desig.textContent + ' ' + (o.name || '') + ' ' + bits.join(' ')).toLowerCase());
     li.addEventListener('mouseenter', () => {
       opts.svg.classList.add('focus');
       g.classList.add('lit');
@@ -697,7 +708,7 @@ function buildAnnotationUI(opts) {
     const zoomed = vb && vb[2] < w - 1;
     let shown = 0;
     cards.forEach((li, i) => {
-      const hit = (!q || li.textContent.toLowerCase().includes(q)) && inView(i);
+      const hit = (!q || texts[i].includes(q)) && inView(i);
       li.style.display = hit ? '' : 'none';
       if (hit) shown++;
       anns[i].classList.toggle('lit', !!q && hit);
@@ -720,10 +731,8 @@ function buildAnnotationUI(opts) {
 
 let openSeq = 0;
 function openLightbox(src, cap, ann, forceAnn) {
-  if (typeof tip !== 'undefined') {
-    clearTimeout(tipHide);
-    tip.style.display = 'none';
-  }
+  clearTimeout(tipHide);
+  tip.style.display = 'none';
   lbName.textContent = cap[0] || '';
   lbSub.textContent = cap[1] || '';
   const seq = ++openSeq;
@@ -794,6 +803,10 @@ function closeLightbox() {
 }
 lb.addEventListener('click', closeLightbox);
 document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && lb.hidden) {
+    openSeq++;  // cancel any still-probing open (slow remote image)
+    return;
+  }
   if (e.key !== 'Escape' || lb.hidden) return;
   if (e.target === lbSearch && lbSearch.value) {
     lbSearch.value = '';
