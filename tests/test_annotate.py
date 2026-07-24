@@ -654,6 +654,22 @@ def test_dso_distances_batch_single_request(monkeypatch):
     assert "STRAY" not in out  # ids we never asked about are ignored
 
 
+def test_dso_distances_empty_list_makes_no_requests(monkeypatch):
+    import builtins
+
+    import uranometria.annotate.field as field
+
+    real_import = builtins.__import__
+
+    def guard(name, *a, **k):
+        if name.startswith("astroquery"):
+            raise AssertionError("empty input must not touch astroquery at all")
+        return real_import(name, *a, **k)
+
+    monkeypatch.setattr(builtins, "__import__", guard)
+    assert field.dso_distances([]) == {}
+
+
 def test_dso_distances_batch_falls_back_serial(monkeypatch):
     from astropy.table import Table
 

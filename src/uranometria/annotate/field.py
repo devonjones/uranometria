@@ -300,20 +300,22 @@ def dso_distances(designations):
     All designations go out as ONE query_objects request (a field can hold
     half a dozen DSOs; serial round-trips dominated the wall time), with the
     old per-object loop kept as a fallback."""
+    designations = list(designations)
+    if not designations:
+        return {}
     from astroquery.simbad import Simbad
 
     sim = Simbad()
     sim.add_votable_fields("mesdistance")
-    designations = list(designations)
-    if not designations:
-        return {}
     try:
         t = sim.query_objects(designations)
     except Exception:
         t = None
     if t is not None and len(t) > 0:
         cols = {c.lower(): c for c in t.colnames}
-        idc = cols.get("user_specified_id") or cols.get("typed_id")
+        # astroquery >= 0.4.8 (our floor) always names this column
+        # user_specified_id; unknown schemas route to the serial fallback
+        idc = cols.get("user_specified_id")
         dc, uc = cols.get("mesdistance.dist"), cols.get("mesdistance.unit")
         if idc and dc and uc:
             wanted = set(designations)
