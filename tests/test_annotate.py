@@ -863,6 +863,21 @@ def test_render_html_rejects_nonfinite_label_scale(tmp_path):
         render_html(m, img, tmp_path / "p.html", label_scale=float("nan"))
 
 
+def test_render_html_rejects_nonfinite_model_values(tmp_path):
+    import pytest
+    from PIL import Image
+
+    from uranometria.annotate.render_html import render_html
+
+    img = tmp_path / "tiny.jpg"
+    Image.new("RGB", (80, 60)).save(img)
+    m = _tiny_model()
+    m["solved"]["pixel_frame"] = "raster0"
+    m["objects"][0]["x"] = float("nan")
+    with pytest.raises(ValueError):  # allow_nan=False refuses the embed
+        render_html(m, img, tmp_path / "p.html")
+
+
 def test_render_html_rejects_mismatched_image(tmp_path):
     import pytest
     from PIL import Image

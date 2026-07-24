@@ -547,12 +547,16 @@ def test_annotations_json_escapes_all_angle_brackets(tmp_path):
     assert r"\u003c!--\u003cscript" in payload
 
 
-def test_nan_in_sidecar_warns_not_breaks(tmp_path):
+@pytest.mark.parametrize(
+    "field,value",
+    [("y", float("nan")), ("mag", float("inf")), ("dist_ly", float("nan"))],
+)
+def test_nan_in_sidecar_warns_not_breaks(tmp_path, field, value):
     import json
 
     (tmp_path / "pic.jpg").write_bytes(b"x")
     m = _sidecar_model()
-    m["objects"][0]["y"] = float("nan")  # Python json accepts it; browsers don't
+    m["objects"][0][field] = value  # Python json accepts these; browsers don't
     (tmp_path / "pic.jpg.annotations.json").write_text(json.dumps(m))
     cfg = {"objects": [{"id": "M31", "image": "pic.jpg"}]}
     out = tmp_path / "map.html"
