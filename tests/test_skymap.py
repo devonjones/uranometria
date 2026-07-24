@@ -615,6 +615,7 @@ def test_no_sidecar_means_empty_map(tmp_path):
     assert "attachPanZoom" in html  # shared pan/zoom present
     assert "userSelect" in html  # drag-to-pan never selects text (u-8)
     assert "const nz" in html  # wheel at the zoom clamp is a no-op (u-9)
+    assert "removeAllRanges" in html  # pan start clears a live selection (u-8)
     assert 'id="lb-ann"' in html  # toggle exists (hidden until usable)
 
 
