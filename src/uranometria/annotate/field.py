@@ -112,6 +112,28 @@ def _merge_sharpless_duplicates(hits):
     return sorted(merged, key=lambda r: r["sep_deg"])
 
 
+# Gaia DR3 positions are epoch J2016.0; Tycho-2 observed positions carry
+# PER-STAR epochs (EpRA-1990/EpDE-1990, roughly 1990.8 to 1992.1). High-
+# proper-motion stars move arcminutes across the gap (Groombridge 1830:
+# ~171 arcsec), so the match must run at each Tycho row's own epochs; even
+# a fixed catalog-mean epoch leaves fast movers several arcsec out.
+GAIA_EPOCH = 2016.0
+TYCHO_FALLBACK_EPOCH = 1991.5  # catalog mean, for rows with masked epochs
+
+
+def _propagate(ra, dec, pmra_masyr, pmde_masyr, dt_years):
+    """Move an ICRS position by proper motion. pmra is the projected
+    mu_alpha* (mas/yr, already times cos dec), Gaia's convention. Within
+    an arcminute of the pole the linear RA shift is meaningless, so RA is
+    left untouched there (dec still moves; a 2 arcsec match at the exact
+    pole is not a real case)."""
+    dec2 = dec + pmde_masyr * dt_years / 3.6e6
+    if abs(dec) > 90 - 1 / 60:
+        return ra, dec2
+    ra2 = ra + pmra_masyr * dt_years / 3.6e6 / math.cos(math.radians(dec))
+    return ra2, dec2
+
+
 def stars_in_field(center_ra, center_dec, radius_deg, *, mag_limit=12.5, max_stars=100):
     """Gaia DR3 (via VizieR) stars in the search circle, brightest first, with
     Tycho-2 designations where available. Online only. Callers apply their own
@@ -126,7 +148,7 @@ def stars_in_field(center_ra, center_dec, radius_deg, *, mag_limit=12.5, max_sta
 
     gaia = Vizier(
         catalog="I/355/gaiadr3",
-        columns=["Source", "RA_ICRS", "DE_ICRS", "Gmag", "Plx", "e_Plx"],
+        columns=["Source", "RA_ICRS", "DE_ICRS", "Gmag", "Plx", "e_Plx", "pmRA", "pmDE"],
         column_filters={"Gmag": f"<{mag_limit}"},
         row_limit=5000,
     ).query_region(center, radius=radius)
@@ -135,11 +157,15 @@ def stars_in_field(center_ra, center_dec, radius_deg, *, mag_limit=12.5, max_sta
         for row in gaia[0]:
             plx = float(row["Plx"]) if row["Plx"] else None
             dist_pc = 1000.0 / plx if plx and plx > 0.5 else None
+            ra, dec = float(row["RA_ICRS"]), float(row["DE_ICRS"])
+            pmra = float(row["pmRA"]) if row["pmRA"] else 0.0
+            pmde = float(row["pmDE"]) if row["pmDE"] else 0.0
             stars.append(
                 {
                     "designation": f"Gaia DR3 {row['Source']}",
-                    "ra": float(row["RA_ICRS"]),
-                    "dec": float(row["DE_ICRS"]),
+                    "_pm": (pmra, pmde),
+                    "ra": ra,
+                    "dec": dec,
                     "mag": round(float(row["Gmag"]), 1),
                     "band": "G",
                     "dist_ly": round(dist_pc * 3.26156) if dist_pc else None,
@@ -150,17 +176,26 @@ def stars_in_field(center_ra, center_dec, radius_deg, *, mag_limit=12.5, max_sta
 
     tycho = Vizier(
         catalog="I/259/tyc2",
-        columns=["TYC1", "TYC2", "TYC3", "RA(ICRS)", "DE(ICRS)", "VTmag"],
+        columns=["TYC1", "TYC2", "TYC3", "RA(ICRS)", "DE(ICRS)", "VTmag", "EpRA-1990", "EpDE-1990"],
         row_limit=200,
     ).query_region(center, radius=radius)
     if tycho:
+        fallback = TYCHO_FALLBACK_EPOCH - 1990.0
         for row in tycho[0]:
             tyc = f"TYC {row['TYC1']}-{row['TYC2']}-{row['TYC3']}"
             tra, tdec = float(row["RA(ICRS)"]), float(row["DE(ICRS)"])
+            ep_ra = 1990.0 + (float(row["EpRA-1990"]) if row["EpRA-1990"] else fallback)
+            ep_de = 1990.0 + (float(row["EpDE-1990"]) if row["EpDE-1990"] else fallback)
             for s in stars:
-                if sep_deg(s["ra"], s["dec"], tra, tdec) < 2 * ARCSEC:
+                pmra, pmde = s["_pm"]
+                # RA and DE are observed at different epochs in Tycho-2
+                era, _ = _propagate(s["ra"], s["dec"], pmra, pmde, ep_ra - GAIA_EPOCH)
+                _, edec = _propagate(s["ra"], s["dec"], pmra, pmde, ep_de - GAIA_EPOCH)
+                if sep_deg(era, edec, tra, tdec) < 2 * ARCSEC:
                     s["designation"] = tyc
                     break
+    for s in stars:
+        s.pop("_pm", None)
     return stars
 
 

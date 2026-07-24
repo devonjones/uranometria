@@ -1,6 +1,6 @@
 [project]
 name = "uranometria"
-version = "0.10.0"
+version = "0.10.1"
 description = "Star-atlas style HTML sky charts of the deep-sky objects you have photographed"
 readme = "README.md"
 license = "Apache-2.0"
