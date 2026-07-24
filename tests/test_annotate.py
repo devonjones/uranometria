@@ -855,3 +855,20 @@ def test_fmt_dist_ly_approx():
     assert fmt_dist_ly(7247) == "7,247 ly"
     assert fmt_dist_ly(365) == "365 ly"
     assert fmt_dist_ly(22_000_000, approx=True) == "~22 Mly"
+
+
+def test_render_html_viewport_filter(tmp_path):
+    from PIL import Image
+
+    from uranometria.annotate.render_html import render_html
+
+    img = tmp_path / "tiny.jpg"
+    Image.new("RGB", (80, 60)).save(img)
+    m = _tiny_model()
+    m["solved"]["pixel_frame"] = "raster0"
+    out = tmp_path / "page.html"
+    render_html(m, img, out)
+    page = out.read_text()
+    assert "function inView(" in page  # zoom filters the sidebar
+    assert "IN VIEW" in page
+    assert "attachPanZoom(svg, 80, 60, applyFilter)" in page

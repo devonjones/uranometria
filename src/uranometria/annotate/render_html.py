@@ -231,7 +231,6 @@ footer {{ margin-top:10px; text-align:center; color:var(--dim); font-size:9.5px;
 <script>
 {PANZOOM_JS}
 const svg = document.getElementById('img-svg');
-attachPanZoom(svg, {w}, {h}, null);
 
 const stage = document.querySelector('.stage');
 const labelsBtn = document.getElementById('labels');
@@ -246,23 +245,38 @@ const anns = Array.from(document.querySelectorAll('.ann'));
 const cards = Array.from(document.querySelectorAll('#cards li'));
 const searchBox = document.getElementById('search');
 const countEl = document.getElementById('count');
-function applySearch() {{
+const positions = anns.map(a => [
+  parseFloat(a.style.getPropertyValue('--tx')),
+  parseFloat(a.style.getPropertyValue('--ty')),
+]);
+function inView(i) {{
+  if (!svg._vb || svg._vb[2] >= {w} - 1) return true;   // not zoomed
+  const [vx, vy, vw, vh] = svg._vb;
+  const m = 20 / ({w} / vw);                            // marker slop
+  const [x, y] = positions[i] || [0, 0];
+  return x >= vx - m && x <= vx + vw + m && y >= vy - m && y <= vy + vh + m;
+}}
+function applyFilter() {{
   const q = searchBox.value.trim().toLowerCase();
+  const zoomed = svg._vb && svg._vb[2] < {w} - 1;
   let shown = 0;
   cards.forEach((li, i) => {{
-    const hit = !q || li.textContent.toLowerCase().includes(q);
+    const hit = (!q || li.textContent.toLowerCase().includes(q)) && inView(i);
     li.style.display = hit ? '' : 'none';
     if (hit) shown++;
     if (anns[i]) anns[i].classList.toggle('lit', !!q && hit);
   }});
   svg.classList.toggle('focus', !!q);
-  countEl.textContent = q ? `${{shown}} OF ${{cards.length}} OBJECTS` : `${{cards.length}} OBJECTS`;
+  countEl.textContent = shown < cards.length
+    ? `${{shown}} OF ${{cards.length}} OBJECTS${{zoomed ? ' \u00b7 IN VIEW' : ''}}`
+    : `${{cards.length}} OBJECTS`;
 }}
-searchBox.addEventListener('input', applySearch);
+searchBox.addEventListener('input', applyFilter);
 cards.forEach((li, i) => {{
   li.addEventListener('mouseenter', () => {{ svg.classList.add('focus'); anns[i] && anns[i].classList.add('lit'); }});
-  li.addEventListener('mouseleave', applySearch);
+  li.addEventListener('mouseleave', applyFilter);
 }});
+attachPanZoom(svg, {w}, {h}, applyFilter);
 </script>
 """
     with open(return_path, "w") as f:
