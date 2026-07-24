@@ -57,12 +57,15 @@ The generated page is interactive:
   photo never dismisses it, only the backdrop or Esc does. If the photo has
   an annotation model (an `annotations:` key in the config, or a sidecar
   named `<image>.annotations.json` beside the photo), the lightbox becomes a
-  full annotation viewer: a LABELS toggle draws the identified objects over
-  the image, and a side panel lists every object with its aliases, type,
-  magnitude, distance, and SIMBAD/Wikipedia links. The panel filters to the
-  objects in view as you zoom, just like the chart sidebar. All of it is
-  embedded in the chart page itself, so it keeps working if the standalone
-  annotated HTML moves or was never generated.
+  full annotation viewer, the same one the standalone annotated page uses:
+  the identified objects drawn over the image, and a searchable side panel
+  listing every object with its aliases, type, magnitude, distance, and
+  SIMBAD/Wikipedia links. The panel filters to the objects in view as you
+  zoom, hovering a card spotlights that object on the image, an ANNOTATIONS
+  button toggles the overlay and panel together, and EXPAND grows the viewer
+  to fill the window. All of it is embedded in the chart page itself, so it
+  keeps working if the standalone annotated HTML moves or was never
+  generated.
 
 ## Self-contained output
 

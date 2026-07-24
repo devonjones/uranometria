@@ -112,9 +112,10 @@ Paths with spaces are fine (they are URL-encoded).
 object's photo (path resolved like `image:`). Without it, a sidecar named
 `<image>.annotations.json` next to the photo is picked up automatically. When
 present and matching the photo's dimensions, the lightbox draws the overlay
-with a LABELS toggle and shows a side panel listing every identified object
-with aliases, magnitude, distance, and SIMBAD/Wikipedia links, filtered to
-the region in view as you zoom. The model is embedded in the chart page at
+and shows a searchable side panel listing every identified object with
+aliases, magnitude, distance, and SIMBAD/Wikipedia links, filtered to the
+region in view as you zoom; an ANNOTATIONS button toggles the overlay and
+panel together, and EXPAND grows the viewer to fill the window. The model is embedded in the chart page at
 build time, so the viewer works wherever the page goes. An unreadable
 sidecar is a warning, never a failure.
 
@@ -142,8 +143,9 @@ overlay instead of drawing circles in the wrong place.
 overlay labels drawn in the lightbox.
 
 `annotated:` links the object to its interactive annotated page (built with
-`render --html`), shown as an ANNOTATED link on the legend card and an OPEN
-INTERACTIVE button in the lightbox. Without the key, a sibling file named
+`render --html`), shown as an ANNOTATED link on the legend card. With the
+model embedded via `annotations:` the lightbox already carries the full
+viewer, so this link is optional. Without the key, a sibling file named
 `<image stem>_annotated.html` is picked up automatically. This pairs well
 with keeping the pretty hero as `image:` while the interactive page carries
 the labeled version.

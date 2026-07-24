@@ -84,7 +84,8 @@ generate / edit / re-render workflow described in
 
 `--html` (on `annotate`) or `render --html` produces one self-contained HTML
 file: the photograph embedded as a data URI, the overlay drawn in SVG with
-counter-scaled markers, wheel zoom and drag pan, a LABELS toggle, and a
+counter-scaled markers, wheel zoom and drag pan, an ANNOTATIONS toggle
+(hides the overlay and the object panel together), and a
 searchable sidebar where every object links to SIMBAD (and Wikipedia when an
 article is likely). FITS sources are rendered through the same display
 stretch as the PNG before embedding.
@@ -94,14 +95,17 @@ stretch as the PNG before embedding.
 If a chart object's photo has an annotation model sitting next to it as
 `<image>.annotations.json` (or named explicitly with an `annotations:` key in
 the chart config), the sky map's lightbox draws the overlay on the photo with
-a LABELS toggle (off by default, remembered per session) and shows a side
-panel listing every identified object: designations with aliases, common
-name, type, magnitude, distance, and SIMBAD/Wikipedia links. Zooming the
-photo filters the panel to the objects in view. The model is embedded in the
-chart page when the chart is built, so the annotation viewer travels with the
-page and does not depend on the standalone annotated HTML existing or staying
-put; an `annotated:` link is still offered as an OPEN INTERACTIVE button when
-configured. The overlay only engages when the model's `image_size` matches
+an ANNOTATIONS toggle (on by default, remembered per session; hides the
+overlay and the panel together) and shows a side panel listing every
+identified object: designations with aliases, common name, type, magnitude,
+distance, and SIMBAD/Wikipedia links, with a search box. Zooming the photo
+filters the panel to the objects in view, hovering a card spotlights that
+object on the image, and an EXPAND button grows the viewer to fill the
+window. The lightbox and the standalone page are built by the same shared
+code, so they behave identically. The model is embedded in the chart page
+when the chart is built, so the annotation viewer travels with the page and
+does not depend on the standalone annotated HTML existing or staying put.
+The overlay only engages when the model's `image_size` matches
 the displayed photo, so a model built from a different crop is ignored rather
 than misdrawn. The lightbox itself zooms and pans like the chart discs;
 clicking the photo never closes it, only the backdrop or Esc does.

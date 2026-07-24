@@ -760,10 +760,12 @@ def test_render_html_standalone(tmp_path):
     page = out.read_text()
     assert "data:image/jpeg;base64," in page  # image embedded, self-contained
     assert "attachPanZoom" in page
-    assert 'id="labels"' in page  # LABELS toggle
-    assert "M51 · NGC 5194" in page  # aliases in the sidebar
-    assert "~22 Mly" in page  # distance formatted
-    assert 'href="https://simbad/x"' in page and "Wikipedia" in page
+    assert 'id="annotations"' in page  # ANNOTATIONS toggle (overlay + panel)
+    assert "buildAnnotationUI" in page  # shared viewer builds cards client-side
+    assert 'id="ann-model"' in page  # model embedded as JSON
+    assert "NGC 5194" in page  # aliases carried in the model
+    assert "22000000" in page  # distance carried in the model
+    assert "https://simbad/x" in page and "wikipedia" in page
     assert 'id="search"' in page
 
 
@@ -781,7 +783,7 @@ def test_render_html_fits_source_flips_nothing(tmp_path):
     out = tmp_path / "page.html"
     render_html(m, f, out)
     page = out.read_text()
-    assert "--ty:25.0px" in page  # M51 y unchanged
+    assert '"y": 25.0' in page  # M51 y unchanged in the embedded model
     assert "data:image/jpeg;base64," in page  # stretched render embedded
 
 
@@ -887,9 +889,9 @@ def test_html_label_scale(tmp_path):
         o["x"], o["y"] = 100.0, 100.0
     out = tmp_path / "p.html"
     render_html(m, img, out)
-    assert "font-size:16px" in out.read_text()  # 0.016 * 1000
+    assert "labelScale: 1.0" in out.read_text()  # builder sizes labels from this
     render_html(m, img, out, label_scale=2.0)
-    assert "font-size:32px" in out.read_text()
+    assert "labelScale: 2.0" in out.read_text()
 
 
 def test_chart_annotation_label_scale(tmp_path):

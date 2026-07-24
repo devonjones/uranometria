@@ -1,9 +1,9 @@
 """Standalone interactive HTML page for one annotated image.
 
-One self-contained file: the photograph (embedded as a data URI), the
-annotation overlay drawn in SVG, pan/zoom with counter-scaled markers, a
-LABELS toggle, and a searchable sidebar with catalog links. Shares its
-interaction code and palette with the sky-chart pages.
+One self-contained file: the photograph (embedded as a data URI) and the
+annotation model (embedded as JSON), with the overlay, card list, search,
+hover spotlight, and viewport filtering all built client-side by the same
+shared code the sky-chart lightbox uses (webui.ANNOTATION_UI_JS).
 """
 
 import base64
@@ -13,8 +13,14 @@ import json
 import os
 
 from ..resources import asset_text
-from ..webui import ANNOTATION_COLORS, PANZOOM_JS
-from .render_png import _load_image, dso_color, fmt_dist_ly, needs_flip
+from ..webui import (
+    ANNOTATION_UI_CSS,
+    ANNOTATION_UI_JS,
+    DSO_COLOR_JS,
+    PANZOOM_JS,
+    js_color_map,
+)
+from .render_png import _load_image, needs_flip
 from .render_png import _default_title, _hms, _dms
 
 
@@ -42,64 +48,6 @@ def _image_data_uri(image_path):
         return f"data:image/{mime};base64," + base64.b64encode(f.read()).decode()
 
 
-def _obj_color(o):
-    if o["kind"] == "dso":
-        return dso_color(o.get("type"))
-    return ANNOTATION_COLORS["named_star"] if o.get("named") else ANNOTATION_COLORS["field_star"]
-
-
-def _overlay_svg(objects, w, h):
-    r = 0.02 * min(w, h)
-    parts = []
-    for o in objects:
-        color = html.escape(_obj_color(o), quote=True)
-        label = str(o["key"]) if o["kind"] == "star" and not o.get("named") else o["designation"]
-        radius = r * 1.4 if o["kind"] == "dso" else (r if o.get("named") else r * 0.6)
-        parts.append(
-            f'<g class="ann" style="--tx:{o["x"]:.1f}px;--ty:{o["y"]:.1f}px;color:{color}">'
-            f'<circle r="{radius:.1f}"/>'
-            f'<text x="{r * 1.6:.1f}" y="{-r * 0.8:.1f}">{html.escape(label)}</text></g>'
-        )
-    return "".join(parts)
-
-
-def _sidebar_cards(objects):
-    cards = []
-    for i, o in enumerate(objects):
-        color = html.escape(_obj_color(o), quote=True)
-        title = html.escape(o["designation"])
-        if o.get("aliases"):
-            title += " · " + html.escape(" · ".join(o["aliases"]))
-        name = f'<span class="common">{html.escape(o["name"])}</span>' if o.get("name") else ""
-        bits = []
-        if o.get("type"):
-            bits.append(html.escape(o["type"]))
-        if o.get("mag") is not None:
-            bits.append(f"{html.escape(o.get('band', ''))}={o['mag']}")
-        dist = fmt_dist_ly(o.get("dist_ly"), approx=o["kind"] == "dso")
-        if dist:
-            bits.append(html.escape(dist))
-        links = []
-        for label, key in (("SIMBAD", "simbad"), ("Wikipedia", "wikipedia")):
-            url = (o.get("links") or {}).get(key)
-            if url:
-                links.append(
-                    f'<a href="{html.escape(url, quote=True)}" target="_blank" rel="noopener">{label}</a>'
-                )
-        key_badge = (
-            f'<span class="keybadge">{o["key"]}</span>'
-            if o["kind"] == "star" and not o.get("named")
-            else ""
-        )
-        cards.append(
-            f'<li data-ann="{i}" style="--accent:{color}">'
-            f'<div class="obj"><span class="desig">{key_badge}{title}</span>{name}'
-            f'<span class="meta">{" · ".join(bits)}</span>'
-            f'<span class="linkrow">{" ".join(links)}</span></div></li>'
-        )
-    return "".join(cards)
-
-
 def render_html(model, image_path, output, *, title=None, label_scale=1.0):
     """Write the standalone annotated-image page. Returns the output path."""
     if not isinstance(model, dict):
@@ -124,10 +72,7 @@ def render_html(model, image_path, output, *, title=None, label_scale=1.0):
         f" · {solved.get('solver', 'ASTAP')}"
     )
     data_uri = _image_data_uri(image_path)
-    n_obj = len(objects)
-    # labels are SVG user units: size them relative to the image so they are
-    # readable at fit-to-screen, times the configurable multiplier
-    label_px = max(12.0, 0.016 * min(w, h)) * label_scale
+    model_json = json.dumps({"image_size": [w, h], "objects": objects}).replace("</", "<\\/")
 
     def b64(fn):
         return asset_text(fn + ".b64")
@@ -156,6 +101,8 @@ header h1 {{ font-family:'Marcellus',serif; font-weight:400; color:var(--star);
 header .sub {{ color:var(--dim); font-size:11.5px; letter-spacing:0.08em; margin-top:8px; }}
 .layout {{ flex:1 1 0; min-height:0; display:grid;
   grid-template-columns:minmax(0,1fr) 330px; gap:24px; }}
+.hide-ann .layout {{ grid-template-columns:minmax(0,1fr); }}
+.hide-ann #overlay, .hide-ann .panel {{ display:none; }}
 .stage {{ min-height:0; display:flex; flex-direction:column; }}
 .stage .tools {{ display:flex; gap:10px; align-items:center; margin-bottom:8px; flex:none; }}
 #img-svg {{ flex:1 1 auto; min-height:0; width:100%; background:#000;
@@ -166,14 +113,7 @@ header .sub {{ color:var(--dim); font-size:11.5px; letter-spacing:0.08em; margin
   padding:5px 14px; cursor:pointer; }}
 .btn.on {{ color:var(--gold); border-color:var(--gold); }}
 .hint {{ color:var(--dim); font-size:9px; letter-spacing:0.1em; }}
-.ann {{ transform:translate(var(--tx),var(--ty)) scale(calc(1 / var(--z,1))); }}
-.ann circle {{ fill:none; stroke:currentColor; stroke-width:1.6; }}
-.ann text {{ fill:currentColor; font-family:'Plex Mono',monospace;
-  font-size:{label_px:.0f}px; font-weight:500; paint-order:stroke;
-  stroke:rgba(0,0,0,0.8); stroke-width:{label_px / 4:.1f}px; }}
-.hide-labels #overlay {{ display:none; }}
-svg.focus .ann {{ opacity:0.25; }}
-svg.focus .ann.lit {{ opacity:1; }}
+{ANNOTATION_UI_CSS}
 .panel {{ min-height:0; display:flex; flex-direction:column; }}
 .panel h2 {{ font-family:'Marcellus',serif; font-weight:400; color:var(--star);
   font-size:15px; letter-spacing:0.22em; text-align:center; margin:0 0 12px; }}
@@ -215,71 +155,51 @@ footer {{ margin-top:10px; text-align:center; color:var(--dim); font-size:9.5px;
 <div class="layout">
 <div class="stage">
   <div class="tools">
-    <button id="labels" class="btn on">LABELS ON</button>
+    <button id="annotations" class="btn on">ANNOTATIONS ON</button>
     <span class="hint">SCROLL TO ZOOM · DRAG TO PAN · DOUBLE-CLICK TO RESET</span>
   </div>
   <svg id="img-svg" viewBox="0 0 {w} {h}" role="img" aria-label="{html.escape(page_title, quote=True)}">
     <image href="{data_uri}" width="{w}" height="{h}"/>
-    <g id="overlay">{_overlay_svg(objects, w, h)}</g>
+    <g id="overlay"></g>
   </svg>
 </div>
 <aside class="panel">
   <h2>IN THIS IMAGE</h2>
   <input class="search" id="search" type="search" placeholder="Search objects…" aria-label="Search objects">
-  <p class="count" id="count">{n_obj} OBJECTS</p>
-  <div class="scroll"><ul id="cards">{_sidebar_cards(objects)}</ul></div>
+  <p class="count" id="count"></p>
+  <div class="scroll"><ul id="cards"></ul></div>
 </aside>
 </div>
 <footer>Generated by uranometria · solve: {html.escape(solved.get("solver", "ASTAP"))} · OpenNGC · Gaia DR3 · SIMBAD</footer>
 </div>
+<script type="application/json" id="ann-model">{model_json}</script>
 <script>
 {PANZOOM_JS}
+{DSO_COLOR_JS}
+{ANNOTATION_UI_JS}
 const svg = document.getElementById('img-svg');
+const wrap = document.querySelector('.wrap');
+const model = JSON.parse(document.getElementById('ann-model').textContent);
 
-const stage = document.querySelector('.stage');
-const labelsBtn = document.getElementById('labels');
-labelsBtn.addEventListener('click', () => {{
-  const on = !labelsBtn.classList.contains('on');
-  labelsBtn.classList.toggle('on', on);
-  labelsBtn.textContent = on ? 'LABELS ON' : 'LABELS OFF';
-  stage.classList.toggle('hide-labels', !on);
+const applyFilter = buildAnnotationUI({{
+  svg,
+  overlayEl: document.getElementById('overlay'),
+  listEl: document.getElementById('cards'),
+  countEl: document.getElementById('count'),
+  searchEl: document.getElementById('search'),
+  model,
+  colors: {js_color_map()},
+  labelScale: {label_scale},
 }});
 
-const anns = Array.from(document.querySelectorAll('.ann'));
-const cards = Array.from(document.querySelectorAll('#cards li'));
-const searchBox = document.getElementById('search');
-const countEl = document.getElementById('count');
-const positions = anns.map(a => [
-  parseFloat(a.style.getPropertyValue('--tx')),
-  parseFloat(a.style.getPropertyValue('--ty')),
-]);
-function inView(i) {{
-  if (!svg._vb || svg._vb[2] >= {w} - 1) return true;   // not zoomed
-  const [vx, vy, vw, vh] = svg._vb;
-  const m = 20 / ({w} / vw);                            // marker slop
-  const [x, y] = positions[i] || [0, 0];
-  return x >= vx - m && x <= vx + vw + m && y >= vy - m && y <= vy + vh + m;
-}}
-function applyFilter() {{
-  const q = searchBox.value.trim().toLowerCase();
-  const zoomed = svg._vb && svg._vb[2] < {w} - 1;
-  let shown = 0;
-  cards.forEach((li, i) => {{
-    const hit = (!q || li.textContent.toLowerCase().includes(q)) && inView(i);
-    li.style.display = hit ? '' : 'none';
-    if (hit) shown++;
-    if (anns[i]) anns[i].classList.toggle('lit', !!q && hit);
-  }});
-  svg.classList.toggle('focus', !!q);
-  countEl.textContent = shown < cards.length
-    ? `${{shown}} OF ${{cards.length}} OBJECTS${{zoomed ? ' \u00b7 IN VIEW' : ''}}`
-    : `${{cards.length}} OBJECTS`;
-}}
-searchBox.addEventListener('input', applyFilter);
-cards.forEach((li, i) => {{
-  li.addEventListener('mouseenter', () => {{ svg.classList.add('focus'); anns[i] && anns[i].classList.add('lit'); }});
-  li.addEventListener('mouseleave', applyFilter);
+const annBtn = document.getElementById('annotations');
+annBtn.addEventListener('click', () => {{
+  const on = !annBtn.classList.contains('on');
+  annBtn.classList.toggle('on', on);
+  annBtn.textContent = on ? 'ANNOTATIONS ON' : 'ANNOTATIONS OFF';
+  wrap.classList.toggle('hide-ann', !on);
 }});
+
 attachPanZoom(svg, {w}, {h}, applyFilter);
 </script>
 """

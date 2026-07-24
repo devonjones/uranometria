@@ -469,6 +469,10 @@ def test_annotation_sidecar_discovery_and_flip(tmp_path):
     assert "simbad.example/M51" in html
     assert 'id="lb-panel"' in html
     assert 'id="lb-cards"' in html
+    assert 'id="lb-search"' in html  # panel search, same as the standalone page
+    assert 'id="lb-ann"' in html and 'id="lb-expand"' in html
+    assert "buildAnnotationUI" in html  # shared annotation viewer
+    assert "svg.focus .ann" in html  # hover spotlight styles present
 
 
 def test_annotation_sidecar_raster_no_flip(tmp_path):
@@ -506,7 +510,7 @@ def test_no_sidecar_means_empty_map(tmp_path):
     html = out.read_text()
     assert 'id="lb-annotations">{}</script>' in html
     assert "attachPanZoom" in html  # shared pan/zoom present
-    assert 'id="lb-labels"' in html  # toggle exists (hidden until usable)
+    assert 'id="lb-ann"' in html  # toggle exists (hidden until usable)
 
 
 def test_annotated_page_link(tmp_path):
@@ -516,8 +520,9 @@ def test_annotated_page_link(tmp_path):
     out = tmp_path / "map.html"
     assert uranometria.generate(cfg, out, allow_online=False) == []
     html = out.read_text()
-    assert 'data-annpage="m51_page.html"' in html
-    assert "ANNOTATED" in html and 'id="lb-annpage"' in html
+    assert 'href="m51_page.html"' in html  # legend-card ANNOTATED link
+    assert "ANNOTATED" in html
+    assert "lb-annpage" not in html  # lightbox carries annotations itself now
 
 
 def test_annotated_page_auto_discovery_and_missing(tmp_path):
@@ -526,9 +531,9 @@ def test_annotated_page_auto_discovery_and_missing(tmp_path):
     cfg = {"objects": [{"id": "M31", "image": "pic.jpg"}]}
     out = tmp_path / "map.html"
     uranometria.generate(cfg, out, allow_online=False)
-    assert 'data-annpage="pic_annotated.html"' in out.read_text()
+    assert 'href="pic_annotated.html"' in out.read_text()
 
     cfg = {"objects": [{"id": "M31", "image": "pic.jpg", "annotated": "missing.html"}]}
     warnings = uranometria.generate(cfg, out, allow_online=False)
     assert any("annotated page not found" in w for w in warnings)
-    assert "data-annpage" not in out.read_text()
+    assert 'class="annlink"' not in out.read_text()  # no link rendered
