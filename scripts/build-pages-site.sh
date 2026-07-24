@@ -4,6 +4,7 @@
 #   scripts/build-pages-site.sh out/site
 set -euo pipefail
 site="${1:?usage: build-pages-site.sh OUTPUT_DIR}"
+cd "$(dirname "$0")/.."
 rm -rf "$site"
 mkdir -p "$site"
 cp -r examples "$site/examples"
@@ -15,6 +16,7 @@ uv run pdoc \
   uranometria.chart \
   uranometria.page \
   uranometria.webui \
+  uranometria.resources \
   uranometria.cli \
   uranometria.annotate \
   uranometria.annotate.model \
@@ -25,8 +27,8 @@ uv run pdoc \
   -o "$site/api"
 cat > "$site/index.html" <<'HTML'
 <!doctype html>
-<title>uranometria</title>
 <meta charset="utf-8">
+<title>uranometria</title>
 <style>body{font-family:monospace;background:#070B1B;color:#C7CEE6;padding:40px}
 a{color:#E5B958}</style>
 <h1>uranometria</h1>
