@@ -1,6 +1,7 @@
 """Assemble the full HTML page: header, hemisphere charts, legend, lightbox."""
 
 import html
+import re
 
 import json as _json
 
@@ -21,9 +22,16 @@ def _linkrow(o):
     return f'\n    <span class="linkrow">{anchors}</span>'
 
 
+def _nat_key(text):
+    """Natural sort key: M1 < M27 < M110, NGC 253 < NGC 7380."""
+    return [int(p) if p.isdigit() else p.lower() for p in re.split(r"(\d+)", text)]
+
+
 def _legend_html(objects):
     items = []
-    for i, o in enumerate(objects):
+    order = sorted(range(len(objects)), key=lambda i: _nat_key(objects[i]["disp"]))
+    for i in order:
+        o = objects[i]
         meta = o["type"] + (f" — {o['constellation']}" if o["constellation"] else "")
         common = f'<span class="common">{html.escape(o["common"])}</span>' if o["common"] else ""
         accent = accent_value(o)
@@ -276,7 +284,6 @@ svg.focus .marker.lit .halo {{ opacity:0.35; }}
 }}
 .marker image.thumb {{ display:none; }}
 svg.sky.deepzoom .marker image.thumb {{ display:block; }}
-.marker.showthumb image.thumb {{ display:block; }}
 #thumbtip {{ position:fixed; z-index:20; display:none; cursor:zoom-in;
   border:1px solid var(--equator); background:var(--deep); padding:3px;
   box-shadow:0 6px 24px rgba(0,0,0,0.6); }}
@@ -446,6 +453,17 @@ tip.addEventListener('click', () => {{
     openLightbox(mk.dataset.img, (mk.dataset.cap || '').split('|'), ANNOTATIONS[tipKey]);
   }}
 }});
+function anchorTipToMarker(key) {{
+  const mk = document.getElementById(key);
+  if (!mk) return;
+  const r = mk.getBoundingClientRect();
+  if (!r.width && !r.height && !r.left && !r.top) return; // hidden hemisphere
+  clearTimeout(tipHide);
+  tipKey = key;
+  tipImg.src = THUMBS[key];
+  tip.style.display = 'block';
+  moveTip({{ clientX: r.right + 4, clientY: r.top - 4 }});
+}}
 function moveTip(ev) {{
   lastTipEv = ev;
   const pad = 14;
@@ -471,21 +489,13 @@ if (Object.keys(THUMBS).length) {{
     el.addEventListener('mousemove', moveTip);
     el.addEventListener('mouseleave', hideTipSoon);
   }});
-  // legend cards: pin the thumb at the object's marker on the chart, so
-  // the eye goes to the map instead of chasing a cursor tooltip
+  // legend cards: show the full-size tooltip anchored at the object's
+  // marker on the chart, so the eye goes straight to the map
   document.querySelectorAll('.legend li[data-target]').forEach(el => {{
     const key = el.dataset.target;
     if (!THUMBS[key]) return;
-    el.addEventListener('mouseenter', () => {{
-      const mk = document.getElementById(key);
-      if (!mk) return;
-      ensureMarkerThumbs(mk.closest('svg'));
-      mk.classList.add('showthumb');
-    }});
-    el.addEventListener('mouseleave', () => {{
-      const mk = document.getElementById(key);
-      if (mk) mk.classList.remove('showthumb');
-    }});
+    el.addEventListener('mouseenter', () => anchorTipToMarker(key));
+    el.addEventListener('mouseleave', hideTipSoon);
   }});
 }}
 

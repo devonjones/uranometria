@@ -605,6 +605,16 @@ def test_remote_annotated_url_passthrough(tmp_path):
     assert 'href="https://example.org/m51.html"' in out.read_text()
 
 
+def test_legend_sorted_naturally(tmp_path):
+    cfg = {"objects": ["M110", "M2", "M27", "M1"]}
+    out = tmp_path / "map.html"
+    uranometria.generate(cfg, out, allow_online=False)
+    html = out.read_text()
+    legend = html.split("OBSERVING RECORD")[1]
+    positions = [legend.index(f">{d}<") for d in ("M1", "M2", "M27", "M110")]
+    assert positions == sorted(positions)  # M1 < M2 < M27 < M110, not lexicographic
+
+
 def test_object_links_auto_and_custom(tmp_path):
     cfg = {
         "objects": [
@@ -726,7 +736,8 @@ def test_thumbnails_opt_in(tmp_path):
     assert 'id="thumbtip"' in html
     assert "ensureMarkerThumbs" in html
     assert "deepzoom" in html
-    assert "showthumb" in html  # legend hover pins the thumb at the marker
+    assert "anchorTipToMarker" in html  # legend hover anchors the big tip
+    # at the object's marker on the chart
 
 
 def test_thumbnails_remote_and_broken_images(tmp_path):

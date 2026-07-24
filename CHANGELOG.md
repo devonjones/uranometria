@@ -15,8 +15,10 @@ changes, so they move fast.
   away from the markers. Capture now waits until a drag actually starts.
 - The floating hover thumbnail on map markers is clickable and opens the
   photo in the lightbox. Hovering a legend card no longer chases the
-  cursor with an image; it pins the thumbnail at the object's marker on
-  the chart, where your eye is headed anyway.
+  cursor with an image; it shows the full-size preview anchored at the
+  object's marker on the chart, where your eye is headed anyway.
+- The observing-record list sorts naturally by designation (M1 before
+  M2 before M110) instead of config order.
 
 ## 0.10.2 (July 24)
 

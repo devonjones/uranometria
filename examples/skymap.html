@@ -168,7 +168,6 @@ svg.focus .ann.lit { opacity:1; }
 }
 .marker image.thumb { display:none; }
 svg.sky.deepzoom .marker image.thumb { display:block; }
-.marker.showthumb image.thumb { display:block; }
 #thumbtip { position:fixed; z-index:20; display:none; cursor:zoom-in;
   border:1px solid var(--equator); background:var(--deep); padding:3px;
   box-shadow:0 6px 24px rgba(0,0,0,0.6); }
@@ -214,23 +213,7 @@ footer { margin-top:14px; text-align:center; color:var(--dim); font-size:10px;
   <input class="search" id="search" type="search" placeholder="Search objects…"
          aria-label="Search objects">
   <p class="count" id="count">7 OBJECTS</p>
-  <div class="scroll"><ul><li data-target="mk-0" style="--accent:#82B4F5" data-img="images/M31.jpg" data-cap="M31 — Andromeda Galaxy|Galaxy   ·   00h 43m  +41° 16′">
-  <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
-    <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
-    <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
-  <div class="obj"><span class="desig">M31 <span class="photo">PHOTO ↗</span></span><span class="common">Andromeda Galaxy</span>
-    <span class="meta">Galaxy — Andromeda</span>
-    <span class="linkrow"><a href="https://simbad.cds.unistra.fr/simbad/sim-id?Ident=M31" target="_blank" rel="noopener">SIMBAD</a><a href="https://en.wikipedia.org/wiki/Messier_31" target="_blank" rel="noopener">Wikipedia</a></span>
-    <span class="coord">00h 43m  +41° 16′</span></div>
-</li><li data-target="mk-1" style="--accent:#FFCC80" data-img="images/M45.jpg" data-cap="M45 — Pleiades|Open cluster   ·   03h 47m  +24° 06′">
-  <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
-    <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
-    <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
-  <div class="obj"><span class="desig">M45 <span class="photo">PHOTO ↗</span></span><span class="common">Pleiades</span>
-    <span class="meta">Open cluster — Taurus</span>
-    <span class="linkrow"><a href="https://simbad.cds.unistra.fr/simbad/sim-id?Ident=M45" target="_blank" rel="noopener">SIMBAD</a><a href="https://en.wikipedia.org/wiki/Messier_45" target="_blank" rel="noopener">Wikipedia</a></span>
-    <span class="coord">03h 47m  +24° 06′</span></div>
-</li><li data-target="mk-2" style="--accent:#C5CAE9" data-img="images/M1.jpg" data-cap="M1 — Crab Nebula|Supernova remnant   ·   05h 35m  +22° 01′">
+  <div class="scroll"><ul><li data-target="mk-2" style="--accent:#C5CAE9" data-img="images/M1.jpg" data-cap="M1 — Crab Nebula|Supernova remnant   ·   05h 35m  +22° 01′">
   <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
     <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
     <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
@@ -238,22 +221,6 @@ footer { margin-top:14px; text-align:center; color:var(--dim); font-size:10px;
     <span class="meta">Supernova remnant — Taurus</span>
     <span class="linkrow"><a href="https://simbad.cds.unistra.fr/simbad/sim-id?Ident=M1" target="_blank" rel="noopener">SIMBAD</a><a href="https://en.wikipedia.org/wiki/Messier_1" target="_blank" rel="noopener">Wikipedia</a></span>
     <span class="coord">05h 35m  +22° 01′</span></div>
-</li><li data-target="mk-3" style="--accent:#F48FB1" data-img="images/M42.jpg" data-cap="M42 — Great Orion Nebula|Cluster + nebula   ·   05h 35m  −05° 23′">
-  <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
-    <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
-    <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
-  <div class="obj"><span class="desig">M42 <span class="photo">PHOTO ↗</span></span><span class="common">Great Orion Nebula</span>
-    <span class="meta">Cluster + nebula — Orion</span>
-    <span class="linkrow"><a href="https://simbad.cds.unistra.fr/simbad/sim-id?Ident=M42" target="_blank" rel="noopener">SIMBAD</a><a href="https://en.wikipedia.org/wiki/Messier_42" target="_blank" rel="noopener">Wikipedia</a></span>
-    <span class="coord">05h 35m  −05° 23′</span></div>
-</li><li data-target="mk-4" style="--accent:#82B4F5" data-img="images/M51.jpg" data-cap="M51 — Whirlpool Galaxy|Galaxy   ·   13h 30m  +47° 12′">
-  <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
-    <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
-    <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
-  <div class="obj"><span class="desig">M51 <span class="photo">PHOTO ↗</span> <span class="annlink" role="button" tabindex="0">ANNOTATED</span></span><span class="common">Whirlpool Galaxy</span>
-    <span class="meta">Galaxy — Canes Venatici</span>
-    <span class="linkrow"><a href="https://simbad.cds.unistra.fr/simbad/sim-id?Ident=M51" target="_blank" rel="noopener">SIMBAD</a><a href="https://en.wikipedia.org/wiki/Messier_51" target="_blank" rel="noopener">Wikipedia</a><a href="https://www.messier.seds.org/m/m051.html" target="_blank" rel="noopener">SEDS</a></span>
-    <span class="coord">13h 30m  +47° 12′</span></div>
 </li><li data-target="mk-5" style="--accent:#80DEEA" data-img="images/M27.jpg" data-cap="M27 — Dumbbell Nebula|Planetary nebula   ·   20h 00m  +22° 43′">
   <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
     <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
@@ -262,6 +229,38 @@ footer { margin-top:14px; text-align:center; color:var(--dim); font-size:10px;
     <span class="meta">Planetary nebula — Vulpecula</span>
     <span class="linkrow"><a href="https://simbad.cds.unistra.fr/simbad/sim-id?Ident=M27" target="_blank" rel="noopener">SIMBAD</a><a href="https://en.wikipedia.org/wiki/Messier_27" target="_blank" rel="noopener">Wikipedia</a></span>
     <span class="coord">20h 00m  +22° 43′</span></div>
+</li><li data-target="mk-0" style="--accent:#82B4F5" data-img="images/M31.jpg" data-cap="M31 — Andromeda Galaxy|Galaxy   ·   00h 43m  +41° 16′">
+  <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
+    <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
+    <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
+  <div class="obj"><span class="desig">M31 <span class="photo">PHOTO ↗</span></span><span class="common">Andromeda Galaxy</span>
+    <span class="meta">Galaxy — Andromeda</span>
+    <span class="linkrow"><a href="https://simbad.cds.unistra.fr/simbad/sim-id?Ident=M31" target="_blank" rel="noopener">SIMBAD</a><a href="https://en.wikipedia.org/wiki/Messier_31" target="_blank" rel="noopener">Wikipedia</a></span>
+    <span class="coord">00h 43m  +41° 16′</span></div>
+</li><li data-target="mk-3" style="--accent:#F48FB1" data-img="images/M42.jpg" data-cap="M42 — Great Orion Nebula|Cluster + nebula   ·   05h 35m  −05° 23′">
+  <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
+    <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
+    <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
+  <div class="obj"><span class="desig">M42 <span class="photo">PHOTO ↗</span></span><span class="common">Great Orion Nebula</span>
+    <span class="meta">Cluster + nebula — Orion</span>
+    <span class="linkrow"><a href="https://simbad.cds.unistra.fr/simbad/sim-id?Ident=M42" target="_blank" rel="noopener">SIMBAD</a><a href="https://en.wikipedia.org/wiki/Messier_42" target="_blank" rel="noopener">Wikipedia</a></span>
+    <span class="coord">05h 35m  −05° 23′</span></div>
+</li><li data-target="mk-1" style="--accent:#FFCC80" data-img="images/M45.jpg" data-cap="M45 — Pleiades|Open cluster   ·   03h 47m  +24° 06′">
+  <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
+    <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
+    <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
+  <div class="obj"><span class="desig">M45 <span class="photo">PHOTO ↗</span></span><span class="common">Pleiades</span>
+    <span class="meta">Open cluster — Taurus</span>
+    <span class="linkrow"><a href="https://simbad.cds.unistra.fr/simbad/sim-id?Ident=M45" target="_blank" rel="noopener">SIMBAD</a><a href="https://en.wikipedia.org/wiki/Messier_45" target="_blank" rel="noopener">Wikipedia</a></span>
+    <span class="coord">03h 47m  +24° 06′</span></div>
+</li><li data-target="mk-4" style="--accent:#82B4F5" data-img="images/M51.jpg" data-cap="M51 — Whirlpool Galaxy|Galaxy   ·   13h 30m  +47° 12′">
+  <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
+    <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
+    <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
+  <div class="obj"><span class="desig">M51 <span class="photo">PHOTO ↗</span> <span class="annlink" role="button" tabindex="0">ANNOTATED</span></span><span class="common">Whirlpool Galaxy</span>
+    <span class="meta">Galaxy — Canes Venatici</span>
+    <span class="linkrow"><a href="https://simbad.cds.unistra.fr/simbad/sim-id?Ident=M51" target="_blank" rel="noopener">SIMBAD</a><a href="https://en.wikipedia.org/wiki/Messier_51" target="_blank" rel="noopener">Wikipedia</a><a href="https://www.messier.seds.org/m/m051.html" target="_blank" rel="noopener">SEDS</a></span>
+    <span class="coord">13h 30m  +47° 12′</span></div>
 </li><li data-target="mk-6" style="--accent:#F48FB1" data-img="images/Sh2-142.jpg" data-cap="NGC 7380 — Wizard Nebula · Sh2-142|Emission nebula + cluster   ·   22h 48m  +58° 04′">
   <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
     <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
@@ -489,6 +488,17 @@ tip.addEventListener('click', () => {
     openLightbox(mk.dataset.img, (mk.dataset.cap || '').split('|'), ANNOTATIONS[tipKey]);
   }
 });
+function anchorTipToMarker(key) {
+  const mk = document.getElementById(key);
+  if (!mk) return;
+  const r = mk.getBoundingClientRect();
+  if (!r.width && !r.height && !r.left && !r.top) return; // hidden hemisphere
+  clearTimeout(tipHide);
+  tipKey = key;
+  tipImg.src = THUMBS[key];
+  tip.style.display = 'block';
+  moveTip({ clientX: r.right + 4, clientY: r.top - 4 });
+}
 function moveTip(ev) {
   lastTipEv = ev;
   const pad = 14;
@@ -514,21 +524,13 @@ if (Object.keys(THUMBS).length) {
     el.addEventListener('mousemove', moveTip);
     el.addEventListener('mouseleave', hideTipSoon);
   });
-  // legend cards: pin the thumb at the object's marker on the chart, so
-  // the eye goes to the map instead of chasing a cursor tooltip
+  // legend cards: show the full-size tooltip anchored at the object's
+  // marker on the chart, so the eye goes straight to the map
   document.querySelectorAll('.legend li[data-target]').forEach(el => {
     const key = el.dataset.target;
     if (!THUMBS[key]) return;
-    el.addEventListener('mouseenter', () => {
-      const mk = document.getElementById(key);
-      if (!mk) return;
-      ensureMarkerThumbs(mk.closest('svg'));
-      mk.classList.add('showthumb');
-    });
-    el.addEventListener('mouseleave', () => {
-      const mk = document.getElementById(key);
-      if (mk) mk.classList.remove('showthumb');
-    });
+    el.addEventListener('mouseenter', () => anchorTipToMarker(key));
+    el.addEventListener('mouseleave', hideTipSoon);
   });
 }
 
