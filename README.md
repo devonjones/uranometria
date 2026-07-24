@@ -255,7 +255,10 @@ Full documentation lives in [`docs/`](docs/): [sky charts](docs/charts.md),
 the [chart config reference](docs/chart-config.md),
 [annotating images](docs/annotate.md), and the
 [annotation model](docs/annotation-model.md) with its edit-and-re-render
-workflow. Version history is in the [changelog](CHANGELOG.md).
+workflow. Generated API documentation lives at
+[devonjones.github.io/uranometria/api](https://devonjones.github.io/uranometria/api/),
+rebuilt from docstrings on every push to master. Version history is in the
+[changelog](CHANGELOG.md).
 
 ## Data & licenses
 

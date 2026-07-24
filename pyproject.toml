@@ -34,6 +34,7 @@ dev = [
     "astroquery>=0.4.11",
     "black>=26.5.1",
     "matplotlib>=3.11.1",
+    "pdoc>=16.0.0",
     "pillow>=12.3.0",
     "pytest>=8",
 ]
