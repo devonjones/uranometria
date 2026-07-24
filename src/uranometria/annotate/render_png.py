@@ -277,15 +277,18 @@ def render_png(model, image_path, output, *, title=None, max_width=2000):
         arm = 0.045 * min(W, H)
         ox, oy = max(1.6 * arm, 0.04 * W), 0.10 * H + 1.6 * arm
         if mirrored_display(north, east):
+            # opposite the arms' bisector: no arm direction can collide
+            tx, ty = -(north[0] + east[0]), -(north[1] + east[1])
+            norm = math.hypot(tx, ty) or 1.0
             ax.text(
-                ox,
-                oy + arm * 1.75,
+                ox + tx / norm * arm * 1.5,
+                oy + ty / norm * arm * 1.5,
                 "MIRRORED",
                 color="#FFD54F",
                 fontsize=9,
                 family="monospace",
                 ha="center",
-                va="top",
+                va="center",
                 zorder=10,
             )
         for vec, lab in ((north, "N"), (east, "E")):

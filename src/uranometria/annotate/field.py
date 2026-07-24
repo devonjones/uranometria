@@ -72,32 +72,44 @@ def dsos_in_field(center_ra, center_dec, radius_deg, catalog=None):
 # position collapse above cannot see they are one object.
 _SH_MERGE_MAX_SEP_DEG = 12.0 / 60.0
 
+# only these OpenNGC types can be the NGC/IC face of a Sharpless object;
+# dark and planetary nebulae are physically different things that merely
+# sit nearby (B33 is 3.9' from Sh2-277 and is not it)
+_SH_HOST_TYPES = {"Nebula", "Emission nebula", "H II region"}
+
 
 def _merge_sharpless_duplicates(hits):
-    """Fold a Sharpless entry into a nearby pure-nebula NGC/IC/M entry: same
-    object, two catalogs. Cluster+nebula complexes (NGC 7380 / Sh2-142) keep
-    both entries — those are physically distinct centroids worth labeling."""
-    merged = []
-    for h in hits:
-        if not h["disp"].startswith("Sh2-"):
-            merged.append(h)
+    """Fold a Sharpless entry into its pure-nebula NGC/IC/M counterpart:
+    same object, two catalogs. Matching is one-to-one by proximity — an
+    NGC/IC object carries at most one Sharpless identity, so in a crowded
+    complex (Sh2-254..258 around IC 2162) only the nearest pair merges and
+    the rest stay their own objects. Cluster+nebula complexes (NGC 7380 /
+    Sh2-142) keep both entries: physically distinct centroids worth
+    labeling."""
+    merged = [h for h in hits if not h["disp"].startswith("Sh2-")]
+    sharpless = [h for h in hits if h["disp"].startswith("Sh2-")]
+    hosts = [m for m in merged if m["type"] in _SH_HOST_TYPES]
+    pairs = []
+    for h in sharpless:
+        for m in hosts:
+            d = sep_deg(h["ra"], h["dec"], m["ra"], m["dec"])
+            if d <= _SH_MERGE_MAX_SEP_DEG:
+                pairs.append((d, h, m))
+    pairs.sort(key=lambda p: p[0])
+    taken_sh, taken_host = set(), set()
+    for d, h, m in pairs:
+        if id(h) in taken_sh or id(m) in taken_host:
             continue
-        host = None
-        for m in merged:
-            t = (m["type"] or "").lower()
-            if "nebula" not in t or "cluster" in t:
-                continue
-            if sep_deg(h["ra"], h["dec"], m["ra"], m["dec"]) <= _SH_MERGE_MAX_SEP_DEG:
-                host = m
-                break
-        if host is None:
-            merged.append(h)
-            continue
-        host["aliases"] = [a for a in host["aliases"] if a != h["disp"]] + [h["disp"]]
-        # the Sharpless side is the more specific classification
-        host["type"] = h["type"]
-        host["z"] = host["z"] if host["z"] is not None else h["z"]
-    return merged
+        taken_sh.add(id(h))
+        taken_host.add(id(m))
+        m["aliases"] = [a for a in m["aliases"] if a != h["disp"]] + [h["disp"]]
+        if m["type"] == "Nebula":
+            # generic OpenNGC "Neb" gains the Sharpless classification;
+            # already-specific types (H II region) are kept
+            m["type"] = h["type"]
+        m["z"] = m["z"] if m["z"] is not None else h["z"]
+    merged.extend(h for h in sharpless if id(h) not in taken_sh)
+    return sorted(merged, key=lambda r: r["sep_deg"])
 
 
 def stars_in_field(center_ra, center_dec, radius_deg, *, mag_limit=12.5, max_stars=100):

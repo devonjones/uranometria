@@ -128,11 +128,15 @@ key when the model lives elsewhere.
 
 - **Deep-sky objects**: everything from the bundled OpenNGC + Sharpless
   catalogs that lands in the frame, with aliases collapsed (M51 and NGC 5194
-  become one entry listing both). A Sharpless entry within 12 arcminutes of
-  a pure-nebula NGC/IC entry is folded in as an alias too, since large
-  nebulae carry different centers in the two catalogs (IC 405 and Sh2-229
-  are one object, 6.8 arcminutes apart on paper); cluster-plus-nebula
-  complexes like NGC 7380 / Sh2-142 keep both entries on purpose. Distances
+  become one entry listing both). A Sharpless entry is folded into its
+  NGC/IC counterpart as an alias too, since large nebulae carry different
+  centers in the two catalogs (IC 405 and Sh2-229 are one object, 6.8
+  arcminutes apart on paper). Matching is one-to-one by proximity within 12
+  arcminutes, and only plain nebula, emission nebula, and H II region
+  entries can host: in the Sh2-254..258 complex only IC 2162 / Sh2-255
+  merge, dark and planetary nebulae never absorb a Sharpless neighbor, and
+  cluster-plus-nebula complexes like NGC 7380 / Sh2-142 keep both entries
+  on purpose. Distances
   where available: Hubble-flow estimates from catalog redshifts for
   galaxies, SIMBAD measured distances for nebulae and clusters, with alias
   designations tried when the primary comes up empty.

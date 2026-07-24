@@ -329,6 +329,8 @@ def _tiny_model(w=80, h=60):
         "image_size": [w, h],
         "solved": {
             "pixel_frame": "fits0",
+            # rendered onto a raster (cross-frame flip), this CD is standard
+            # chirality; negate its first column to exercise the MIRRORED tag
             "cd": [[-0.00033, 0.00001], [0.00001, 0.00033]],
             "center_ra": 202.5,
             "center_dec": 47.2,
@@ -668,6 +670,161 @@ def test_sharpless_duplicate_merged_into_ic():
     ic405 = next(h for h in hits if h["disp"] == "IC 405")
     assert "Sh2-229" in ic405["aliases"]
     assert ic405["type"] == "Emission nebula (H II)"  # the more specific class
+
+
+def test_sharpless_merge_is_order_independent():
+    from uranometria.annotate.field import dsos_in_field
+
+    # frame centered on Sh2-229's cataloged position: the Sharpless entry is
+    # now nearest the center, and the fold must still find its IC host
+    hits = dsos_in_field(79.079116, 34.463366, 0.75)
+    disps = [h["disp"] for h in hits]
+    assert "Sh2-229" not in disps
+    ic405 = next(h for h in hits if h["disp"] == "IC 405")
+    assert "Sh2-229" in ic405["aliases"]
+
+
+def test_sharpless_merge_respects_radius_and_z():
+    from uranometria.annotate.field import _merge_sharpless_duplicates
+
+    def hit(disp, ra, dec, type_, z=None, sep=0.1):
+        return {
+            "disp": disp,
+            "ra": ra,
+            "dec": dec,
+            "type": type_,
+            "z": z,
+            "aliases": [],
+            "sep_deg": sep,
+        }
+
+    # host 30' away: outside the 12' radius, both stay standalone
+    far = _merge_sharpless_duplicates(
+        [hit("IC 1", 100.0, 30.0, "Nebula"), hit("Sh2-1", 100.0, 30.5, "Emission nebula (H II)")]
+    )
+    assert sorted(h["disp"] for h in far) == ["IC 1", "Sh2-1"]
+    assert all(h["aliases"] == [] for h in far)
+
+    # in radius: merged, and the host inherits z only when it has none
+    near = _merge_sharpless_duplicates(
+        [
+            hit("IC 1", 100.0, 30.0, "Nebula", z=None),
+            hit("Sh2-1", 100.0, 30.1, "Emission nebula (H II)", z=0.001),
+        ]
+    )
+    assert len(near) == 1 and near[0]["z"] == 0.001
+
+    kept = _merge_sharpless_duplicates(
+        [
+            hit("IC 1", 100.0, 30.0, "Nebula", z=0.002),
+            hit("Sh2-1", 100.0, 30.1, "Emission nebula (H II)", z=0.001),
+        ]
+    )
+    assert kept[0]["z"] == 0.002
+
+
+def test_alias_retry_skipped_when_primary_succeeds(monkeypatch, tmp_path):
+    import uranometria.annotate.model as model
+
+    monkeypatch.setattr(model, "solve", lambda image, **kw: dict(M51_SOLUTION))
+    monkeypatch.setattr(model, "_image_size", lambda image: (3872, 2192))
+    monkeypatch.setattr(model, "named_bright_stars", lambda *a, **k: [])
+    monkeypatch.setattr(model, "stars_in_field", lambda *a, **k: [])
+    monkeypatch.setattr(
+        model,
+        "dsos_in_field",
+        lambda *a, **k: [
+            {
+                "disp": "IC 405",
+                "common": "",
+                "type": "Emission nebula (H II)",
+                "constellation": "",
+                "ra": 202.5,
+                "dec": 47.2,
+                "z": None,
+                "aliases": ["Sh2-229"],
+                "sep_deg": 0.0,
+            }
+        ],
+    )
+    calls = []
+
+    def fake_distances(desigs):
+        calls.append(list(desigs))
+        return {"IC 405": 2381}
+
+    monkeypatch.setattr(model, "dso_distances", fake_distances)
+    m = model.build_model(tmp_path / "f.fit", allow_online=True)
+    dso = next(o for o in m["objects"] if o["kind"] == "dso")
+    assert dso["dist_ly"] == 2381
+    assert calls == [["IC 405"]]  # no alias retry when the primary answered
+
+
+def test_mirrored_tag_drawn_only_for_mirrored_cd(tmp_path):
+    import numpy as np
+    from PIL import Image
+
+    from uranometria.annotate.render_png import render_png
+
+    def amber_pixels(path):
+        arr = np.asarray(Image.open(path).convert("RGB")).astype(int)
+        target = np.array([255, 213, 79])  # the MIRRORED tag color
+        return int((np.abs(arr - target).sum(axis=-1) < 90).sum())
+
+    img = tmp_path / "t.jpg"
+    Image.new("RGB", (80, 60), (5, 5, 20)).save(img)
+
+    m = _tiny_model()  # rendered cross-frame, the fixture CD is standard
+    m["objects"] = [m["objects"][0]]  # DSO only: no amber star circles
+    out_plain = tmp_path / "plain.png"
+    render_png(m, img, out_plain)
+
+    m2 = _tiny_model()
+    m2["objects"] = [m2["objects"][0]]
+    (a, b), (c, d) = m2["solved"]["cd"]
+    m2["solved"]["cd"] = [[-a, b], [-c, d]]  # negate first column: mirrored
+    out_mirrored = tmp_path / "mirrored.png"
+    render_png(m2, img, out_mirrored)
+
+    assert amber_pixels(out_mirrored) > amber_pixels(out_plain)
+    assert amber_pixels(out_plain) == 0  # no tag on a standard frame
+
+
+def test_sharpless_complex_merges_one_to_one():
+    from uranometria.annotate.field import dsos_in_field
+
+    # Sh2-254..258 cluster around IC 2162: only the nearest pair merges
+    # (IC 2162 is Sh2-255); the other four are distinct H II regions
+    hits = dsos_in_field(93.6, 17.99, 0.6)
+    ic = next(h for h in hits if h["disp"] == "IC 2162")
+    assert ic["aliases"] == ["Sh2-255"]
+    disps = [h["disp"] for h in hits]
+    for stand_alone in ("Sh2-254", "Sh2-256", "Sh2-257", "Sh2-258"):
+        assert stand_alone in disps
+
+
+def test_sharpless_never_hosts_sharpless():
+    from uranometria.annotate.field import dsos_in_field
+
+    # Cepheus Sh2-147..153 complex: no pure-nebula NGC/IC host in range, so
+    # every Sharpless entry stays its own object
+    hits = dsos_in_field(344.0, 59.05, 0.6)
+    for h in hits:
+        if h["disp"].startswith("Sh2-"):
+            assert not any(a.startswith("Sh2-") for a in h["aliases"])
+
+
+def test_dark_nebula_never_hosts_sharpless():
+    from uranometria.annotate.field import dsos_in_field
+
+    # Horsehead field: Sh2-277 belongs to IC 434 (H II region), not to the
+    # dark nebula B33 sitting 3.9' away
+    hits = dsos_in_field(85.25, -2.45, 0.6)
+    ic434 = next(h for h in hits if h["disp"] == "IC 434")
+    b33 = next(h for h in hits if h["disp"] == "B33")
+    assert "Sh2-277" in ic434["aliases"]
+    assert ic434["type"] == "H II region"  # specific type not overwritten
+    assert b33["aliases"] == [] and b33["type"] == "Dark nebula"
 
 
 def test_cluster_nebula_pair_stays_separate():
