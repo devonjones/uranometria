@@ -602,6 +602,7 @@ document.querySelectorAll('[data-img]').forEach(el => {{
     openLightbox(el.dataset.img, cap, ANNOTATIONS[key], !!annEl);
   }});
   el.addEventListener('keydown', e => {{
+    if (e.target.closest && e.target.closest('a[href]')) return;
     if (e.key !== 'Enter' || !e.target.classList || !e.target.classList.contains('annlink')) return;
     const cap = (el.dataset.cap || '').split('|');
     const key = el.id || el.dataset.target;

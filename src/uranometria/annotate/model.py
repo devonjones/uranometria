@@ -48,19 +48,9 @@ def _image_size(image):
 
 
 def _links(designation, common=None):
-    import urllib.parse
+    from ..catalog import object_links
 
-    links = {
-        "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident="
-        + urllib.parse.quote_plus(designation)
-    }
-    if designation.startswith("M") and designation[1:].isdigit():
-        links["wikipedia"] = f"https://en.wikipedia.org/wiki/Messier_{designation[1:]}"
-    elif common:
-        links["wikipedia"] = "https://en.wikipedia.org/wiki/" + urllib.parse.quote(
-            common.replace(" ", "_"), safe="_()'-,."
-        )
-    return links
+    return {label.lower(): url for label, url in object_links(designation, common)}
 
 
 def _harmonize_pair_distances(objects):

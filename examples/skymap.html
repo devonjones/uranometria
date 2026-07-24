@@ -268,7 +268,7 @@ footer { margin-top:14px; text-align:center; color:var(--dim); font-size:10px;
     <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
   <div class="obj"><span class="desig">NGC 7380 <span class="photo">PHOTO ↗</span></span><span class="common">Wizard Nebula · Sh2-142</span>
     <span class="meta">Emission nebula + cluster — Cepheus</span>
-    <span class="linkrow"><a href="https://simbad.cds.unistra.fr/simbad/sim-id?Ident=NGC+7380" target="_blank" rel="noopener">SIMBAD</a><a href="https://en.wikipedia.org/wiki/Wizard_Nebula_%C2%B7_Sh2-142" target="_blank" rel="noopener">Wikipedia</a></span>
+    <span class="linkrow"><a href="https://simbad.cds.unistra.fr/simbad/sim-id?Ident=NGC+7380" target="_blank" rel="noopener">SIMBAD</a><a href="https://en.wikipedia.org/wiki/Wizard_Nebula" target="_blank" rel="noopener">Wikipedia</a></span>
     <span class="coord">22h 48m  +58° 04′</span></div>
 </li></ul></div>
 </aside>
@@ -777,6 +777,7 @@ document.querySelectorAll('[data-img]').forEach(el => {
     openLightbox(el.dataset.img, cap, ANNOTATIONS[key], !!annEl);
   });
   el.addEventListener('keydown', e => {
+    if (e.target.closest && e.target.closest('a[href]')) return;
     if (e.key !== 'Enter' || !e.target.classList || !e.target.classList.contains('annlink')) return;
     const cap = (el.dataset.cap || '').split('|');
     const key = el.id || el.dataset.target;

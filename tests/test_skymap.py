@@ -638,6 +638,42 @@ def test_object_links_auto_and_custom(tmp_path):
     assert "https://en.wikipedia.org/wiki/_" not in html
 
 
+def test_object_links_common_name_and_dot_designation(tmp_path):
+    cfg = {
+        "objects": [
+            {
+                "label": "NGC 7380",
+                "name": "Wizard Nebula \u00b7 Sh2-142",
+                "type": "Emission nebula",
+                "ra": 341.8,
+                "dec": 58.1,
+            }
+        ]
+    }
+    out = tmp_path / "map.html"
+    assert uranometria.generate(cfg, out, allow_online=False) == []
+    html = out.read_text()
+    # the alt designation never belongs in the article guess
+    assert "https://en.wikipedia.org/wiki/Wizard_Nebula" in html
+    assert "Sh2-142" not in html.split("wiki/")[1][:40]
+
+
+def test_object_links_scalar_config_warns(tmp_path):
+    cfg = {"objects": [{"id": "M31", "links": "https://example.org"}]}
+    out = tmp_path / "map.html"
+    warnings = uranometria.generate(cfg, out, allow_online=False)
+    assert any("must be a mapping or a list" in w for w in warnings)
+
+
+def test_object_link_href_quote_escaped(tmp_path):
+    cfg = {"objects": [{"id": "M31", "links": {"x": 'https://example.org/"onmouseover="a'}}]}
+    out = tmp_path / "map.html"
+    uranometria.generate(cfg, out, allow_online=False)
+    html = out.read_text()
+    assert "https://example.org/&quot;onmouseover=&quot;a" in html
+    assert '" onmouseover=' not in html
+
+
 def test_object_links_url_quoting_and_scheme_case(tmp_path):
     cfg = {
         "objects": [

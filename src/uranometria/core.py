@@ -27,7 +27,7 @@ import os
 import re
 import urllib.parse
 
-from .catalog import Catalog, fmt_coord, parse_angle, sesame
+from .catalog import Catalog, fmt_coord, parse_angle, sesame, object_links
 from .page import build_page
 
 
@@ -132,26 +132,7 @@ def resolve_image(url, base_dir):
 
 
 def _object_links(disp, common):
-    """(label, url) pairs every chart object gets for free: SIMBAD always,
-    Wikipedia when the article name is a safe bet. Mirrors the annotated
-    page's link policy."""
-    links = [
-        (
-            "SIMBAD",
-            "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=" + urllib.parse.quote_plus(disp),
-        )
-    ]
-    if disp.startswith("M") and disp[1:].isdigit():
-        links.append(("Wikipedia", f"https://en.wikipedia.org/wiki/Messier_{disp[1:]}"))
-    elif common:
-        links.append(
-            (
-                "Wikipedia",
-                "https://en.wikipedia.org/wiki/"
-                + urllib.parse.quote(common.replace(" ", "_"), safe="_()'-,."),
-            )
-        )
-    return links
+    return object_links(disp, common)
 
 
 def _custom_links(entry, disp, warnings):
