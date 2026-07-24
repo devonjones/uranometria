@@ -22,6 +22,7 @@ subtitle: Seven deep-sky objects · Seestar S50 · Epoch J2000
 # mag_limit: 5.0        # faintest stars drawn
 # show_ecliptic: true
 # mirror: false         # true for the mirrored (celestial-globe) orientation
+thumbnails: true        # hover/deep-zoom photo thumbs (opt-in; needs Pillow)
 # Per-object colors below reuse the annotation palette (webui.py), so the
 # chart legend and annotated-image legends share one color language:
 # galaxies #82B4F5, emission nebulae #F48FB1, planetaries #80DEEA,
