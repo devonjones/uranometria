@@ -130,6 +130,28 @@ def resolve_image(url, base_dir):
     return urllib.parse.quote(path), None
 
 
+def _thumbnail(href, base_dir, size=112):
+    """Small JPEG data URI for a local image href, for marker/hover thumbs.
+    Remote URLs return None (nothing is fetched at build time)."""
+    if not href or re.match(r"https?://", href):
+        return None
+    path = href[7:] if href.startswith("file://") else href
+    path = urllib.parse.unquote(path)
+    if not os.path.isabs(path):
+        path = os.path.join(base_dir, path)
+    import base64
+    import io
+
+    from PIL import Image
+
+    with Image.open(path) as im:
+        im = im.convert("RGB")
+        im.thumbnail((size, size))
+        buf = io.BytesIO()
+        im.save(buf, format="JPEG", quality=70)
+    return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
+
+
 def _annotation_sidecar(o, base_dir):
     """Load and normalize an annotation model for an object's photo: the
     explicit `annotations:` path, or `<image>.annotations.json` beside the
@@ -250,6 +272,7 @@ def render(config, *, image_base=None, allow_online=True):
     objects, warnings = resolve_objects(entries, allow_online=allow_online)
     if not objects:
         raise SkymapError("no objects could be resolved")
+    thumbs_on = bool(cfg.get("thumbnails", False))
 
     for o in objects:
         if not o.get("image"):
@@ -273,6 +296,16 @@ def render(config, *, image_base=None, allow_online=True):
             o["href"] = href
             name = f" — {o['common']}" if o["common"] else ""
             o["caption"] = f"{o['disp']}{name}|{o['type']}   ·   {o['coord']}"
+            if thumbs_on:
+                try:
+                    thumb = _thumbnail(href, image_base or "")
+                    if thumb:
+                        o["thumb"] = thumb
+                except ImportError:
+                    warnings.append("thumbnails: true needs Pillow (pip install pillow) — skipped")
+                    thumbs_on = False
+                except OSError as err:
+                    warnings.append(f"{o['disp']}: thumbnail failed ({err})")
             try:
                 o["annotation"] = _annotation_sidecar(o, image_base or "")
             except (OSError, ValueError, KeyError, TypeError) as err:

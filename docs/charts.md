@@ -51,6 +51,9 @@ The generated page is interactive:
   type, or constellation, and dims everything else on the chart.
 - **Zoom filtering**: when you zoom in, the sidebar narrows to the objects in
   the visible region (the count shows "N OF M OBJECTS · IN VIEW").
+- **Thumbnails** (`thumbnails: true` in the config): hovering a marker or
+  legend card floats a small preview of the object's photo by the cursor,
+  and zooming past 4x pins it beside the marker.
 - **Photos**: objects with an `image:` in the config get a "PHOTO" tag; click
   the marker or the card to open the photo in a lightbox. The photo zooms and
   pans like the chart (wheel, drag, double-click to reset); clicking the

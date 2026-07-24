@@ -605,6 +605,46 @@ def test_remote_annotated_url_passthrough(tmp_path):
     assert 'href="https://example.org/m51.html"' in out.read_text()
 
 
+def test_thumbnails_opt_in(tmp_path):
+    from PIL import Image
+
+    Image.new("RGB", (400, 300), (30, 10, 60)).save(tmp_path / "pic.jpg")
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg"}]}
+    out = tmp_path / "map.html"
+
+    # default: off — the map is empty and no thumb data URI is embedded
+    uranometria.generate(cfg, out, allow_online=False)
+    html = out.read_text()
+    assert 'id="chart-thumbs">{}</script>' in html
+
+    # opt-in: thumb embedded, tooltip and deep-zoom hooks present
+    cfg["thumbnails"] = True
+    assert uranometria.generate(cfg, out, allow_online=False) == []
+    html = out.read_text()
+    start = html.index('id="chart-thumbs">')
+    payload = html[start : html.index("</script>", start)]
+    assert '"mk-0": "data:image/jpeg;base64,' in payload
+    assert 'id="thumbtip"' in html
+    assert "ensureMarkerThumbs" in html
+    assert "deepzoom" in html
+
+
+def test_thumbnails_remote_and_broken_images(tmp_path):
+    (tmp_path / "bad.jpg").write_bytes(b"not a jpeg")
+    cfg = {
+        "objects": [
+            {"id": "M31", "image": "https://example.org/far.jpg"},
+            {"id": "M51", "image": "bad.jpg"},
+        ],
+        "thumbnails": True,
+    }
+    out = tmp_path / "map.html"
+    warnings = uranometria.generate(cfg, out, allow_online=False)
+    assert any("thumbnail failed" in w for w in warnings)  # bad.jpg warns
+    html = out.read_text()
+    assert 'id="chart-thumbs">{}</script>' in html  # remote skipped silently
+
+
 def test_no_sidecar_means_empty_map(tmp_path):
     (tmp_path / "pic.jpg").write_bytes(b"x")
     cfg = {"objects": [{"id": "M31", "image": "pic.jpg"}]}

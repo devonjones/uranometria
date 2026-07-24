@@ -87,6 +87,8 @@ def build_page(cfg, objects):
         return asset_text(fn + ".b64")
 
     annotations = {f"mk-{i}": o["annotation"] for i, o in enumerate(objects) if o.get("annotation")}
+    thumbs = {f"mk-{i}": o["thumb"] for i, o in enumerate(objects) if o.get("thumb")}
+    thumbs_json = _json.dumps(thumbs, allow_nan=False).replace("<", "\\u003c")
     # </script> can never appear inside the JSON payload
     # \u003c-escape every "<" so no payload string can toy with the HTML
     # script-data parser states (e.g. "<!--<script" double-escape tricks)
@@ -257,6 +259,12 @@ svg.focus .marker.lit .halo {{ opacity:0.35; }}
   .lb-stage {{ flex-direction:column; overflow-y:auto; max-height:94vh; }}
   #lb-panel {{ width:auto; max-height:30vh; }}
 }}
+.marker image.thumb {{ display:none; }}
+svg.sky.deepzoom .marker image.thumb {{ display:block; }}
+#thumbtip {{ position:fixed; z-index:20; pointer-events:none; display:none;
+  border:1px solid var(--equator); background:var(--deep); padding:3px;
+  box-shadow:0 6px 24px rgba(0,0,0,0.6); }}
+#thumbtip img {{ display:block; width:112px; height:auto; }}
 .lightbox figcaption {{ text-align:center; }}
 .lightbox .cap-name {{ font-family:'Marcellus',serif; color:var(--star); font-size:18px;
   letter-spacing:0.08em; }}
@@ -308,6 +316,8 @@ footer {{ margin-top:14px; text-align:center; color:var(--dim); font-size:10px;
   </div>
 </div>
 <script type="application/json" id="lb-annotations">{annotations_json}</script>
+<script type="application/json" id="chart-thumbs">{thumbs_json}</script>
+<div id="thumbtip"><img alt=""></div>
 </div>
 <script>
 // ---- filtering: search text AND current zoom viewport ----------------
@@ -378,8 +388,59 @@ cards.forEach(c => {{
 // ---- pan & zoom (shared) ---------------------------------------------
 {panzoom_js}
 {dso_color_js}
+// ---- thumbnails: deep-zoom marker thumbs + hover tooltip (opt-in) -----
+const THUMBS = JSON.parse(document.getElementById('chart-thumbs').textContent);
+const DEEP_ZOOM = 4;
+
+function ensureMarkerThumbs(svg) {{
+  if (svg._thumbed) return;
+  svg._thumbed = true;
+  svg.querySelectorAll('.marker').forEach(m => {{
+    const t = THUMBS[m.id];
+    if (!t) return;
+    const im = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+    im.setAttribute('href', t);
+    im.setAttribute('x', 12);
+    im.setAttribute('y', -68);
+    im.setAttribute('width', 56);
+    im.setAttribute('height', 56);
+    im.setAttribute('class', 'thumb');
+    m.appendChild(im);
+  }});
+}}
+
+const tip = document.getElementById('thumbtip');
+const tipImg = tip.querySelector('img');
+function moveTip(ev) {{
+  const pad = 14;
+  const r = tip.getBoundingClientRect();
+  let x = ev.clientX + pad, y = ev.clientY + pad;
+  if (x + r.width > innerWidth - 4) x = ev.clientX - r.width - pad;
+  if (y + r.height > innerHeight - 4) y = ev.clientY - r.height - pad;
+  tip.style.left = x + 'px';
+  tip.style.top = y + 'px';
+}}
+if (Object.keys(THUMBS).length) {{
+  document.querySelectorAll('.marker, .legend li[data-target]').forEach(el => {{
+    const key = el.id || el.dataset.target;
+    if (!THUMBS[key]) return;
+    el.addEventListener('mouseenter', ev => {{
+      tipImg.src = THUMBS[key];
+      tip.style.display = 'block';
+      moveTip(ev);
+    }});
+    el.addEventListener('mousemove', moveTip);
+    el.addEventListener('mouseleave', () => {{ tip.style.display = 'none'; }});
+  }});
+}}
+
 document.querySelectorAll('svg.sky').forEach(svg => {{
-  attachPanZoom(svg, 1000, 1000, applyFilter);
+  attachPanZoom(svg, 1000, 1000, vb => {{
+    const deep = 1000 / vb[2] >= DEEP_ZOOM;
+    if (deep) ensureMarkerThumbs(svg);
+    svg.classList.toggle('deepzoom', deep);
+    applyFilter();
+  }});
 }});
 
 // ---- lightbox: zoom/pan image, optional annotation overlay -------------

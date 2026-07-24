@@ -3,6 +3,15 @@
 All dates 2026. Versions bump whenever behavior visible in the output
 changes, so they move fast.
 
+## 0.10.0 (July 24)
+
+- Photo thumbnails on the chart, opt-in with `thumbnails: true`. Hovering
+  a marker or a legend card floats a small preview by the cursor, and
+  zooming a disc past 4x pins the thumb beside the marker. Thumbs are
+  built with Pillow at generation time and embedded as data URIs, so the
+  page stays self-contained; remote images are never fetched and simply
+  go without.
+
 ## 0.9.1 (July 24)
 
 - Dragging to pan no longer selects the chart text: the pan/zoom surfaces
