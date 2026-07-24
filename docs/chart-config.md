@@ -143,9 +143,10 @@ overlay instead of drawing circles in the wrong place.
 overlay labels drawn in the lightbox.
 
 `annotated:` links the object to its interactive annotated page (built with
-`render --html`), shown as an ANNOTATED link on the legend card. With the
-model embedded via `annotations:` the lightbox already carries the full
-viewer, so this link is optional. Without the key, a sibling file named
+`render --html`). When the object has an embedded annotation model, the
+legend card's ANNOTATED tag opens the lightbox in annotation mode instead
+and the external link is not emitted; the link is used only for objects
+without a model. Without the key, a sibling file named
 `<image stem>_annotated.html` is picked up automatically. This pairs well
 with keeping the pretty hero as `image:` while the interactive page carries
 the labeled version.

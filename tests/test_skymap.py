@@ -470,6 +470,9 @@ def test_annotation_sidecar_discovery_and_flip(tmp_path):
     assert 'id="lb-panel"' in html
     assert 'id="lb-cards"' in html
     assert 'id="lb-search"' in html  # panel search, same as the standalone page
+    # embedded model: the legend ANNOTATED tag opens the lightbox in
+    # annotation mode instead of linking out
+    assert '<span class="annlink" role="button"' in html
     assert 'id="lb-ann"' in html and 'id="lb-expand"' in html
     assert "buildAnnotationUI" in html  # shared annotation viewer
     assert "svg.focus .ann" in html  # hover spotlight styles present
@@ -520,9 +523,24 @@ def test_annotated_page_link(tmp_path):
     out = tmp_path / "map.html"
     assert uranometria.generate(cfg, out, allow_online=False) == []
     html = out.read_text()
-    assert 'href="m51_page.html"' in html  # legend-card ANNOTATED link
+    # no embedded model here, so the external page is still the best we have
+    assert 'href="m51_page.html"' in html
     assert "ANNOTATED" in html
     assert "lb-annpage" not in html  # lightbox carries annotations itself now
+
+
+def test_annotated_link_prefers_embedded_viewer(tmp_path):
+    import json
+
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    (tmp_path / "pic.jpg.annotations.json").write_text(json.dumps(_sidecar_model()))
+    (tmp_path / "m51_page.html").write_text("<title>x</title>")
+    cfg = {"objects": [{"id": "M51", "image": "pic.jpg", "annotated": "m51_page.html"}]}
+    out = tmp_path / "map.html"
+    assert uranometria.generate(cfg, out, allow_online=False) == []
+    html = out.read_text()
+    assert '<span class="annlink" role="button"' in html  # in-page viewer wins
+    assert 'href="m51_page.html"' not in html  # external link not emitted
 
 
 def test_annotated_page_auto_discovery_and_missing(tmp_path):

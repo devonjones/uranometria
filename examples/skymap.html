@@ -104,7 +104,7 @@ svg.focus .marker.lit .halo { opacity:0.35; }
 .legend .desig { color:var(--accent); font-weight:500; font-size:13px; letter-spacing:0.05em; }
 .legend .photo { color:var(--dim); font-size:9px; letter-spacing:0.14em; margin-left:8px; }
 .legend .annlink { color:var(--dim); font-size:9px; letter-spacing:0.14em; margin-left:8px;
-  text-decoration:none; border-bottom:1px dotted var(--dim); }
+  text-decoration:none; border-bottom:1px dotted var(--dim); cursor:pointer; }
 .legend .annlink:hover { color:var(--gold); border-color:var(--gold); }
 .legend li:hover .photo { color:var(--accent); }
 .legend .common { font-family:'Marcellus',serif; color:var(--star); font-size:15px; }
@@ -236,7 +236,7 @@ footer { margin-top:14px; text-align:center; color:var(--dim); font-size:10px;
   <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
     <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
     <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
-  <div class="obj"><span class="desig">M51 <span class="photo">PHOTO ↗</span> <a class="annlink" href="annotated/M51_annotated.html" target="_blank" rel="noopener">ANNOTATED ↗</a></span><span class="common">Whirlpool Galaxy</span>
+  <div class="obj"><span class="desig">M51 <span class="photo">PHOTO ↗</span> <span class="annlink" role="button" tabindex="0">ANNOTATED</span></span><span class="common">Whirlpool Galaxy</span>
     <span class="meta">Galaxy — Canes Venatici</span>
     <span class="coord">13h 30m  +47° 12′</span></div>
 </li><li data-target="mk-5" data-img="images/M27.jpg" data-cap="M27 — Dumbbell Nebula|Planetary nebula   ·   20h 00m  +22° 43′">
@@ -578,7 +578,7 @@ function buildAnnotationUI(opts) {
 }
 
 
-function openLightbox(src, cap, ann) {
+function openLightbox(src, cap, ann, forceAnn) {
   lbName.textContent = cap[0] || '';
   lbSub.textContent = cap[1] || '';
   const probe = new Image();
@@ -616,7 +616,7 @@ function openLightbox(src, cap, ann) {
     } else {
       lbCards.textContent = '';
     }
-    setAnn(usable && annOn, false);
+    setAnn(usable && (annOn || forceAnn), false);
     attachPanZoom(svg, w, h, onChange);
     lb.hidden = false;
   };
@@ -624,10 +624,18 @@ function openLightbox(src, cap, ann) {
 }
 
 document.querySelectorAll('[data-img]').forEach(el => {
-  el.addEventListener('click', () => {
+  el.addEventListener('click', e => {
+    const annEl = e.target.closest ? e.target.closest('.annlink') : null;
+    if (annEl && annEl.tagName === 'A') return;
     const cap = (el.dataset.cap || '').split('|');
     const key = el.id || el.dataset.target;
-    openLightbox(el.dataset.img, cap, ANNOTATIONS[key]);
+    openLightbox(el.dataset.img, cap, ANNOTATIONS[key], !!annEl);
+  });
+  el.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' || !e.target.classList || !e.target.classList.contains('annlink')) return;
+    const cap = (el.dataset.cap || '').split('|');
+    const key = el.id || el.dataset.target;
+    openLightbox(el.dataset.img, cap, ANNOTATIONS[key], true);
   });
 });
 function closeLightbox() { lb.hidden = true; }

@@ -18,7 +18,11 @@ def _legend_html(objects):
         attrs = f' style="--accent:{accent}"' if accent else ""
         attrs += photo_attrs(o)
         photo = ' <span class="photo">PHOTO ↗</span>' if o.get("href") else ""
-        if o.get("annotated_href"):
+        if o.get("annotation"):
+            # model is embedded in this page: open the lightbox in
+            # annotation mode instead of leaving for the standalone file
+            photo += ' <span class="annlink" role="button" tabindex="0">ANNOTATED</span>'
+        elif o.get("annotated_href"):
             photo += (
                 f' <a class="annlink" href="{html.escape(o["annotated_href"], quote=True)}"'
                 f' target="_blank" rel="noopener">ANNOTATED \u2197</a>'
@@ -199,7 +203,7 @@ svg.focus .marker.lit .halo {{ opacity:0.35; }}
 .legend .desig {{ color:var(--accent); font-weight:500; font-size:13px; letter-spacing:0.05em; }}
 .legend .photo {{ color:var(--dim); font-size:9px; letter-spacing:0.14em; margin-left:8px; }}
 .legend .annlink {{ color:var(--dim); font-size:9px; letter-spacing:0.14em; margin-left:8px;
-  text-decoration:none; border-bottom:1px dotted var(--dim); }}
+  text-decoration:none; border-bottom:1px dotted var(--dim); cursor:pointer; }}
 .legend .annlink:hover {{ color:var(--gold); border-color:var(--gold); }}
 .legend li:hover .photo {{ color:var(--accent); }}
 .legend .common {{ font-family:'Marcellus',serif; color:var(--star); font-size:15px; }}
@@ -415,7 +419,7 @@ lbStage.addEventListener('click', e => e.stopPropagation());
 const ANN_LABEL_SCALE = {ann_label_scale};
 {ann_ui_js}
 
-function openLightbox(src, cap, ann) {{
+function openLightbox(src, cap, ann, forceAnn) {{
   lbName.textContent = cap[0] || '';
   lbSub.textContent = cap[1] || '';
   const probe = new Image();
@@ -453,7 +457,7 @@ function openLightbox(src, cap, ann) {{
     }} else {{
       lbCards.textContent = '';
     }}
-    setAnn(usable && annOn, false);
+    setAnn(usable && (annOn || forceAnn), false);
     attachPanZoom(svg, w, h, onChange);
     lb.hidden = false;
   }};
@@ -461,10 +465,18 @@ function openLightbox(src, cap, ann) {{
 }}
 
 document.querySelectorAll('[data-img]').forEach(el => {{
-  el.addEventListener('click', () => {{
+  el.addEventListener('click', e => {{
+    const annEl = e.target.closest ? e.target.closest('.annlink') : null;
+    if (annEl && annEl.tagName === 'A') return;
     const cap = (el.dataset.cap || '').split('|');
     const key = el.id || el.dataset.target;
-    openLightbox(el.dataset.img, cap, ANNOTATIONS[key]);
+    openLightbox(el.dataset.img, cap, ANNOTATIONS[key], !!annEl);
+  }});
+  el.addEventListener('keydown', e => {{
+    if (e.key !== 'Enter' || !e.target.classList || !e.target.classList.contains('annlink')) return;
+    const cap = (el.dataset.cap || '').split('|');
+    const key = el.id || el.dataset.target;
+    openLightbox(el.dataset.img, cap, ANNOTATIONS[key], true);
   }});
 }});
 function closeLightbox() {{ lb.hidden = true; }}

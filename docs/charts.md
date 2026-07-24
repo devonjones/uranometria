@@ -65,7 +65,8 @@ The generated page is interactive:
   button toggles the overlay and panel together, and EXPAND grows the viewer
   to fill the window. All of it is embedded in the chart page itself, so it
   keeps working if the standalone annotated HTML moves or was never
-  generated.
+  generated. The legend card's ANNOTATED tag opens the lightbox with
+  annotations switched on, whatever the toggle's remembered state.
 
 ## Self-contained output
 
