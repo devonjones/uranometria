@@ -449,13 +449,18 @@ function ensureMarkerThumbs(svg) {
     im.setAttribute('width', 56);
     im.setAttribute('height', 56);
     im.setAttribute('class', 'thumb');
-    m.appendChild(im);
+    // before the <text> so the haloed label stays legible on top; markers
+    // near the viewport edge may clip the thumb (hover tooltip still works)
+    m.insertBefore(im, m.querySelector('text'));
   });
 }
 
 const tip = document.getElementById('thumbtip');
 const tipImg = tip.querySelector('img');
+let lastTipEv = null;
+tipImg.addEventListener('load', () => { if (lastTipEv) moveTip(lastTipEv); });
 function moveTip(ev) {
+  lastTipEv = ev;
   const pad = 14;
   const r = tip.getBoundingClientRect();
   let x = ev.clientX + pad, y = ev.clientY + pad;

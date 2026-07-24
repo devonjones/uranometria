@@ -640,9 +640,60 @@ def test_thumbnails_remote_and_broken_images(tmp_path):
     }
     out = tmp_path / "map.html"
     warnings = uranometria.generate(cfg, out, allow_online=False)
-    assert any("thumbnail failed" in w for w in warnings)  # bad.jpg warns
+    assert sum("thumbnail failed" in w for w in warnings) == 1  # only bad.jpg
+    assert not any("M31" in w for w in warnings)  # remote skipped SILENTLY
     html = out.read_text()
-    assert 'id="chart-thumbs">{}</script>' in html  # remote skipped silently
+    assert 'id="chart-thumbs">{}</script>' in html
+
+
+def test_thumbnail_absolute_path_with_space(tmp_path):
+    from PIL import Image
+
+    img = tmp_path / "my pic.jpg"  # space forces the quote/unquote round-trip
+    Image.new("RGB", (40, 30)).save(img)
+    cfg = {"objects": [{"id": "M31", "image": str(img)}], "thumbnails": True}
+    out = tmp_path / "map.html"
+    assert uranometria.generate(cfg, out, allow_online=False) == []
+    assert '"mk-0": "data:image/jpeg;base64,' in out.read_text()
+
+
+def test_thumbnail_respects_exif_orientation(tmp_path):
+    import base64
+
+    from PIL import Image
+
+    img = tmp_path / "pic.jpg"
+    im = Image.new("RGB", (400, 300), (20, 10, 40))
+    exif = im.getexif()
+    exif[274] = 6  # rotate 90: browsers display this portrait
+    im.save(img, exif=exif)
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg"}], "thumbnails": True}
+    out = tmp_path / "map.html"
+    uranometria.generate(cfg, out, allow_online=False)
+    html = out.read_text()
+    start = html.index("data:image/jpeg;base64,") + len("data:image/jpeg;base64,")
+    b64 = html[start : html.index('"', start)].encode()
+    import io
+
+    tw, th = Image.open(io.BytesIO(base64.b64decode(b64))).size
+    assert th > tw  # thumb is portrait, matching how browsers show the photo
+
+
+def test_thumbnails_pillow_missing_warns_once(tmp_path, monkeypatch):
+    import sys
+
+    from PIL import Image
+
+    Image.new("RGB", (40, 30)).save(tmp_path / "a.jpg")
+    Image.new("RGB", (40, 30)).save(tmp_path / "b.jpg")
+    cfg = {
+        "objects": [{"id": "M31", "image": "a.jpg"}, {"id": "M51", "image": "b.jpg"}],
+        "thumbnails": True,
+    }
+    monkeypatch.setitem(sys.modules, "PIL", None)
+    warnings = uranometria.generate(cfg, tmp_path / "map.html", allow_online=False)
+    assert sum("needs Pillow" in w for w in warnings) == 1  # once, then disabled
+    assert 'id="chart-thumbs">{}</script>' in (tmp_path / "map.html").read_text()
 
 
 def test_no_sidecar_means_empty_map(tmp_path):

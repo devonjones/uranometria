@@ -142,10 +142,10 @@ def _thumbnail(href, base_dir, size=112):
     import base64
     import io
 
-    from PIL import Image
+    from PIL import Image, ImageOps
 
     with Image.open(path) as im:
-        im = im.convert("RGB")
+        im = ImageOps.exif_transpose(im).convert("RGB")
         im.thumbnail((size, size))
         buf = io.BytesIO()
         im.save(buf, format="JPEG", quality=70)

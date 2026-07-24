@@ -146,15 +146,6 @@ overlay instead of drawing circles in the wrong place.
 `annotation_label_scale:` (chart-level, default 1.0) multiplies the size of
 overlay labels drawn in the lightbox.
 
-## Thumbnails
-
-`thumbnails:` (chart-level, default false) embeds a small JPEG of each
-object's local photo in the page. Hovering a marker or a legend card floats
-the thumbnail by the cursor, and zooming a disc past 4x shows it beside the
-marker. Thumbs are built with Pillow at generation time (a warning and no
-thumbs if Pillow is missing); remote `http(s)` images are never fetched, so
-they simply have no thumbnail. Costs roughly 4 to 8 KB per object, which is
-why it is opt-in.
 
 `annotated:` links the object to its interactive annotated page (built with
 `render --html`). When the object has an embedded annotation model, the
@@ -164,6 +155,16 @@ without a model. Without the key, a sibling file named
 `<image stem>_annotated.html` is picked up automatically. This pairs well
 with keeping the pretty hero as `image:` while the interactive page carries
 the labeled version.
+
+## Thumbnails
+
+`thumbnails:` (chart-level, default false) embeds a small JPEG of each
+object's local photo in the page. Hovering a marker or a legend card floats
+the thumbnail by the cursor, and zooming a disc past 4x shows it beside the
+marker. Thumbs are built with Pillow at generation time (a warning and no
+thumbs if Pillow is missing); remote `http(s)` images are never fetched, so
+they simply have no thumbnail. Costs roughly 4 to 8 KB per object, which is
+why it is opt-in.
 
 ## Colors
 
