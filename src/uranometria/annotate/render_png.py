@@ -108,6 +108,14 @@ def _dms(dec_deg):
     return f"{sign}{d}°{m:02d}′{sec:02d}″"
 
 
+def mirrored_display(north, east):
+    """True when the display shows a mirror image of the sky. In screen
+    coordinates (y down), un-mirrored sky turns counterclockwise from N to E
+    (N up pairs with E left); a positive cross product means the chirality
+    is flipped — the image was mirrored somewhere in the capture pipeline."""
+    return north[0] * east[1] - north[1] * east[0] > 0
+
+
 def compass_vectors(cd):
     """Unit pixel-space direction vectors for celestial North and East.
     CD maps pixel steps to tangent-plane (east, north) degrees; its inverse
@@ -268,6 +276,27 @@ def render_png(model, image_path, output, *, title=None, max_width=2000):
         north, east = compass_vectors(solved["cd"])
         arm = 0.045 * min(W, H)
         ox, oy = max(1.6 * arm, 0.04 * W), 0.10 * H + 1.6 * arm
+        if mirrored_display(north, east):
+            # opposite the arms' bisector: no arm direction can collide.
+            # Text size is fixed in points, so clamp the anchor by the
+            # word's data-unit extent to keep it on canvas at any rotation.
+            tx, ty = -(north[0] + east[0]), -(north[1] + east[1])
+            norm = math.hypot(tx, ty) or 1.0
+            half_w = 34.0 / s_scale
+            half_h = 8.0 / s_scale
+            mx = min(max(ox + tx / norm * arm * 1.5, half_w), W - half_w)
+            my = min(max(oy + ty / norm * arm * 1.5, 0.06 * H + half_h), H - half_h)
+            ax.text(
+                mx,
+                my,
+                "MIRRORED",
+                color="#FFD54F",
+                fontsize=9,
+                family="monospace",
+                ha="center",
+                va="center",
+                zorder=10,
+            )
         for vec, lab in ((north, "N"), (east, "E")):
             ax.annotate(
                 "",
