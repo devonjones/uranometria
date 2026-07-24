@@ -517,6 +517,19 @@ def test_annotation_label_scale_must_be_finite(tmp_path):
         uranometria.generate(cfg, tmp_path / "map.html", allow_online=False)
 
 
+def test_annotation_label_scale_must_be_numeric(tmp_path):
+    import pytest
+
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    for bad in ("big", ["x"]):
+        cfg = {
+            "objects": [{"id": "M31", "image": "pic.jpg"}],
+            "annotation_label_scale": bad,
+        }
+        with pytest.raises(uranometria.SkymapError, match="must be a number"):
+            uranometria.generate(cfg, tmp_path / "map.html", allow_online=False)
+
+
 def test_annotations_json_escapes_all_angle_brackets(tmp_path):
     import json
 
@@ -532,6 +545,22 @@ def test_annotations_json_escapes_all_angle_brackets(tmp_path):
     payload = html[start : html.index("</script>", start)]
     assert "<" not in payload  # every < is backslash-u003c escaped
     assert r"\u003c!--\u003cscript" in payload
+
+
+def test_nan_in_sidecar_warns_not_breaks(tmp_path):
+    import json
+
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    m = _sidecar_model()
+    m["objects"][0]["y"] = float("nan")  # Python json accepts it; browsers don't
+    (tmp_path / "pic.jpg.annotations.json").write_text(json.dumps(m))
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg"}]}
+    out = tmp_path / "map.html"
+    warnings = uranometria.generate(cfg, out, allow_online=False)
+    assert any("sidecar unreadable" in w for w in warnings)
+    html = out.read_text()
+    assert 'id="lb-annotations">{}</script>' in html  # payload stays parseable
+    assert "NaN" not in html.split('id="lb-annotations">')[1].split("</script>")[0]
 
 
 def test_explicit_annotations_missing_warns(tmp_path):

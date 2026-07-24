@@ -94,7 +94,9 @@ def render_html(model, image_path, output, *, title=None, label_scale=1.0):
         f" · {solved.get('solver', 'ASTAP')}"
     )
     data_uri = _image_data_uri(image_path)
-    model_json = json.dumps({"image_size": [w, h], "objects": objects}).replace("<", "\\u003c")
+    model_json = json.dumps({"image_size": [w, h], "objects": objects}, allow_nan=False).replace(
+        "<", "\\u003c"
+    )
 
     def b64(fn):
         return asset_text(fn + ".b64")

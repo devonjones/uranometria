@@ -892,6 +892,25 @@ def test_render_html_cross_frame_flip(tmp_path):
     assert '"y": 25.0' not in page
 
 
+def test_render_html_escapes_all_angle_brackets(tmp_path):
+    from PIL import Image
+
+    from uranometria.annotate.render_html import render_html
+
+    img = tmp_path / "tiny.jpg"
+    Image.new("RGB", (80, 60)).save(img)
+    m = _tiny_model()
+    m["solved"]["pixel_frame"] = "raster0"
+    m["objects"][0]["name"] = "<!--<script>evil"
+    out = tmp_path / "page.html"
+    render_html(m, img, out)
+    page = out.read_text()
+    start = page.index('id="ann-model">') + len('id="ann-model">')
+    payload = page[start : page.index("</script>", start)]
+    assert "<" not in payload  # every < is backslash-u003c escaped
+    assert r"\u003c!--\u003cscript" in payload
+
+
 def test_render_html_coerces_model_strings(tmp_path):
     from PIL import Image
 

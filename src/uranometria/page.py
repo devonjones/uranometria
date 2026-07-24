@@ -90,7 +90,7 @@ def build_page(cfg, objects):
     # </script> can never appear inside the JSON payload
     # \u003c-escape every "<" so no payload string can toy with the HTML
     # script-data parser states (e.g. "<!--<script" double-escape tricks)
-    annotations_json = _json.dumps(annotations).replace("<", "\\u003c")
+    annotations_json = _json.dumps(annotations, allow_nan=False).replace("<", "\\u003c")
     ann_label_scale = float(cfg.get("annotation_label_scale", 1.0))
 
     panzoom_js = PANZOOM_JS

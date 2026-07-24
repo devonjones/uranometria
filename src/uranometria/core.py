@@ -157,8 +157,19 @@ def _annotation_sidecar(o, base_dir):
         model = json.load(f)
     width, height = model["image_size"]
     flip = model.get("solved", {}).get("pixel_frame", "fits0") == "fits0"
+
+    def _finite(v):
+        return isinstance(v, (int, float)) and math.isfinite(v)
+
     objects = []
     for a in model.get("objects", []):
+        # Python's json is lenient about NaN/Infinity but browsers reject
+        # them, which would kill the whole page script at view time
+        if not (_finite(a["x"]) and _finite(a["y"])):
+            raise ValueError("non-finite object coordinates")
+        for k in ("mag", "dist_ly"):
+            if a.get(k) is not None and not _finite(a[k]):
+                raise ValueError(f"non-finite {k}")
         objects.append(
             {
                 "kind": a.get("kind"),
