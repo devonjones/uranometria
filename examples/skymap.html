@@ -110,10 +110,23 @@ svg.focus .marker.lit .halo { opacity:0.35; }
 .lightbox { position:fixed; inset:0; z-index:10; display:flex; align-items:center;
   justify-content:center; background:rgba(4,6,16,0.93); cursor:zoom-out; }
 .lightbox[hidden] { display:none; }
-.lightbox figure { margin:0; display:flex; flex-direction:column; align-items:center; gap:16px;
-  max-width:94vw; }
-.lightbox img { max-width:94vw; max-height:80vh; border:1px solid var(--equator);
-  box-shadow:0 12px 60px rgba(0,0,0,0.7); }
+.lb-stage { display:flex; flex-direction:column; align-items:center; gap:12px;
+  max-width:94vw; cursor:auto; }
+#lb-svg { max-width:94vw; max-height:78vh; border:1px solid var(--equator);
+  box-shadow:0 12px 60px rgba(0,0,0,0.7); background:#000; cursor:grab;
+  touch-action:none; display:block; }
+#lb-svg:active { cursor:grabbing; }
+.lb-tools { display:flex; gap:10px; min-height:26px; align-items:center; }
+.lb-btn { font-family:'Plex Mono',monospace; font-size:10px; letter-spacing:0.16em;
+  color:var(--dim); background:var(--sky); border:1px solid var(--grid);
+  padding:5px 14px; cursor:pointer; }
+.lb-btn.on { color:var(--gold); border-color:var(--gold); }
+.lb-hint { color:var(--dim); font-size:9px; letter-spacing:0.1em; }
+.ann { transform:translate(var(--tx),var(--ty)) scale(calc(1 / var(--z,1))); }
+.ann circle { fill:none; stroke:currentColor; stroke-width:1.6; }
+.ann text { fill:currentColor; font-family:'Plex Mono',monospace; font-size:13px;
+  font-weight:500; paint-order:stroke; stroke:rgba(0,0,0,0.8); stroke-width:3px; }
+.lb-hide-labels #lb-overlay { display:none; }
 .lightbox figcaption { text-align:center; }
 .lightbox .cap-name { font-family:'Marcellus',serif; color:var(--star); font-size:18px;
   letter-spacing:0.08em; }
@@ -208,11 +221,16 @@ footer { margin-top:14px; text-align:center; color:var(--dim); font-size:10px;
 </aside>
 </div>
 <div class="lightbox" id="lightbox" hidden>
-  <figure>
-    <img id="lb-img" src="" alt="">
+  <div class="lb-stage">
+    <div class="lb-tools">
+      <button id="lb-labels" class="lb-btn" hidden>LABELS OFF</button>
+      <span class="lb-hint">SCROLL TO ZOOM · DRAG TO PAN · CLICK OUTSIDE OR ESC TO CLOSE</span>
+    </div>
+    <svg id="lb-svg" viewBox="0 0 1 1" role="img" aria-label="photograph"></svg>
     <figcaption><div class="cap-name" id="lb-name"></div><div class="cap-sub" id="lb-sub"></div></figcaption>
-  </figure>
+  </div>
 </div>
+<script type="application/json" id="lb-annotations">{"mk-4": {"image_size": [2160, 2160], "objects": [{"kind": "dso", "designation": "M51", "type": "Galaxy", "named": null, "key": null, "x": 1177.3, "y": 1110.6}, {"kind": "dso", "designation": "NGC 5195", "type": "Galaxy", "named": null, "key": null, "x": 1111.7, "y": 897.5}, {"kind": "dso", "designation": "IC 4278", "type": "Galaxy", "named": null, "key": null, "x": 874.0, "y": 963.1}, {"kind": "dso", "designation": "IC 4277", "type": "Galaxy", "named": null, "key": null, "x": 960.6, "y": 756.5}, {"kind": "dso", "designation": "IC 4282", "type": "Galaxy", "named": null, "key": null, "x": 431.8, "y": 1166.6}, {"kind": "dso", "designation": "IC 4263", "type": "Galaxy", "named": null, "key": null, "x": 1887.9, "y": 1899.2}, {"kind": "star", "designation": "HD 117815", "type": "Star (A5)", "named": true, "key": null, "x": 116.4, "y": 1021.6}, {"kind": "star", "designation": "TYC 3463-582-1", "type": null, "named": false, "key": 1, "x": 824.1, "y": 1721.2}, {"kind": "star", "designation": "TYC 3463-58-1", "type": null, "named": false, "key": 2, "x": 537.3, "y": 1164.3}, {"kind": "star", "designation": "TYC 3460-285-1", "type": null, "named": false, "key": 3, "x": 1961.0, "y": 392.8}, {"kind": "star", "designation": "Gaia DR3 1551933213472189952", "type": null, "named": false, "key": 4, "x": 177.8, "y": 1907.7}, {"kind": "star", "designation": "TYC 3463-587-1", "type": null, "named": false, "key": 5, "x": 423.3, "y": 1312.3}, {"kind": "star", "designation": "TYC 3463-348-1", "type": null, "named": false, "key": 6, "x": 508.6, "y": 1137.9}, {"kind": "star", "designation": "TYC 3460-642-1", "type": null, "named": false, "key": 7, "x": 2102.0, "y": 1024.0}, {"kind": "star", "designation": "TYC 3463-464-1", "type": null, "named": false, "key": 8, "x": 362.1, "y": 226.3}, {"kind": "star", "designation": "Gaia DR3 1551935751795702912", "type": null, "named": false, "key": 9, "x": 711.7, "y": 1790.7}, {"kind": "star", "designation": "Gaia DR3 1551890126360075264", "type": null, "named": false, "key": 10, "x": 1051.4, "y": 1596.1}, {"kind": "star", "designation": "Gaia DR3 1552001417552726400", "type": null, "named": false, "key": 11, "x": 1512.8, "y": 970.2}, {"kind": "star", "designation": "Gaia DR3 1552003754014939520", "type": null, "named": false, "key": 12, "x": 1390.5, "y": 623.4}, {"kind": "star", "designation": "Gaia DR3 1551912112296179072", "type": null, "named": false, "key": 13, "x": 1915.7, "y": 721.8}]}}</script>
 </div>
 <script>
 // ---- filtering: search text AND current zoom viewport ----------------
@@ -280,33 +298,35 @@ cards.forEach(c => {
   c.li.addEventListener('mouseleave', applyFilter);
 });
 
-// ---- pan & zoom ------------------------------------------------------
-document.querySelectorAll('svg.sky').forEach(svg => {
-  let vb = [0, 0, 1000, 1000], pan = null, moved = 0;
-  svg._vb = vb;
+// ---- pan & zoom (shared) ---------------------------------------------
+
+function attachPanZoom(svg, w, h, onChange) {
+  let vb = [0, 0, w, h], pan = null, moved = 0;
+  const maxZ = 8;
   const apply = () => {
     svg.setAttribute('viewBox', vb.join(' '));
-    svg.style.setProperty('--z', 1000 / vb[2]);
+    svg.style.setProperty('--z', w / vb[2]);
     svg._vb = vb;
-    applyFilter();
+    if (onChange) onChange(vb);
   };
   const clamp = () => {
-    vb[2] = vb[3] = Math.min(1000, Math.max(125, vb[2]));
-    vb[0] = Math.max(0, Math.min(1000 - vb[2], vb[0]));
-    vb[1] = Math.max(0, Math.min(1000 - vb[3], vb[1]));
+    vb[2] = Math.min(w, Math.max(w / maxZ, vb[2]));
+    vb[3] = vb[2] * (h / w);
+    vb[0] = Math.max(0, Math.min(w - vb[2], vb[0]));
+    vb[1] = Math.max(0, Math.min(h - vb[3], vb[1]));
   };
-  const toSvg = (cx, cy) => {
+  const toLocal = (cx, cy) => {
     const r = svg.getBoundingClientRect();
     return [vb[0] + (cx - r.left) / r.width * vb[2],
             vb[1] + (cy - r.top) / r.height * vb[3]];
   };
   svg.addEventListener('wheel', e => {
     e.preventDefault();
-    const [px, py] = toSvg(e.clientX, e.clientY);
+    const [px, py] = toLocal(e.clientX, e.clientY);
     const f = e.deltaY < 0 ? 1 / 1.25 : 1.25;
     vb[0] = px - (px - vb[0]) * f;
     vb[1] = py - (py - vb[1]) * f;
-    vb[2] *= f; vb[3] = vb[2];
+    vb[2] *= f;
     clamp(); apply();
   }, { passive: false });
   svg.addEventListener('pointerdown', e => {
@@ -324,25 +344,114 @@ document.querySelectorAll('svg.sky').forEach(svg => {
   });
   svg.addEventListener('pointerup', () => { pan = null; });
   svg.addEventListener('click', e => {
-    if (moved > 5) e.stopPropagation();   // a drag is not a marker click
+    if (moved > 5) { e.stopPropagation(); }
     moved = 0;
   }, true);
-  svg.addEventListener('dblclick', () => { vb = [0, 0, 1000, 1000]; apply(); });
+  svg.addEventListener('dblclick', () => { vb = [0, 0, w, h]; apply(); });
+  apply();
+  return () => { vb = [0, 0, w, h]; apply(); };
+}
+
+
+function dsoColor(t, C) {
+  t = (t || '').toLowerCase();
+  if (t.includes('galaxy')) return C.galaxy;
+  if (t.includes('planetary')) return C.planetary;
+  if (t.includes('dark')) return C.dark;
+  if (t.includes('cluster') || t.includes('association')) return C.cluster;
+  if (t.includes('emission') || t.includes('h ii') || t.includes('nebula')) return C.emission;
+  return C.other;
+}
+
+document.querySelectorAll('svg.sky').forEach(svg => {
+  attachPanZoom(svg, 1000, 1000, applyFilter);
 });
+
+// ---- lightbox: zoom/pan image, optional annotation overlay -------------
+const ANN_COLORS = {"galaxy": "#82B4F5", "emission": "#F48FB1", "planetary": "#80DEEA", "cluster": "#FFCC80", "dark": "#B39DDB", "other": "#C5CAE9", "named_star": "#FFD54F", "field_star": "#69F0AE", "ink": "#ECEFF4", "dim": "#9BA6B5"};
+const ANNOTATIONS = JSON.parse(document.getElementById('lb-annotations').textContent);
 const lb = document.getElementById('lightbox');
-const lbImg = document.getElementById('lb-img');
+const lbStage = lb.querySelector('.lb-stage');
 const lbName = document.getElementById('lb-name');
 const lbSub = document.getElementById('lb-sub');
+const lbLabelsBtn = document.getElementById('lb-labels');
+const SVGNS = 'http://www.w3.org/2000/svg';
+let labelsOn = sessionStorage.getItem('uranometria-labels') === 'on';
+
+function setLabels(on) {
+  labelsOn = on;
+  sessionStorage.setItem('uranometria-labels', on ? 'on' : 'off');
+  lbStage.classList.toggle('lb-hide-labels', !on);
+  lbLabelsBtn.textContent = on ? 'LABELS ON' : 'LABELS OFF';
+  lbLabelsBtn.classList.toggle('on', on);
+}
+lbLabelsBtn.addEventListener('click', () => setLabels(!labelsOn));
+lbStage.addEventListener('click', e => e.stopPropagation());
+
+function annColor(o) {
+  if (o.kind === 'dso') return dsoColor(o.type, ANN_COLORS);
+  return o.named ? ANN_COLORS.named_star : ANN_COLORS.field_star;
+}
+
+function buildOverlay(gEl, ann, w, h) {
+  const r = 0.02 * Math.min(w, h);
+  ann.objects.forEach(o => {
+    const g = document.createElementNS(SVGNS, 'g');
+    g.setAttribute('class', 'ann');
+    g.style.setProperty('--tx', o.x + 'px');
+    g.style.setProperty('--ty', o.y + 'px');
+    g.style.color = annColor(o);
+    const c = document.createElementNS(SVGNS, 'circle');
+    c.setAttribute('r', o.kind === 'dso' ? r * 1.4 : o.named ? r : r * 0.6);
+    g.appendChild(c);
+    const t = document.createElementNS(SVGNS, 'text');
+    t.setAttribute('x', r * 1.6);
+    t.setAttribute('y', -r * 0.8);
+    t.textContent = o.kind === 'star' && !o.named ? String(o.key) : o.designation;
+    g.appendChild(t);
+    gEl.appendChild(g);
+  });
+}
+
+function openLightbox(src, cap, ann) {
+  lbName.textContent = cap[0] || '';
+  lbSub.textContent = cap[1] || '';
+  const probe = new Image();
+  probe.onload = () => {
+    const w = probe.naturalWidth, h = probe.naturalHeight;
+    const old = document.getElementById('lb-svg');
+    const svg = document.createElementNS(SVGNS, 'svg');
+    svg.setAttribute('id', 'lb-svg');
+    svg.setAttribute('role', 'img');
+    const im = document.createElementNS(SVGNS, 'image');
+    im.setAttribute('href', src);
+    im.setAttribute('width', w);
+    im.setAttribute('height', h);
+    svg.appendChild(im);
+    const usable = ann && ann.image_size && ann.image_size[0] === w && ann.image_size[1] === h;
+    if (usable) {
+      const gEl = document.createElementNS(SVGNS, 'g');
+      gEl.setAttribute('id', 'lb-overlay');
+      buildOverlay(gEl, ann, w, h);
+      svg.appendChild(gEl);
+    }
+    lbLabelsBtn.hidden = !usable;
+    setLabels(usable && labelsOn);
+    old.replaceWith(svg);
+    attachPanZoom(svg, w, h, null);
+    lb.hidden = false;
+  };
+  probe.src = src;
+}
+
 document.querySelectorAll('[data-img]').forEach(el => {
   el.addEventListener('click', () => {
     const cap = (el.dataset.cap || '').split('|');
-    lbImg.src = el.dataset.img;
-    lbImg.alt = cap[0] || '';
-    lbName.textContent = cap[0] || '';
-    lbSub.textContent = cap[1] || '';
-    lb.hidden = false;
+    const key = el.id || el.dataset.target;
+    openLightbox(el.dataset.img, cap, ANNOTATIONS[key]);
   });
 });
-lb.addEventListener('click', () => { lb.hidden = true; lbImg.src = ''; });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { lb.hidden = true; lbImg.src = ''; } });
+function closeLightbox() { lb.hidden = true; }
+lb.addEventListener('click', closeLightbox);
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 </script>

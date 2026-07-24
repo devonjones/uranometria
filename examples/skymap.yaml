@@ -32,7 +32,8 @@ objects:
   - id: M42
     image: images/M42.jpg
   - id: M51
-    image: images/M51.jpg
+    image: images/M51.jpg      # has images/M51.jpg.annotations.json beside it:
+                               # the lightbox draws the labeled overlay (LABELS toggle)
   - id: M27
     image: images/M27.jpg
   - id: Sh2-142
