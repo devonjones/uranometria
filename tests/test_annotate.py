@@ -616,17 +616,98 @@ def test_cli_annotate_html_success(monkeypatch, tmp_path):
     assert "labelScale: 2.0" in page  # --label-scale reaches the page
 
 
+def test_dso_distances_batch_single_request(monkeypatch):
+    from astropy.table import MaskedColumn, Table
+
+    import uranometria.annotate.field as field
+
+    calls = []
+    batch = Table(
+        {
+            "user_specified_id": ["ODD", "ODD", "ODD", "EVEN", "EVEN", "EVEN", "STRAY"],
+            "mesdistance.dist": MaskedColumn(
+                [3.0, 1.0, 2.0, 2.0, 4.0, 9.0, 5.0],
+                mask=[False, False, False, False, False, True, False],
+            ),
+            "mesdistance.unit": ["pc", "pc", "pc", "kpc", "kpc", "kpc", "pc"],
+        }
+    )
+
+    class FakeSimbad:
+        def add_votable_fields(self, *a, **k):
+            pass
+
+        def query_objects(self, desigs):
+            calls.append(list(desigs))
+            return batch
+
+        def query_object(self, desig):
+            raise AssertionError("batch path must not fall back")
+
+    import astroquery.simbad
+
+    monkeypatch.setattr(astroquery.simbad, "Simbad", FakeSimbad)
+    out = field.dso_distances(["ODD", "EVEN"])
+    assert calls == [["ODD", "EVEN"]]  # exactly one request
+    assert out["ODD"] == 2.0 * 3.26156  # median of three
+    assert out["EVEN"] == 4.0 * 3261.56  # masked row dropped, upper median
+    assert "STRAY" not in out  # ids we never asked about are ignored
+
+
+def test_dso_distances_empty_list_makes_no_requests(monkeypatch):
+    import builtins
+
+    import uranometria.annotate.field as field
+
+    real_import = builtins.__import__
+
+    def guard(name, *a, **k):
+        if name.startswith("astroquery"):
+            raise AssertionError("empty input must not touch astroquery at all")
+        return real_import(name, *a, **k)
+
+    monkeypatch.setattr(builtins, "__import__", guard)
+    assert field.dso_distances([]) == {}
+
+
+def test_dso_distances_batch_falls_back_serial(monkeypatch):
+    from astropy.table import Table
+
+    import uranometria.annotate.field as field
+
+    serial = {
+        "A": Table({"mesdistance.dist": [2.0], "mesdistance.unit": ["pc"]}),
+    }
+
+    class FakeSimbad:
+        def add_votable_fields(self, *a, **k):
+            pass
+
+        def query_objects(self, desigs):
+            raise RuntimeError("TAP down")
+
+        def query_object(self, desig):
+            return serial.get(desig)
+
+    import astroquery.simbad
+
+    monkeypatch.setattr(astroquery.simbad, "Simbad", FakeSimbad)
+    out = field.dso_distances(["A", "B"])
+    assert out == {"A": 2.0 * 3.26156}
+
+
 def test_dso_distances_median(monkeypatch):
     from astropy.table import Table
 
     import uranometria.annotate.field as field
 
     tables = {
-        # three usable pc rows -> median is the middle value (2 pc)
+        # three usable pc rows -> median is the middle value (2 pc);
+        # the None row cannot float() and is dropped by _distance_ly
         "ODD": Table(
             {
-                "mesdistance.dist": [3.0, 1.0, 2.0],
-                "mesdistance.unit": ["pc", "pc", "pc"],
+                "mesdistance.dist": [3.0, 1.0, 2.0, None],
+                "mesdistance.unit": ["pc", "pc", "pc", "pc"],
             }
         ),
         # four rows: one masked, one junk unit; two usable -> len//2 picks
@@ -645,6 +726,9 @@ def test_dso_distances_median(monkeypatch):
     class FakeSimbad:
         def add_votable_fields(self, *a, **k):
             pass
+
+        def query_objects(self, desigs):
+            return None  # push the median test down the serial path
 
         def query_object(self, desig):
             return tables.get(desig)
@@ -929,6 +1013,98 @@ def test_distance_reaches_object_via_alias(monkeypatch, tmp_path):
     assert dso["designation"] == "IC 405"
     assert dso["dist_ly"] == 2381  # found under the alias
     assert calls == [["IC 405"], ["Sh2-229"]]
+
+
+def test_propagate_direction_and_projection():
+    import math
+
+    import pytest
+
+    from uranometria.annotate.field import GAIA_EPOCH, _propagate, sep_deg
+
+    # Groombridge 1830 (Gaia DR3): pmRA* 4003 mas/yr, pmDE -5815 mas/yr.
+    ra, dec = 178.232, 37.719
+    dt = 1991.4 - GAIA_EPOCH
+    ra2, dec2 = _propagate(ra, dec, 4003.0, -5815.0, dt)
+    # direction and cos projection pinned exactly: going BACK to 1991,
+    # RA decreases (positive pmRA*, negative dt) and dec increases
+    assert ra2 - ra == pytest.approx(4003.0 * dt / 3.6e6 / math.cos(math.radians(dec)))
+    assert dec2 - dec == pytest.approx(-5815.0 * dt / 3.6e6)
+    assert ra2 < ra and dec2 > dec
+    moved = sep_deg(ra, dec, ra2, dec2) * 3600
+    assert 168 < moved < 180  # the ~171 arcsec the ticket measured live
+
+
+def test_propagate_leaves_ra_alone_at_the_pole():
+    from uranometria.annotate.field import _propagate
+
+    ra2, dec2 = _propagate(10.0, 89.999, 5000.0, -3000.0, -25.0)
+    assert ra2 == 10.0  # linear RA shift is meaningless there
+    assert dec2 != 89.999  # dec still moves
+
+
+def test_tycho_match_uses_per_star_epochs(monkeypatch):
+    import math
+
+    from astropy.table import MaskedColumn, Table
+
+    import uranometria.annotate.field as field
+    from uranometria.annotate.field import sep_deg
+
+    # Groombridge 1830's real numbers: Gaia J2016 position/pm, Tycho row
+    # observed at EpRA 1991.88 / EpDE 1991.79. The Tycho position is
+    # computed with independent inline arithmetic, not _propagate.
+    ra, dec = 178.232, 37.719
+    pmra, pmde = 4003.0, -5815.0
+    ep_ra, ep_de = 1991.88, 1991.79
+    tra = ra + pmra * (ep_ra - 2016.0) / 3.6e6 / math.cos(math.radians(dec))
+    tdec = dec + pmde * (ep_de - 2016.0) / 3.6e6
+
+    # non-vacuous: a fixed catalog-mean epoch would MISS this row by > 2"
+    mid_ra = ra + pmra * (1991.25 - 2016.0) / 3.6e6 / math.cos(math.radians(dec))
+    mid_de = dec + pmde * (1991.25 - 2016.0) / 3.6e6
+    assert sep_deg(mid_ra, mid_de, tra, tdec) * 3600 > 2
+
+    gaia_tbl = Table(
+        {
+            "Source": [1234, 5678],
+            "RA_ICRS": [ra, 178.9],
+            "DE_ICRS": [dec, 37.9],
+            "Gmag": [6.4, 9.0],
+            "Plx": [109.0, 2.0],
+            "e_Plx": [0.02, 0.1],
+            "pmRA": MaskedColumn([pmra, 0.0], mask=[False, True]),
+            "pmDE": MaskedColumn([pmde, 0.0], mask=[False, True]),
+        }
+    )
+    tycho_tbl = Table(
+        {
+            "TYC1": [3014],
+            "TYC2": [574],
+            "TYC3": [1],
+            "RA(ICRS)": [tra],
+            "DE(ICRS)": [tdec],
+            "VTmag": [6.6],
+            "EpRA-1990": [ep_ra - 1990.0],
+            "EpDE-1990": [ep_de - 1990.0],
+        }
+    )
+
+    class FakeVizier:
+        def __init__(self, catalog=None, **kw):
+            self.catalog = catalog
+
+        def query_region(self, center, radius=None):
+            return [gaia_tbl if self.catalog == "I/355/gaiadr3" else tycho_tbl]
+
+    import astroquery.vizier
+
+    monkeypatch.setattr(astroquery.vizier, "Vizier", FakeVizier)
+    stars = field.stars_in_field(ra, dec, 0.5)
+    by_desig = {s["designation"]: s for s in stars}
+    assert "TYC 3014-574-1" in by_desig  # matched at per-star epochs
+    assert "Gaia DR3 5678" in by_desig  # masked pm: kept, unmatched, no crash
+    assert all("_pm" not in s for s in stars)  # temp key never reaches models
 
 
 def test_dso_aliases_collected():

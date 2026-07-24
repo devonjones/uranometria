@@ -84,6 +84,11 @@ objects:
     color: "#E06C75"           # marker/legend accent, any CSS color
 ```
 
+A nice convention for `color:` is typing objects with the same palette the
+annotated images use, so both legends speak one color language: galaxies
+`#82B4F5`, emission nebulae `#F48FB1`, planetary nebulae `#80DEEA`, clusters
+`#FFCC80`, anything else `#C5CAE9`. The example config does exactly that.
+
 These designations resolve offline from bundled catalogs: Messier (including
 the M40/M45/M102 oddballs), NGC and IC (OpenNGC), Sharpless (Sh2-1 through
 313), Caldwell, Barnard 33, Melotte, and any common name OpenNGC knows, like
@@ -250,7 +255,10 @@ Full documentation lives in [`docs/`](docs/): [sky charts](docs/charts.md),
 the [chart config reference](docs/chart-config.md),
 [annotating images](docs/annotate.md), and the
 [annotation model](docs/annotation-model.md) with its edit-and-re-render
-workflow. Version history is in the [changelog](CHANGELOG.md).
+workflow. Generated API documentation lives at
+[devonjones.github.io/uranometria/api](https://devonjones.github.io/uranometria/api/),
+rebuilt from docstrings on every push to master. Version history is in the
+[changelog](CHANGELOG.md).
 
 ## Data & licenses
 

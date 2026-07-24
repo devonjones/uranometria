@@ -605,6 +605,247 @@ def test_remote_annotated_url_passthrough(tmp_path):
     assert 'href="https://example.org/m51.html"' in out.read_text()
 
 
+def test_legend_sorted_naturally(tmp_path):
+    cfg = {"objects": ["M110", "M2", "M27", "M1"]}
+    out = tmp_path / "map.html"
+    uranometria.generate(cfg, out, allow_online=False)
+    html = out.read_text()
+    legend = html.split("OBSERVING RECORD")[1]
+    positions = [legend.index(f">{d}<") for d in ("M1", "M2", "M27", "M110")]
+    assert positions == sorted(positions)  # M1 < M2 < M27 < M110, not lexicographic
+
+
+def test_sorted_legend_keeps_original_marker_indices(tmp_path):
+    import json
+
+    from PIL import Image
+
+    # config order M110 then M1; natural sort displays M1 first, but every
+    # data-target/thumb/annotation key must stay the ORIGINAL index
+    Image.new("RGB", (80, 60), (9, 9, 30)).save(tmp_path / "pic.jpg")
+    (tmp_path / "pic.jpg.annotations.json").write_text(json.dumps(_sidecar_model()))
+    cfg = {
+        "objects": [
+            {"id": "M110", "image": "pic.jpg"},  # original index 0
+            {"id": "M1"},  # original index 1, sorts first
+        ],
+        "thumbnails": True,
+    }
+    out = tmp_path / "map.html"
+    uranometria.generate(cfg, out, allow_online=False)
+    html = out.read_text()
+    legend = html.split("OBSERVING RECORD")[1]
+    m1_card = legend.split(">M1<")[0].rsplit("<li ", 1)[1]
+    m110_card = legend.split(">M110 ")[0].rsplit("<li ", 1)[1]  # PHOTO tag follows
+    assert 'data-target="mk-1"' in m1_card  # M1 shows first, keeps index 1
+    assert 'data-target="mk-0"' in m110_card
+    assert legend.index(">M1<") < legend.index(">M110 ")  # sorted display
+    # thumbs and annotations stay keyed to the original index too
+    thumbs = html.split('id="chart-thumbs">')[1].split("</script>")[0]
+    assert '"mk-0"' in thumbs and '"mk-1"' not in thumbs
+    anns = html.split('id="lb-annotations">')[1].split("</script>")[0]
+    assert '"mk-0"' in anns
+
+
+def test_object_links_auto_and_custom(tmp_path):
+    cfg = {
+        "objects": [
+            {"id": "M31"},
+            {"id": "M51", "links": {"SEDS": "https://www.messier.seds.org/m/m051.html"}},
+            {
+                "id": "M1",
+                "links": [
+                    {"label": "APOD", "url": "https://apod.nasa.gov/apod/astropix.html"},
+                    {"label": "evil", "url": "javascript:alert(1)"},
+                ],
+            },
+            {"label": "X-1", "name": "", "type": "Other", "ra": 10.0, "dec": 20.0},
+        ]
+    }
+    out = tmp_path / "map.html"
+    warnings = uranometria.generate(cfg, out, allow_online=False)
+    assert any("is not http(s)" in w and "M1" in w for w in warnings)
+    html = out.read_text()
+    # every object gets SIMBAD; Messier objects get Wikipedia
+    assert "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=M31" in html
+    assert "https://en.wikipedia.org/wiki/Messier_31" in html
+    # custom article links survive in both config shapes
+    assert 'href="https://www.messier.seds.org/m/m051.html"' in html
+    assert ">SEDS</a>" in html
+    assert 'href="https://apod.nasa.gov/apod/astropix.html"' in html
+    # the javascript: link is gone entirely
+    assert "javascript:" not in html
+    # nameless manual entry: SIMBAD only, no guessed Wikipedia article
+    assert "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=X-1" in html
+    assert "https://en.wikipedia.org/wiki/_" not in html
+
+
+def test_object_links_common_name_and_dot_designation(tmp_path):
+    cfg = {
+        "objects": [
+            {
+                "label": "NGC 7380",
+                "name": "Wizard Nebula \u00b7 Sh2-142",
+                "type": "Emission nebula",
+                "ra": 341.8,
+                "dec": 58.1,
+            }
+        ]
+    }
+    out = tmp_path / "map.html"
+    assert uranometria.generate(cfg, out, allow_online=False) == []
+    html = out.read_text()
+    # the alt designation never belongs in the article guess
+    assert "https://en.wikipedia.org/wiki/Wizard_Nebula" in html
+    assert "Sh2-142" not in html.split("wiki/")[1][:40]
+
+
+def test_object_links_scalar_config_warns(tmp_path):
+    cfg = {"objects": [{"id": "M31", "links": "https://example.org"}]}
+    out = tmp_path / "map.html"
+    warnings = uranometria.generate(cfg, out, allow_online=False)
+    assert any("must be a mapping or a list" in w for w in warnings)
+
+
+def test_object_links_non_dict_list_item_warns(tmp_path):
+    cfg = {"objects": [{"id": "M31", "links": ["https://example.org"]}]}
+    out = tmp_path / "map.html"
+    warnings = uranometria.generate(cfg, out, allow_online=False)
+    assert any("is not a label/url mapping" in w for w in warnings)
+
+
+def test_object_link_href_quote_escaped(tmp_path):
+    cfg = {"objects": [{"id": "M31", "links": {"x": 'https://example.org/"onmouseover="a'}}]}
+    out = tmp_path / "map.html"
+    uranometria.generate(cfg, out, allow_online=False)
+    html = out.read_text()
+    assert "https://example.org/&quot;onmouseover=&quot;a" in html
+    assert '" onmouseover=' not in html
+
+
+def test_object_links_url_quoting_and_scheme_case(tmp_path):
+    cfg = {
+        "objects": [
+            {
+                "label": "BD+30 3639",
+                "name": "Ne&bula #9",
+                "type": "Planetary nebula",
+                "ra": 200.0,
+                "dec": 30.0,
+                "links": {"Mirror": "HTTPS://Example.org/page"},
+            }
+        ]
+    }
+    out = tmp_path / "map.html"
+    assert uranometria.generate(cfg, out, allow_online=False) == []
+    html = out.read_text()
+    assert "Ident=BD%2B30+3639" in html  # + survives as %2B, space as +
+    assert "wiki/Ne%26bula_%239" in html  # & and # cannot reshape the path
+    assert 'href="HTTPS://Example.org/page"' in html  # scheme case accepted
+
+
+def test_object_link_labels_escaped(tmp_path):
+    cfg = {"objects": [{"id": "M31", "links": {"<script>boom</script>": "https://example.org/x"}}]}
+    out = tmp_path / "map.html"
+    uranometria.generate(cfg, out, allow_online=False)
+    html = out.read_text()
+    assert "<script>boom" not in html
+    assert "&lt;script&gt;boom" in html
+
+
+def test_thumbnails_opt_in(tmp_path):
+    from PIL import Image
+
+    Image.new("RGB", (400, 300), (30, 10, 60)).save(tmp_path / "pic.jpg")
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg"}]}
+    out = tmp_path / "map.html"
+
+    # default: off — the map is empty and no thumb data URI is embedded
+    uranometria.generate(cfg, out, allow_online=False)
+    html = out.read_text()
+    assert 'id="chart-thumbs">{}</script>' in html
+
+    # opt-in: thumb embedded, tooltip and deep-zoom hooks present
+    cfg["thumbnails"] = True
+    assert uranometria.generate(cfg, out, allow_online=False) == []
+    html = out.read_text()
+    start = html.index('id="chart-thumbs">')
+    payload = html[start : html.index("</script>", start)]
+    assert '"mk-0": "data:image/jpeg;base64,' in payload
+    assert 'id="thumbtip"' in html
+    assert "ensureMarkerThumbs" in html
+    assert "deepzoom" in html
+    assert "anchorTipToMarker" in html  # legend hover anchors the big tip
+    # at the object's marker on the chart
+
+
+def test_thumbnails_remote_and_broken_images(tmp_path):
+    (tmp_path / "bad.jpg").write_bytes(b"not a jpeg")
+    cfg = {
+        "objects": [
+            {"id": "M31", "image": "https://example.org/far.jpg"},
+            {"id": "M51", "image": "bad.jpg"},
+        ],
+        "thumbnails": True,
+    }
+    out = tmp_path / "map.html"
+    warnings = uranometria.generate(cfg, out, allow_online=False)
+    assert sum("thumbnail failed" in w for w in warnings) == 1  # only bad.jpg
+    assert not any("M31" in w for w in warnings)  # remote skipped SILENTLY
+    html = out.read_text()
+    assert 'id="chart-thumbs">{}</script>' in html
+
+
+def test_thumbnail_absolute_path_with_space(tmp_path):
+    from PIL import Image
+
+    img = tmp_path / "my pic.jpg"  # space forces the quote/unquote round-trip
+    Image.new("RGB", (40, 30)).save(img)
+    cfg = {"objects": [{"id": "M31", "image": str(img)}], "thumbnails": True}
+    out = tmp_path / "map.html"
+    assert uranometria.generate(cfg, out, allow_online=False) == []
+    assert '"mk-0": "data:image/jpeg;base64,' in out.read_text()
+
+
+def test_thumbnail_respects_exif_orientation(tmp_path):
+    import base64
+
+    from PIL import Image
+
+    img = tmp_path / "pic.jpg"
+    im = Image.new("RGB", (400, 300), (20, 10, 40))
+    exif = im.getexif()
+    exif[274] = 6  # rotate 90: browsers display this portrait
+    im.save(img, exif=exif)
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg"}], "thumbnails": True}
+    out = tmp_path / "map.html"
+    uranometria.generate(cfg, out, allow_online=False)
+    html = out.read_text()
+    start = html.index("data:image/jpeg;base64,") + len("data:image/jpeg;base64,")
+    b64 = html[start : html.index('"', start)].encode()
+    import io
+
+    tw, th = Image.open(io.BytesIO(base64.b64decode(b64))).size
+    assert th > tw  # thumb is portrait, matching how browsers show the photo
+
+
+def test_thumbnails_pillow_missing_warns_once(tmp_path, monkeypatch):
+    import sys
+
+    from PIL import Image
+
+    Image.new("RGB", (40, 30)).save(tmp_path / "a.jpg")
+    Image.new("RGB", (40, 30)).save(tmp_path / "b.jpg")
+    cfg = {
+        "objects": [{"id": "M31", "image": "a.jpg"}, {"id": "M51", "image": "b.jpg"}],
+        "thumbnails": True,
+    }
+    monkeypatch.setitem(sys.modules, "PIL", None)
+    warnings = uranometria.generate(cfg, tmp_path / "map.html", allow_online=False)
+    assert sum("needs Pillow" in w for w in warnings) == 1  # once, then disabled
+    assert 'id="chart-thumbs">{}</script>' in (tmp_path / "map.html").read_text()
+
+
 def test_no_sidecar_means_empty_map(tmp_path):
     (tmp_path / "pic.jpg").write_bytes(b"x")
     cfg = {"objects": [{"id": "M31", "image": "pic.jpg"}]}
@@ -613,6 +854,11 @@ def test_no_sidecar_means_empty_map(tmp_path):
     html = out.read_text()
     assert 'id="lb-annotations">{}</script>' in html
     assert "attachPanZoom" in html  # shared pan/zoom present
+    assert "userSelect" in html  # drag-to-pan never selects text (u-8)
+    assert "const nz" in html  # wheel at the zoom clamp is a no-op (u-9)
+    assert "removeAllRanges" in html  # pan start clears a live selection (u-8)
+    assert "hasPointerCapture" in html  # capture deferred until a real drag,
+    # so plain clicks on markers reach their handlers (u-13)
     assert 'id="lb-ann"' in html  # toggle exists (hidden until usable)
 
 
@@ -641,6 +887,10 @@ def test_annotated_link_prefers_embedded_viewer(tmp_path):
     html = out.read_text()
     assert '<span class="annlink" role="button"' in html  # in-page viewer wins
     assert 'href="m51_page.html"' not in html  # external link not emitted
+    assert 'class="linkrow"' in html  # article links coexist on the card
+    # the anchor guard exists in BOTH the click and keydown handlers, so a
+    # SIMBAD link click can never also open the lightbox
+    assert html.count("e.target.closest('a[href]')) return") == 2
 
 
 def test_annotated_page_auto_discovery_and_missing(tmp_path):

@@ -112,6 +112,28 @@ def _merge_sharpless_duplicates(hits):
     return sorted(merged, key=lambda r: r["sep_deg"])
 
 
+# Gaia DR3 positions are epoch J2016.0; Tycho-2 observed positions carry
+# PER-STAR epochs (EpRA-1990/EpDE-1990, roughly 1990.8 to 1992.1). High-
+# proper-motion stars move arcminutes across the gap (Groombridge 1830:
+# ~171 arcsec), so the match must run at each Tycho row's own epochs; even
+# a fixed catalog-mean epoch leaves fast movers several arcsec out.
+GAIA_EPOCH = 2016.0
+TYCHO_FALLBACK_EPOCH = 1991.5  # catalog mean, for rows with masked epochs
+
+
+def _propagate(ra, dec, pmra_masyr, pmde_masyr, dt_years):
+    """Move an ICRS position by proper motion. pmra is the projected
+    mu_alpha* (mas/yr, already times cos dec), Gaia's convention. Within
+    an arcminute of the pole the linear RA shift is meaningless, so RA is
+    left untouched there (dec still moves; a 2 arcsec match at the exact
+    pole is not a real case)."""
+    dec2 = dec + pmde_masyr * dt_years / 3.6e6
+    if abs(dec) > 90 - 1 / 60:
+        return ra, dec2
+    ra2 = ra + pmra_masyr * dt_years / 3.6e6 / math.cos(math.radians(dec))
+    return ra2, dec2
+
+
 def stars_in_field(center_ra, center_dec, radius_deg, *, mag_limit=12.5, max_stars=100):
     """Gaia DR3 (via VizieR) stars in the search circle, brightest first, with
     Tycho-2 designations where available. Online only. Callers apply their own
@@ -126,7 +148,7 @@ def stars_in_field(center_ra, center_dec, radius_deg, *, mag_limit=12.5, max_sta
 
     gaia = Vizier(
         catalog="I/355/gaiadr3",
-        columns=["Source", "RA_ICRS", "DE_ICRS", "Gmag", "Plx", "e_Plx"],
+        columns=["Source", "RA_ICRS", "DE_ICRS", "Gmag", "Plx", "e_Plx", "pmRA", "pmDE"],
         column_filters={"Gmag": f"<{mag_limit}"},
         row_limit=5000,
     ).query_region(center, radius=radius)
@@ -135,11 +157,15 @@ def stars_in_field(center_ra, center_dec, radius_deg, *, mag_limit=12.5, max_sta
         for row in gaia[0]:
             plx = float(row["Plx"]) if row["Plx"] else None
             dist_pc = 1000.0 / plx if plx and plx > 0.5 else None
+            ra, dec = float(row["RA_ICRS"]), float(row["DE_ICRS"])
+            pmra = float(row["pmRA"]) if row["pmRA"] else 0.0
+            pmde = float(row["pmDE"]) if row["pmDE"] else 0.0
             stars.append(
                 {
                     "designation": f"Gaia DR3 {row['Source']}",
-                    "ra": float(row["RA_ICRS"]),
-                    "dec": float(row["DE_ICRS"]),
+                    "_pm": (pmra, pmde),
+                    "ra": ra,
+                    "dec": dec,
                     "mag": round(float(row["Gmag"]), 1),
                     "band": "G",
                     "dist_ly": round(dist_pc * 3.26156) if dist_pc else None,
@@ -150,17 +176,26 @@ def stars_in_field(center_ra, center_dec, radius_deg, *, mag_limit=12.5, max_sta
 
     tycho = Vizier(
         catalog="I/259/tyc2",
-        columns=["TYC1", "TYC2", "TYC3", "RA(ICRS)", "DE(ICRS)", "VTmag"],
+        columns=["TYC1", "TYC2", "TYC3", "RA(ICRS)", "DE(ICRS)", "VTmag", "EpRA-1990", "EpDE-1990"],
         row_limit=200,
     ).query_region(center, radius=radius)
     if tycho:
+        fallback = TYCHO_FALLBACK_EPOCH - 1990.0
         for row in tycho[0]:
             tyc = f"TYC {row['TYC1']}-{row['TYC2']}-{row['TYC3']}"
             tra, tdec = float(row["RA(ICRS)"]), float(row["DE(ICRS)"])
+            ep_ra = 1990.0 + (float(row["EpRA-1990"]) if row["EpRA-1990"] else fallback)
+            ep_de = 1990.0 + (float(row["EpDE-1990"]) if row["EpDE-1990"] else fallback)
             for s in stars:
-                if sep_deg(s["ra"], s["dec"], tra, tdec) < 2 * ARCSEC:
+                pmra, pmde = s["_pm"]
+                # RA and DE are observed at different epochs in Tycho-2
+                era, _ = _propagate(s["ra"], s["dec"], pmra, pmde, ep_ra - GAIA_EPOCH)
+                _, edec = _propagate(s["ra"], s["dec"], pmra, pmde, ep_de - GAIA_EPOCH)
+                if sep_deg(era, edec, tra, tdec) < 2 * ARCSEC:
                     s["designation"] = tyc
                     break
+    for s in stars:
+        s.pop("_pm", None)
     return stars
 
 
@@ -232,14 +267,72 @@ def named_bright_stars(center_ra, center_dec, radius_deg, *, mag_limit=8.5):
 _DIST_LY_PER_UNIT = {"pc": 3.26156, "kpc": 3261.56, "mpc": 3.26156e6}
 
 
+def _distance_ly(dist, unit):
+    """One measurement row to light-years, or None."""
+    try:
+        if hasattr(dist, "mask") and dist.mask:
+            return None
+        factor = _DIST_LY_PER_UNIT.get(str(unit).strip().lower())
+        if factor and float(dist) > 0:
+            return float(dist) * factor
+    except (TypeError, ValueError):
+        pass
+    return None
+
+
+def _median_by_key(rows):
+    """{key: median-of-values} from (key, ly) pairs; the literature usually
+    holds several measurements, and the median beats whichever row happens
+    to come back first."""
+    groups = {}
+    for key, ly in rows:
+        groups.setdefault(key, []).append(ly)
+    out = {}
+    for key, values in groups.items():
+        values.sort()
+        out[key] = values[len(values) // 2]
+    return out
+
+
 def dso_distances(designations):
     """SIMBAD mean distances in light-years, keyed by designation. Online only;
-    designations SIMBAD doesn't know or has no distance for are simply absent."""
+    designations SIMBAD doesn't know or has no distance for are simply absent.
+    All designations go out as ONE query_objects request (a field can hold
+    half a dozen DSOs; serial round-trips dominated the wall time), with the
+    old per-object loop kept as a fallback."""
+    designations = list(designations)
+    if not designations:
+        return {}
     from astroquery.simbad import Simbad
 
     sim = Simbad()
     sim.add_votable_fields("mesdistance")
-    out = {}
+    try:
+        t = sim.query_objects(designations)
+    except Exception:
+        t = None
+    if t is not None and len(t) > 0:
+        cols = {c.lower(): c for c in t.colnames}
+        # astroquery >= 0.4.8 (our floor) always names this column
+        # user_specified_id; unknown schemas route to the serial fallback
+        idc = cols.get("user_specified_id")
+        dc, uc = cols.get("mesdistance.dist"), cols.get("mesdistance.unit")
+        if idc and dc and uc:
+            wanted = set(designations)
+            rows = []
+            for row in t:
+                key = str(row[idc]).strip()
+                ly = _distance_ly(row[dc], row[uc])
+                if key in wanted and ly is not None:
+                    rows.append((key, ly))
+            return _median_by_key(rows)
+    return _dso_distances_serial(designations, sim)
+
+
+def _dso_distances_serial(designations, sim):
+    """Per-object fallback when the batch request fails or the service
+    changes its column names."""
+    rows = []
     for desig in designations:
         try:
             t = sim.query_object(desig)
@@ -251,20 +344,8 @@ def dso_distances(designations):
         dc, uc = cols.get("mesdistance.dist"), cols.get("mesdistance.unit")
         if not dc or not uc:
             continue
-        values = []
         for row in t:
-            dist, unit = row[dc], row[uc]
-            try:
-                if hasattr(dist, "mask") and dist.mask:
-                    continue
-                factor = _DIST_LY_PER_UNIT.get(str(unit).strip().lower())
-                if factor and float(dist) > 0:
-                    values.append(float(dist) * factor)
-            except (TypeError, ValueError):
-                continue
-        if values:
-            # the literature usually holds several measurements; the median
-            # beats whichever row happens to come back first
-            values.sort()
-            out[desig] = values[len(values) // 2]
-    return out
+            ly = _distance_ly(row[dc], row[uc])
+            if ly is not None:
+                rows.append((desig, ly))
+    return _median_by_key(rows)

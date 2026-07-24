@@ -61,6 +61,34 @@ def fmt_coord(ra, dec):
 
 
 # ---------------------------------------------------------------- catalogs
+def object_links(disp, common=None):
+    """(label, url) pairs for an object: SIMBAD always, Wikipedia when the
+    article name is a safe bet (Messier numbers, or a common name with any
+    dot-joined alt designation stripped). The one link policy shared by the
+    chart legend and the annotated pages."""
+    links = [
+        (
+            "SIMBAD",
+            "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=" + urllib.parse.quote_plus(disp),
+        )
+    ]
+    if disp.startswith("M") and disp[1:].isdigit():
+        links.append(("Wikipedia", f"https://en.wikipedia.org/wiki/Messier_{disp[1:]}"))
+    elif common:
+        # names like "Wizard Nebula · Sh2-142" carry an alt designation the
+        # article title never has
+        article = common.split("\u00b7")[0].strip()
+        if article:
+            links.append(
+                (
+                    "Wikipedia",
+                    "https://en.wikipedia.org/wiki/"
+                    + urllib.parse.quote(article.replace(" ", "_"), safe="_()'-,."),
+                )
+            )
+    return links
+
+
 TYPE_NAMES = {
     "OCl": "Open cluster",
     "GCl": "Globular cluster",

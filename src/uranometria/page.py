@@ -1,6 +1,7 @@
 """Assemble the full HTML page: header, hemisphere charts, legend, lightbox."""
 
 import html
+import re
 
 import json as _json
 
@@ -9,9 +10,29 @@ from .resources import asset_text, sky_data
 from .webui import ANNOTATION_UI_CSS, ANNOTATION_UI_JS, DSO_COLOR_JS, PANZOOM_JS, js_color_map
 
 
+def _linkrow(o):
+    links = o.get("links") or []
+    if not links:
+        # defensive only: object_links always emits at least SIMBAD
+        return ""
+    anchors = "".join(
+        f'<a href="{html.escape(url, quote=True)}" target="_blank"'
+        f' rel="noopener">{html.escape(label)}</a>'
+        for label, url in links
+    )
+    return f'\n    <span class="linkrow">{anchors}</span>'
+
+
+def _nat_key(text):
+    """Natural sort key: M1 < M27 < M110, NGC 253 < NGC 7380."""
+    return [int(p) if p.isdigit() else p.lower() for p in re.split(r"(\d+)", text)]
+
+
 def _legend_html(objects):
     items = []
-    for i, o in enumerate(objects):
+    order = sorted(range(len(objects)), key=lambda i: _nat_key(objects[i]["disp"]))
+    for i in order:
+        o = objects[i]
         meta = o["type"] + (f" — {o['constellation']}" if o["constellation"] else "")
         common = f'<span class="common">{html.escape(o["common"])}</span>' if o["common"] else ""
         accent = accent_value(o)
@@ -32,7 +53,7 @@ def _legend_html(objects):
     <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
     <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
   <div class="obj"><span class="desig">{html.escape(o["disp"])}{photo}</span>{common}
-    <span class="meta">{html.escape(meta)}</span>
+    <span class="meta">{html.escape(meta)}</span>{_linkrow(o)}
     <span class="coord">{html.escape(o["coord"])}</span></div>
 </li>""")
     return "".join(items)
@@ -87,6 +108,8 @@ def build_page(cfg, objects):
         return asset_text(fn + ".b64")
 
     annotations = {f"mk-{i}": o["annotation"] for i, o in enumerate(objects) if o.get("annotation")}
+    thumbs = {f"mk-{i}": o["thumb"] for i, o in enumerate(objects) if o.get("thumb")}
+    thumbs_json = _json.dumps(thumbs, allow_nan=False).replace("<", "\\u003c")
     # </script> can never appear inside the JSON payload
     # \u003c-escape every "<" so no payload string can toy with the HTML
     # script-data parser states (e.g. "<!--<script" double-escape tricks)
@@ -211,6 +234,9 @@ svg.focus .marker.lit .halo {{ opacity:0.35; }}
 .legend .common {{ font-family:'Marcellus',serif; color:var(--star); font-size:15px; }}
 .legend .meta {{ color:var(--ink); font-size:11px; }}
 .legend .coord {{ color:var(--dim); font-size:11px; font-variant-numeric:tabular-nums; }}
+.legend .linkrow a {{ color:var(--dim); font-size:9.5px; letter-spacing:0.1em;
+  text-decoration:none; border-bottom:1px dotted var(--dim); margin-right:10px; }}
+.legend .linkrow a:hover {{ color:var(--gold); border-color:var(--gold); }}
 .lightbox {{ position:fixed; inset:0; z-index:10; display:flex; align-items:center;
   justify-content:center; background:rgba(4,6,16,0.93); cursor:zoom-out; }}
 .lightbox[hidden] {{ display:none; }}
@@ -257,6 +283,12 @@ svg.focus .marker.lit .halo {{ opacity:0.35; }}
   .lb-stage {{ flex-direction:column; overflow-y:auto; max-height:94vh; }}
   #lb-panel {{ width:auto; max-height:30vh; }}
 }}
+.marker image.thumb {{ display:none; }}
+svg.sky.deepzoom .marker image.thumb {{ display:block; }}
+#thumbtip {{ position:fixed; z-index:20; display:none; cursor:zoom-in;
+  border:1px solid var(--equator); background:var(--deep); padding:3px;
+  box-shadow:0 6px 24px rgba(0,0,0,0.6); }}
+#thumbtip img {{ display:block; width:112px; height:auto; }}
 .lightbox figcaption {{ text-align:center; }}
 .lightbox .cap-name {{ font-family:'Marcellus',serif; color:var(--star); font-size:18px;
   letter-spacing:0.08em; }}
@@ -308,6 +340,8 @@ footer {{ margin-top:14px; text-align:center; color:var(--dim); font-size:10px;
   </div>
 </div>
 <script type="application/json" id="lb-annotations">{annotations_json}</script>
+<script type="application/json" id="chart-thumbs">{thumbs_json}</script>
+<div id="thumbtip"><img alt=""></div>
 </div>
 <script>
 // ---- filtering: search text AND current zoom viewport ----------------
@@ -315,12 +349,19 @@ const searchBox = document.getElementById('search');
 const countEl = document.getElementById('count');
 const cards = Array.from(document.querySelectorAll('.legend li')).map(li => {{
   const mk = document.getElementById(li.dataset.target);
+  const desig = li.querySelector('.desig');
+  const desigText = desig && desig.firstChild ? desig.firstChild.textContent : '';
+  const rest = Array.from(li.querySelectorAll('.common, .meta, .coord'))
+    .map(el => el.textContent)
+    .join(' ');
   return {{
     li, mk,
     svg: mk ? mk.closest('svg') : null,
     x: mk ? parseFloat(mk.style.getPropertyValue('--tx')) : 0,
     y: mk ? parseFloat(mk.style.getPropertyValue('--ty')) : 0,
-    text: li.textContent.toLowerCase(),
+    // designation + name + type + coords only: the SIMBAD/PHOTO/ANNOTATED
+    // labels appear on every card and would make junk queries match all
+    text: (desigText + ' ' + rest).toLowerCase(),
   }};
 }});
 function inView(c) {{
@@ -378,8 +419,101 @@ cards.forEach(c => {{
 // ---- pan & zoom (shared) ---------------------------------------------
 {panzoom_js}
 {dso_color_js}
+// ---- thumbnails: deep-zoom marker thumbs + hover tooltip (opt-in) -----
+const THUMBS = JSON.parse(document.getElementById('chart-thumbs').textContent);
+const DEEP_ZOOM = 4;
+
+function ensureMarkerThumbs(svg) {{
+  if (svg._thumbed) return;
+  svg._thumbed = true;
+  svg.querySelectorAll('.marker').forEach(m => {{
+    const t = THUMBS[m.id];
+    if (!t) return;
+    const im = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+    im.setAttribute('href', t);
+    im.setAttribute('x', 12);
+    im.setAttribute('y', -68);
+    im.setAttribute('width', 56);
+    im.setAttribute('height', 56);
+    im.setAttribute('class', 'thumb');
+    // before the <text> so the haloed label stays legible on top; markers
+    // near the viewport edge may clip the thumb (hover tooltip still works)
+    m.insertBefore(im, m.querySelector('text'));
+  }});
+}}
+
+const tip = document.getElementById('thumbtip');
+const tipImg = tip.querySelector('img');
+let lastTipEv = null;
+let tipKey = null;
+let tipHide = null;
+tipImg.addEventListener('load', () => {{ if (lastTipEv) moveTip(lastTipEv); }});
+function hideTipSoon() {{
+  clearTimeout(tipHide);
+  tipHide = setTimeout(() => {{ tip.style.display = 'none'; tipKey = null; }}, 120);
+}}
+tip.addEventListener('mouseenter', () => clearTimeout(tipHide));
+tip.addEventListener('mouseleave', hideTipSoon);
+tip.addEventListener('click', () => {{
+  const mk = tipKey && document.getElementById(tipKey);
+  tip.style.display = 'none';
+  if (mk && mk.dataset.img) {{
+    openLightbox(mk.dataset.img, (mk.dataset.cap || '').split('|'), ANNOTATIONS[tipKey]);
+  }}
+}});
+function anchorTipToMarker(key) {{
+  const mk = document.getElementById(key);
+  if (!mk) return;
+  const r = mk.getBoundingClientRect();
+  if (!r.width && !r.height && !r.left && !r.top) return; // hidden hemisphere
+  clearTimeout(tipHide);
+  tipKey = key;
+  tipImg.src = THUMBS[key];
+  tip.style.display = 'block';
+  moveTip({{ clientX: r.right + 4, clientY: r.top - 4 }});
+}}
+function moveTip(ev) {{
+  lastTipEv = ev;
+  const pad = 14;
+  const r = tip.getBoundingClientRect();
+  let x = ev.clientX + pad, y = ev.clientY + pad;
+  if (x + r.width > innerWidth - 4) x = ev.clientX - r.width - pad;
+  if (y + r.height > innerHeight - 4) y = ev.clientY - r.height - pad;
+  tip.style.left = x + 'px';
+  tip.style.top = y + 'px';
+}}
+if (Object.keys(THUMBS).length) {{
+  // map markers: floating tooltip by the cursor (clickable)
+  document.querySelectorAll('.marker').forEach(el => {{
+    const key = el.id;
+    if (!THUMBS[key]) return;
+    el.addEventListener('mouseenter', ev => {{
+      clearTimeout(tipHide);
+      tipKey = key;
+      tipImg.src = THUMBS[key];
+      tip.style.display = 'block';
+      moveTip(ev);
+    }});
+    el.addEventListener('mousemove', moveTip);
+    el.addEventListener('mouseleave', hideTipSoon);
+  }});
+  // legend cards: show the full-size tooltip anchored at the object's
+  // marker on the chart, so the eye goes straight to the map
+  document.querySelectorAll('.legend li[data-target]').forEach(el => {{
+    const key = el.dataset.target;
+    if (!THUMBS[key]) return;
+    el.addEventListener('mouseenter', () => anchorTipToMarker(key));
+    el.addEventListener('mouseleave', hideTipSoon);
+  }});
+}}
+
 document.querySelectorAll('svg.sky').forEach(svg => {{
-  attachPanZoom(svg, 1000, 1000, applyFilter);
+  attachPanZoom(svg, 1000, 1000, vb => {{
+    const deep = 1000 / vb[2] >= DEEP_ZOOM;
+    if (deep) ensureMarkerThumbs(svg);
+    svg.classList.toggle('deepzoom', deep);
+    applyFilter();
+  }});
 }});
 
 // ---- lightbox: zoom/pan image, optional annotation overlay -------------
@@ -425,6 +559,8 @@ const ANN_LABEL_SCALE = {ann_label_scale};
 
 let openSeq = 0;
 function openLightbox(src, cap, ann, forceAnn) {{
+  clearTimeout(tipHide);
+  tip.style.display = 'none';
   lbName.textContent = cap[0] || '';
   lbSub.textContent = cap[1] || '';
   const seq = ++openSeq;
@@ -475,13 +611,14 @@ function openLightbox(src, cap, ann, forceAnn) {{
 
 document.querySelectorAll('[data-img]').forEach(el => {{
   el.addEventListener('click', e => {{
+    if (e.target.closest && e.target.closest('a[href]')) return;
     const annEl = e.target.closest ? e.target.closest('.annlink') : null;
-    if (annEl && annEl.tagName === 'A') return;
     const cap = (el.dataset.cap || '').split('|');
     const key = el.id || el.dataset.target;
     openLightbox(el.dataset.img, cap, ANNOTATIONS[key], !!annEl);
   }});
   el.addEventListener('keydown', e => {{
+    if (e.target.closest && e.target.closest('a[href]')) return;
     if (e.key !== 'Enter' || !e.target.classList || !e.target.classList.contains('annlink')) return;
     const cap = (el.dataset.cap || '').split('|');
     const key = el.id || el.dataset.target;
@@ -494,6 +631,10 @@ function closeLightbox() {{
 }}
 lb.addEventListener('click', closeLightbox);
 document.addEventListener('keydown', e => {{
+  if (e.key === 'Escape' && lb.hidden) {{
+    openSeq++;  // cancel any still-probing open (slow remote image)
+    return;
+  }}
   if (e.key !== 'Escape' || lb.hidden) return;
   if (e.target === lbSearch && lbSearch.value) {{
     lbSearch.value = '';

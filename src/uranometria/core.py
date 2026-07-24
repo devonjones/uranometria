@@ -27,7 +27,7 @@ import os
 import re
 import urllib.parse
 
-from .catalog import Catalog, fmt_coord, parse_angle, sesame
+from .catalog import Catalog, fmt_coord, parse_angle, sesame, object_links
 from .page import build_page
 
 
@@ -110,6 +110,7 @@ def resolve_objects(entries, *, allow_online=True):
         o["annotated"] = e.get("annotated")
         o["color"] = e.get("color")
         o["coord"] = fmt_coord(o["ra"], o["dec"])
+        o["links"] = _object_links(o["disp"], o["common"]) + _custom_links(e, o["disp"], warnings)
         objects.append(o)
     return objects, warnings
 
@@ -128,6 +129,60 @@ def resolve_image(url, base_dir):
     if os.path.isabs(path):
         return "file://" + urllib.parse.quote(path), None
     return urllib.parse.quote(path), None
+
+
+def _object_links(disp, common):
+    return object_links(disp, common)
+
+
+def _custom_links(entry, disp, warnings):
+    """User-supplied article links from the config: a mapping of label to
+    url, or a list of {label, url} items. Only http(s) targets survive."""
+    raw = entry.get("links")
+    if not raw:
+        return []
+    if isinstance(raw, dict):
+        pairs = list(raw.items())
+    elif isinstance(raw, list):
+        pairs = []
+        for item in raw:
+            if isinstance(item, dict):
+                pairs.append((item.get("label"), item.get("url")))
+            else:
+                warnings.append(f"{disp}: link entry {item!r} is not a label/url mapping — skipped")
+    else:
+        warnings.append(f"{disp}: links must be a mapping or a list — ignored")
+        return []
+    out = []
+    for label, url in pairs:
+        label, url = str(label or "").strip(), str(url or "").strip()
+        if not label or not re.match(r"https?://", url, re.IGNORECASE):
+            warnings.append(f"{disp}: link {label or url!r} is not http(s) — skipped")
+            continue
+        out.append((label, url))
+    return out
+
+
+def _thumbnail(href, base_dir, size=112):
+    """Small JPEG data URI for a local image href, for marker/hover thumbs.
+    Remote URLs return None (nothing is fetched at build time)."""
+    if not href or re.match(r"https?://", href):
+        return None
+    path = href[7:] if href.startswith("file://") else href
+    path = urllib.parse.unquote(path)
+    if not os.path.isabs(path):
+        path = os.path.join(base_dir, path)
+    import base64
+    import io
+
+    from PIL import Image, ImageOps
+
+    with Image.open(path) as im:
+        im = ImageOps.exif_transpose(im).convert("RGB")
+        im.thumbnail((size, size))
+        buf = io.BytesIO()
+        im.save(buf, format="JPEG", quality=70)
+    return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
 
 
 def _annotation_sidecar(o, base_dir):
@@ -250,6 +305,7 @@ def render(config, *, image_base=None, allow_online=True):
     objects, warnings = resolve_objects(entries, allow_online=allow_online)
     if not objects:
         raise SkymapError("no objects could be resolved")
+    thumbs_on = bool(cfg.get("thumbnails", False))
 
     for o in objects:
         if not o.get("image"):
@@ -273,6 +329,16 @@ def render(config, *, image_base=None, allow_online=True):
             o["href"] = href
             name = f" — {o['common']}" if o["common"] else ""
             o["caption"] = f"{o['disp']}{name}|{o['type']}   ·   {o['coord']}"
+            if thumbs_on:
+                try:
+                    thumb = _thumbnail(href, image_base or "")
+                    if thumb:
+                        o["thumb"] = thumb
+                except ImportError:
+                    warnings.append("thumbnails: true needs Pillow (pip install pillow) — skipped")
+                    thumbs_on = False
+                except OSError as err:
+                    warnings.append(f"{o['disp']}: thumbnail failed ({err})")
             try:
                 o["annotation"] = _annotation_sidecar(o, image_base or "")
             except (OSError, ValueError, KeyError, TypeError) as err:

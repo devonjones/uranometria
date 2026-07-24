@@ -110,6 +110,9 @@ svg.focus .marker.lit .halo { opacity:0.35; }
 .legend .common { font-family:'Marcellus',serif; color:var(--star); font-size:15px; }
 .legend .meta { color:var(--ink); font-size:11px; }
 .legend .coord { color:var(--dim); font-size:11px; font-variant-numeric:tabular-nums; }
+.legend .linkrow a { color:var(--dim); font-size:9.5px; letter-spacing:0.1em;
+  text-decoration:none; border-bottom:1px dotted var(--dim); margin-right:10px; }
+.legend .linkrow a:hover { color:var(--gold); border-color:var(--gold); }
 .lightbox { position:fixed; inset:0; z-index:10; display:flex; align-items:center;
   justify-content:center; background:rgba(4,6,16,0.93); cursor:zoom-out; }
 .lightbox[hidden] { display:none; }
@@ -163,6 +166,12 @@ svg.focus .ann.lit { opacity:1; }
   .lb-stage { flex-direction:column; overflow-y:auto; max-height:94vh; }
   #lb-panel { width:auto; max-height:30vh; }
 }
+.marker image.thumb { display:none; }
+svg.sky.deepzoom .marker image.thumb { display:block; }
+#thumbtip { position:fixed; z-index:20; display:none; cursor:zoom-in;
+  border:1px solid var(--equator); background:var(--deep); padding:3px;
+  box-shadow:0 6px 24px rgba(0,0,0,0.6); }
+#thumbtip img { display:block; width:112px; height:auto; }
 .lightbox figcaption { text-align:center; }
 .lightbox .cap-name { font-family:'Marcellus',serif; color:var(--star); font-size:18px;
   letter-spacing:0.08em; }
@@ -191,7 +200,7 @@ footer { margin-top:14px; text-align:center; color:var(--dim); font-size:10px;
   <circle class="rim" cx="500" cy="500" r="470"/>
   <g class="hours"><text x="500.0" y="14.0" dy="0.35em">0h</text><text x="743.0" y="79.1" dy="0.35em">2h</text><text x="920.9" y="257.0" dy="0.35em">4h</text><text x="986.0" y="500.0" dy="0.35em">6h</text><text x="920.9" y="743.0" dy="0.35em">8h</text><text x="743.0" y="920.9" dy="0.35em">10h</text><text x="500.0" y="986.0" dy="0.35em">12h</text><text x="257.0" y="920.9" dy="0.35em">14h</text><text x="79.1" y="743.0" dy="0.35em">16h</text><text x="14.0" y="500.0" dy="0.35em">18h</text><text x="79.1" y="257.0" dy="0.35em">20h</text><text x="257.0" y="79.1" dy="0.35em">22h</text></g>
   <g class="declabels"><text x="528.7" y="393.0" dy="-0.4em">+60°</text><text x="557.9" y="284.0" dy="-0.4em">+30°</text><text x="587.1" y="175.1" dy="-0.4em">0°</text><text x="616.3" y="66.1" dy="-0.4em">-30°</text></g>
-  <g class="markers"><g class="marker has-photo" id="mk-0" style="--tx:534.0px;--ty:319.9px" data-img="images/M31.jpg" data-cap="M31 — Andromeda Galaxy|Galaxy   ·   00h 43m  +41° 16′"><circle r="8.5" class="halo"/><circle r="8.5" class="ring"/><line x1="6.01" y1="6.01" x2="9.19" y2="9.19"/><line x1="-6.01" y1="6.01" x2="-9.19" y2="9.19"/><line x1="-6.01" y1="-6.01" x2="-9.19" y2="-9.19"/><line x1="6.01" y1="-6.01" x2="9.19" y2="-9.19"/><text x="0" y="-14" text-anchor="middle">M31</text></g><g class="marker has-photo" id="mk-1" style="--tx:707.5px;--ty:364.6px" data-img="images/M45.jpg" data-cap="M45 — Pleiades|Open cluster   ·   03h 47m  +24° 06′"><circle r="8.5" class="halo"/><circle r="8.5" class="ring"/><line x1="6.01" y1="6.01" x2="9.19" y2="9.19"/><line x1="-6.01" y1="6.01" x2="-9.19" y2="9.19"/><line x1="-6.01" y1="-6.01" x2="-9.19" y2="-9.19"/><line x1="6.01" y1="-6.01" x2="9.19" y2="-9.19"/><text x="16" y="4" text-anchor="start">M45</text></g><g class="marker has-photo" id="mk-2" style="--tx:754.0px;--ty:471.7px" data-img="images/M1.jpg" data-cap="M1 — Crab Nebula|Supernova remnant   ·   05h 35m  +22° 01′"><circle r="8.5" class="halo"/><circle r="8.5" class="ring"/><line x1="6.01" y1="6.01" x2="9.19" y2="9.19"/><line x1="-6.01" y1="6.01" x2="-9.19" y2="9.19"/><line x1="-6.01" y1="-6.01" x2="-9.19" y2="-9.19"/><line x1="6.01" y1="-6.01" x2="9.19" y2="-9.19"/><text x="0" y="22" text-anchor="middle">M1</text></g><g class="marker has-photo" id="mk-3" style="--tx:856.6px;--ty:461.4px" data-img="images/M42.jpg" data-cap="M42 — Great Orion Nebula|Cluster + nebula   ·   05h 35m  −05° 23′"><circle r="8.5" class="halo"/><circle r="8.5" class="ring"/><line x1="6.01" y1="6.01" x2="9.19" y2="9.19"/><line x1="-6.01" y1="6.01" x2="-9.19" y2="9.19"/><line x1="-6.01" y1="-6.01" x2="-9.19" y2="-9.19"/><line x1="6.01" y1="-6.01" x2="9.19" y2="-9.19"/><text x="16" y="4" text-anchor="start">M42</text></g><g class="marker has-photo" id="mk-4" style="--tx:438.5px;--ty:648.7px" data-img="images/M51.jpg" data-cap="M51 — Whirlpool Galaxy|Galaxy   ·   13h 30m  +47° 12′"><circle r="8.5" class="halo"/><circle r="8.5" class="ring"/><line x1="6.01" y1="6.01" x2="9.19" y2="9.19"/><line x1="-6.01" y1="6.01" x2="-9.19" y2="9.19"/><line x1="-6.01" y1="-6.01" x2="-9.19" y2="-9.19"/><line x1="6.01" y1="-6.01" x2="9.19" y2="-9.19"/><text x="16" y="4" text-anchor="start">M51</text></g><g class="marker has-photo" id="mk-5" style="--tx:280.7px;--ty:373.9px" data-img="images/M27.jpg" data-cap="M27 — Dumbbell Nebula|Planetary nebula   ·   20h 00m  +22° 43′"><circle r="8.5" class="halo"/><circle r="8.5" class="ring"/><line x1="6.01" y1="6.01" x2="9.19" y2="9.19"/><line x1="-6.01" y1="6.01" x2="-9.19" y2="9.19"/><line x1="-6.01" y1="-6.01" x2="-9.19" y2="-9.19"/><line x1="6.01" y1="-6.01" x2="9.19" y2="-9.19"/><text x="0" y="-14" text-anchor="middle">M27</text></g><g class="marker has-photo" id="mk-6" style="--tx:462.7px;--ty:385.9px;--accent:#D98A7E" data-img="images/Sh2-142.jpg" data-cap="NGC 7380 — Wizard Nebula · Sh2-142|Emission nebula + cluster   ·   22h 48m  +58° 04′"><circle r="8.5" class="halo"/><circle r="8.5" class="ring"/><line x1="6.01" y1="6.01" x2="9.19" y2="9.19"/><line x1="-6.01" y1="6.01" x2="-9.19" y2="9.19"/><line x1="-6.01" y1="-6.01" x2="-9.19" y2="-9.19"/><line x1="6.01" y1="-6.01" x2="9.19" y2="-9.19"/><text x="16" y="4" text-anchor="start">NGC 7380</text></g></g>
+  <g class="markers"><g class="marker has-photo" id="mk-0" style="--tx:534.0px;--ty:319.9px;--accent:#82B4F5" data-img="images/M31.jpg" data-cap="M31 — Andromeda Galaxy|Galaxy   ·   00h 43m  +41° 16′"><circle r="8.5" class="halo"/><circle r="8.5" class="ring"/><line x1="6.01" y1="6.01" x2="9.19" y2="9.19"/><line x1="-6.01" y1="6.01" x2="-9.19" y2="9.19"/><line x1="-6.01" y1="-6.01" x2="-9.19" y2="-9.19"/><line x1="6.01" y1="-6.01" x2="9.19" y2="-9.19"/><text x="0" y="-14" text-anchor="middle">M31</text></g><g class="marker has-photo" id="mk-1" style="--tx:707.5px;--ty:364.6px;--accent:#FFCC80" data-img="images/M45.jpg" data-cap="M45 — Pleiades|Open cluster   ·   03h 47m  +24° 06′"><circle r="8.5" class="halo"/><circle r="8.5" class="ring"/><line x1="6.01" y1="6.01" x2="9.19" y2="9.19"/><line x1="-6.01" y1="6.01" x2="-9.19" y2="9.19"/><line x1="-6.01" y1="-6.01" x2="-9.19" y2="-9.19"/><line x1="6.01" y1="-6.01" x2="9.19" y2="-9.19"/><text x="16" y="4" text-anchor="start">M45</text></g><g class="marker has-photo" id="mk-2" style="--tx:754.0px;--ty:471.7px;--accent:#C5CAE9" data-img="images/M1.jpg" data-cap="M1 — Crab Nebula|Supernova remnant   ·   05h 35m  +22° 01′"><circle r="8.5" class="halo"/><circle r="8.5" class="ring"/><line x1="6.01" y1="6.01" x2="9.19" y2="9.19"/><line x1="-6.01" y1="6.01" x2="-9.19" y2="9.19"/><line x1="-6.01" y1="-6.01" x2="-9.19" y2="-9.19"/><line x1="6.01" y1="-6.01" x2="9.19" y2="-9.19"/><text x="0" y="22" text-anchor="middle">M1</text></g><g class="marker has-photo" id="mk-3" style="--tx:856.6px;--ty:461.4px;--accent:#F48FB1" data-img="images/M42.jpg" data-cap="M42 — Great Orion Nebula|Cluster + nebula   ·   05h 35m  −05° 23′"><circle r="8.5" class="halo"/><circle r="8.5" class="ring"/><line x1="6.01" y1="6.01" x2="9.19" y2="9.19"/><line x1="-6.01" y1="6.01" x2="-9.19" y2="9.19"/><line x1="-6.01" y1="-6.01" x2="-9.19" y2="-9.19"/><line x1="6.01" y1="-6.01" x2="9.19" y2="-9.19"/><text x="16" y="4" text-anchor="start">M42</text></g><g class="marker has-photo" id="mk-4" style="--tx:438.5px;--ty:648.7px;--accent:#82B4F5" data-img="images/M51.jpg" data-cap="M51 — Whirlpool Galaxy|Galaxy   ·   13h 30m  +47° 12′"><circle r="8.5" class="halo"/><circle r="8.5" class="ring"/><line x1="6.01" y1="6.01" x2="9.19" y2="9.19"/><line x1="-6.01" y1="6.01" x2="-9.19" y2="9.19"/><line x1="-6.01" y1="-6.01" x2="-9.19" y2="-9.19"/><line x1="6.01" y1="-6.01" x2="9.19" y2="-9.19"/><text x="16" y="4" text-anchor="start">M51</text></g><g class="marker has-photo" id="mk-5" style="--tx:280.7px;--ty:373.9px;--accent:#80DEEA" data-img="images/M27.jpg" data-cap="M27 — Dumbbell Nebula|Planetary nebula   ·   20h 00m  +22° 43′"><circle r="8.5" class="halo"/><circle r="8.5" class="ring"/><line x1="6.01" y1="6.01" x2="9.19" y2="9.19"/><line x1="-6.01" y1="6.01" x2="-9.19" y2="9.19"/><line x1="-6.01" y1="-6.01" x2="-9.19" y2="-9.19"/><line x1="6.01" y1="-6.01" x2="9.19" y2="-9.19"/><text x="0" y="-14" text-anchor="middle">M27</text></g><g class="marker has-photo" id="mk-6" style="--tx:462.7px;--ty:385.9px;--accent:#F48FB1" data-img="images/Sh2-142.jpg" data-cap="NGC 7380 — Wizard Nebula · Sh2-142|Emission nebula + cluster   ·   22h 48m  +58° 04′"><circle r="8.5" class="halo"/><circle r="8.5" class="ring"/><line x1="6.01" y1="6.01" x2="9.19" y2="9.19"/><line x1="-6.01" y1="6.01" x2="-9.19" y2="9.19"/><line x1="-6.01" y1="-6.01" x2="-9.19" y2="-9.19"/><line x1="6.01" y1="-6.01" x2="9.19" y2="-9.19"/><text x="16" y="4" text-anchor="start">NGC 7380</text></g></g>
 </svg></div>
 <p class="zoomhint">SCROLL TO ZOOM · DRAG TO PAN · DOUBLE-CLICK TO RESET</p>
 <footer>
@@ -204,54 +213,61 @@ footer { margin-top:14px; text-align:center; color:var(--dim); font-size:10px;
   <input class="search" id="search" type="search" placeholder="Search objects…"
          aria-label="Search objects">
   <p class="count" id="count">7 OBJECTS</p>
-  <div class="scroll"><ul><li data-target="mk-0" data-img="images/M31.jpg" data-cap="M31 — Andromeda Galaxy|Galaxy   ·   00h 43m  +41° 16′">
-  <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
-    <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
-    <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
-  <div class="obj"><span class="desig">M31 <span class="photo">PHOTO ↗</span></span><span class="common">Andromeda Galaxy</span>
-    <span class="meta">Galaxy — Andromeda</span>
-    <span class="coord">00h 43m  +41° 16′</span></div>
-</li><li data-target="mk-1" data-img="images/M45.jpg" data-cap="M45 — Pleiades|Open cluster   ·   03h 47m  +24° 06′">
-  <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
-    <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
-    <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
-  <div class="obj"><span class="desig">M45 <span class="photo">PHOTO ↗</span></span><span class="common">Pleiades</span>
-    <span class="meta">Open cluster — Taurus</span>
-    <span class="coord">03h 47m  +24° 06′</span></div>
-</li><li data-target="mk-2" data-img="images/M1.jpg" data-cap="M1 — Crab Nebula|Supernova remnant   ·   05h 35m  +22° 01′">
+  <div class="scroll"><ul><li data-target="mk-2" style="--accent:#C5CAE9" data-img="images/M1.jpg" data-cap="M1 — Crab Nebula|Supernova remnant   ·   05h 35m  +22° 01′">
   <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
     <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
     <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
   <div class="obj"><span class="desig">M1 <span class="photo">PHOTO ↗</span></span><span class="common">Crab Nebula</span>
     <span class="meta">Supernova remnant — Taurus</span>
+    <span class="linkrow"><a href="https://simbad.cds.unistra.fr/simbad/sim-id?Ident=M1" target="_blank" rel="noopener">SIMBAD</a><a href="https://en.wikipedia.org/wiki/Messier_1" target="_blank" rel="noopener">Wikipedia</a></span>
     <span class="coord">05h 35m  +22° 01′</span></div>
-</li><li data-target="mk-3" data-img="images/M42.jpg" data-cap="M42 — Great Orion Nebula|Cluster + nebula   ·   05h 35m  −05° 23′">
-  <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
-    <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
-    <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
-  <div class="obj"><span class="desig">M42 <span class="photo">PHOTO ↗</span></span><span class="common">Great Orion Nebula</span>
-    <span class="meta">Cluster + nebula — Orion</span>
-    <span class="coord">05h 35m  −05° 23′</span></div>
-</li><li data-target="mk-4" data-img="images/M51.jpg" data-cap="M51 — Whirlpool Galaxy|Galaxy   ·   13h 30m  +47° 12′">
-  <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
-    <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
-    <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
-  <div class="obj"><span class="desig">M51 <span class="photo">PHOTO ↗</span> <span class="annlink" role="button" tabindex="0">ANNOTATED</span></span><span class="common">Whirlpool Galaxy</span>
-    <span class="meta">Galaxy — Canes Venatici</span>
-    <span class="coord">13h 30m  +47° 12′</span></div>
-</li><li data-target="mk-5" data-img="images/M27.jpg" data-cap="M27 — Dumbbell Nebula|Planetary nebula   ·   20h 00m  +22° 43′">
+</li><li data-target="mk-5" style="--accent:#80DEEA" data-img="images/M27.jpg" data-cap="M27 — Dumbbell Nebula|Planetary nebula   ·   20h 00m  +22° 43′">
   <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
     <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
     <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
   <div class="obj"><span class="desig">M27 <span class="photo">PHOTO ↗</span></span><span class="common">Dumbbell Nebula</span>
     <span class="meta">Planetary nebula — Vulpecula</span>
+    <span class="linkrow"><a href="https://simbad.cds.unistra.fr/simbad/sim-id?Ident=M27" target="_blank" rel="noopener">SIMBAD</a><a href="https://en.wikipedia.org/wiki/Messier_27" target="_blank" rel="noopener">Wikipedia</a></span>
     <span class="coord">20h 00m  +22° 43′</span></div>
-</li><li data-target="mk-6" style="--accent:#D98A7E" data-img="images/Sh2-142.jpg" data-cap="NGC 7380 — Wizard Nebula · Sh2-142|Emission nebula + cluster   ·   22h 48m  +58° 04′">
+</li><li data-target="mk-0" style="--accent:#82B4F5" data-img="images/M31.jpg" data-cap="M31 — Andromeda Galaxy|Galaxy   ·   00h 43m  +41° 16′">
+  <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
+    <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
+    <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
+  <div class="obj"><span class="desig">M31 <span class="photo">PHOTO ↗</span></span><span class="common">Andromeda Galaxy</span>
+    <span class="meta">Galaxy — Andromeda</span>
+    <span class="linkrow"><a href="https://simbad.cds.unistra.fr/simbad/sim-id?Ident=M31" target="_blank" rel="noopener">SIMBAD</a><a href="https://en.wikipedia.org/wiki/Messier_31" target="_blank" rel="noopener">Wikipedia</a></span>
+    <span class="coord">00h 43m  +41° 16′</span></div>
+</li><li data-target="mk-3" style="--accent:#F48FB1" data-img="images/M42.jpg" data-cap="M42 — Great Orion Nebula|Cluster + nebula   ·   05h 35m  −05° 23′">
+  <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
+    <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
+    <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
+  <div class="obj"><span class="desig">M42 <span class="photo">PHOTO ↗</span></span><span class="common">Great Orion Nebula</span>
+    <span class="meta">Cluster + nebula — Orion</span>
+    <span class="linkrow"><a href="https://simbad.cds.unistra.fr/simbad/sim-id?Ident=M42" target="_blank" rel="noopener">SIMBAD</a><a href="https://en.wikipedia.org/wiki/Messier_42" target="_blank" rel="noopener">Wikipedia</a></span>
+    <span class="coord">05h 35m  −05° 23′</span></div>
+</li><li data-target="mk-1" style="--accent:#FFCC80" data-img="images/M45.jpg" data-cap="M45 — Pleiades|Open cluster   ·   03h 47m  +24° 06′">
+  <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
+    <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
+    <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
+  <div class="obj"><span class="desig">M45 <span class="photo">PHOTO ↗</span></span><span class="common">Pleiades</span>
+    <span class="meta">Open cluster — Taurus</span>
+    <span class="linkrow"><a href="https://simbad.cds.unistra.fr/simbad/sim-id?Ident=M45" target="_blank" rel="noopener">SIMBAD</a><a href="https://en.wikipedia.org/wiki/Messier_45" target="_blank" rel="noopener">Wikipedia</a></span>
+    <span class="coord">03h 47m  +24° 06′</span></div>
+</li><li data-target="mk-4" style="--accent:#82B4F5" data-img="images/M51.jpg" data-cap="M51 — Whirlpool Galaxy|Galaxy   ·   13h 30m  +47° 12′">
+  <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
+    <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
+    <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
+  <div class="obj"><span class="desig">M51 <span class="photo">PHOTO ↗</span> <span class="annlink" role="button" tabindex="0">ANNOTATED</span></span><span class="common">Whirlpool Galaxy</span>
+    <span class="meta">Galaxy — Canes Venatici</span>
+    <span class="linkrow"><a href="https://simbad.cds.unistra.fr/simbad/sim-id?Ident=M51" target="_blank" rel="noopener">SIMBAD</a><a href="https://en.wikipedia.org/wiki/Messier_51" target="_blank" rel="noopener">Wikipedia</a><a href="https://www.messier.seds.org/m/m051.html" target="_blank" rel="noopener">SEDS</a></span>
+    <span class="coord">13h 30m  +47° 12′</span></div>
+</li><li data-target="mk-6" style="--accent:#F48FB1" data-img="images/Sh2-142.jpg" data-cap="NGC 7380 — Wizard Nebula · Sh2-142|Emission nebula + cluster   ·   22h 48m  +58° 04′">
   <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
     <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
     <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
   <div class="obj"><span class="desig">NGC 7380 <span class="photo">PHOTO ↗</span></span><span class="common">Wizard Nebula · Sh2-142</span>
     <span class="meta">Emission nebula + cluster — Cepheus</span>
+    <span class="linkrow"><a href="https://simbad.cds.unistra.fr/simbad/sim-id?Ident=NGC+7380" target="_blank" rel="noopener">SIMBAD</a><a href="https://en.wikipedia.org/wiki/Wizard_Nebula" target="_blank" rel="noopener">Wikipedia</a></span>
     <span class="coord">22h 48m  +58° 04′</span></div>
 </li></ul></div>
 </aside>
@@ -276,6 +292,8 @@ footer { margin-top:14px; text-align:center; color:var(--dim); font-size:10px;
   </div>
 </div>
 <script type="application/json" id="lb-annotations">{"mk-4": {"image_size": [2160, 2160], "objects": [{"kind": "dso", "designation": "NGC 5195", "aliases": [], "name": null, "type": "Galaxy", "named": null, "key": null, "mag": null, "band": null, "dist_ly": 26679728, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=NGC+5195"}, "x": 1149.5, "y": 953.5}, {"kind": "dso", "designation": "M51", "aliases": ["NGC 5194"], "name": "Whirlpool Galaxy", "type": "Galaxy", "named": null, "key": null, "mag": null, "band": null, "dist_ly": 21651088, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=M51", "wikipedia": "https://en.wikipedia.org/wiki/Messier_51"}, "x": 1210.6, "y": 1167.9}, {"kind": "dso", "designation": "IC 4278", "aliases": [], "name": null, "type": "Galaxy", "named": null, "key": null, "mag": null, "band": null, "dist_ly": null, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=IC+4278"}, "x": 910.6, "y": 1014.0}, {"kind": "dso", "designation": "IC 4277", "aliases": [], "name": null, "type": "Galaxy", "named": null, "key": null, "mag": null, "band": null, "dist_ly": null, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=IC+4277"}, "x": 1001.5, "y": 809.4}, {"kind": "dso", "designation": "IC 4282", "aliases": [], "name": null, "type": "Galaxy", "named": null, "key": null, "mag": null, "band": null, "dist_ly": null, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=IC+4282"}, "x": 464.6, "y": 1208.1}, {"kind": "dso", "designation": "IC 4263", "aliases": [], "name": null, "type": "Galaxy", "named": null, "key": null, "mag": null, "band": null, "dist_ly": 125017575, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=IC+4263"}, "x": 1904.1, "y": 1971.0}, {"kind": "star", "designation": "HD 117815", "aliases": [], "name": null, "type": "Star (A5)", "named": true, "key": null, "mag": 7.08, "band": "V", "dist_ly": 366, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=HD+117815"}, "x": 152.5, "y": 1056.4}, {"kind": "star", "designation": "TYC 3463-582-1", "aliases": [], "name": null, "type": null, "named": false, "key": 1, "mag": 10.9, "band": "G", "dist_ly": 3197, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3463-582-1"}, "x": 845.0, "y": 1770.6}, {"kind": "star", "designation": "TYC 3463-58-1", "aliases": [], "name": null, "type": null, "named": false, "key": 2, "mag": 10.9, "band": "G", "dist_ly": 3181, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3463-58-1"}, "x": 570.1, "y": 1208.0}, {"kind": "star", "designation": "TYC 3460-285-1", "aliases": [], "name": null, "type": null, "named": false, "key": 3, "mag": 11.1, "band": "G", "dist_ly": 2169, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3460-285-1"}, "x": 2008.5, "y": 467.2}, {"kind": "star", "designation": "Gaia DR3 1551933213472189952", "aliases": [], "name": null, "type": null, "named": false, "key": 4, "mag": 11.2, "band": "G", "dist_ly": 207, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=Gaia+DR3+1551933213472189952"}, "x": 195.4, "y": 1943.3}, {"kind": "star", "designation": "TYC 3463-587-1", "aliases": [], "name": null, "type": null, "named": false, "key": 5, "mag": 11.2, "band": "G", "dist_ly": 911, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3463-587-1"}, "x": 453.1, "y": 1353.5}, {"kind": "star", "designation": "TYC 3463-348-1", "aliases": [], "name": null, "type": null, "named": false, "key": 6, "mag": 11.3, "band": "G", "dist_ly": 6005, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3463-348-1"}, "x": 542.0, "y": 1181.0}, {"kind": "star", "designation": "TYC 3460-642-1", "aliases": [], "name": null, "type": null, "named": false, "key": 7, "mag": 11.3, "band": "G", "dist_ly": 4853, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3460-642-1"}, "x": 2136.3, "y": 1100.9}, {"kind": "star", "designation": "TYC 3466-1146-1", "aliases": [], "name": null, "type": null, "named": false, "key": 8, "mag": 11.5, "band": "G", "dist_ly": 1188, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3466-1146-1"}, "x": 692.2, "y": 33.5}, {"kind": "star", "designation": "TYC 3463-464-1", "aliases": [], "name": null, "type": null, "named": false, "key": 9, "mag": 11.7, "band": "G", "dist_ly": 1118, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3463-464-1"}, "x": 414.6, "y": 266.8}, {"kind": "star", "designation": "Gaia DR3 1551935751795702912", "aliases": [], "name": null, "type": null, "named": false, "key": 10, "mag": 12.2, "band": "G", "dist_ly": 925, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=Gaia+DR3+1551935751795702912"}, "x": 731.2, "y": 1837.7}, {"kind": "star", "designation": "Gaia DR3 1551890126360075264", "aliases": [], "name": null, "type": null, "named": false, "key": 11, "mag": 12.3, "band": "G", "dist_ly": 2881, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=Gaia+DR3+1551890126360075264"}, "x": 1074.7, "y": 1650.4}, {"kind": "star", "designation": "Gaia DR3 1552001417552726400", "aliases": [], "name": null, "type": null, "named": false, "key": 12, "mag": 12.4, "band": "G", "dist_ly": 303, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=Gaia+DR3+1552001417552726400"}, "x": 1548.7, "y": 1034.7}, {"kind": "star", "designation": "Gaia DR3 1552003754014939520", "aliases": [], "name": null, "type": null, "named": false, "key": 13, "mag": 12.4, "band": "G", "dist_ly": 1705, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=Gaia+DR3+1552003754014939520"}, "x": 1433.8, "y": 685.6}, {"kind": "star", "designation": "Gaia DR3 1551912112296179072", "aliases": [], "name": null, "type": null, "named": false, "key": 14, "mag": 12.5, "band": "G", "dist_ly": 1580, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=Gaia+DR3+1551912112296179072"}, "x": 1956.4, "y": 795.0}]}}</script>
+<script type="application/json" id="chart-thumbs">{"mk-0": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAoHBwgHBgoICAgLCgoLDhgQDg0NDh0VFhEYIx8lJCIfIiEmKzcvJik0KSEiMEExNDk7Pj4+JS5ESUM8SDc9Pjv/2wBDAQoLCw4NDhwQEBw7KCIoOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozv/wAARCABwAD8DASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDyM8GkFKw5ptMQ6ge1N+lFIY6gjikpQcdOKAEo47UUtACsRv56U3vSv96lGNuTQAyjNOCknigjPagBM+lFIBg4paACloo4oAWT71NHPBpWJ3GkXrTAtwQmQYH6VYl09hHuCmnacy7xuxXd6PptlqFnJ5kqIwXIz3rNuwI8zeMg4K4x2NR4xxXS65pS28rGM5x6Vz0qdxVJ3AjpaaOlKKYARyaKG6mkoAnhlKMMGtuw1d4BgPiueFSK5Hek1cDobu/88ZJzmsS6wG3DoaQTnHWmswcYJpJWAgPXNFLjHBpKoAPWkpT1pO9ACj8qM0nelAJOAKADPvQDSsrDgjpSGgBc80h9aBS9qAEPWkpSc0lAC5qSCZoJklQjcpBGR3qKloAluJ3uZ3mkOXc7icd6iNJS44zjj1oAOetAopcZoAUspdmVAoOcL1AplIOlLTAKAcUUUgAU7cdm3JxnOO1J7CkoAWlAPam96OnagD//2Q==", "mk-1": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAoHBwgHBgoICAgLCgoLDhgQDg0NDh0VFhEYIx8lJCIfIiEmKzcvJik0KSEiMEExNDk7Pj4+JS5ESUM8SDc9Pjv/2wBDAQoLCw4NDhwQEBw7KCIoOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozv/wAARCABwAD8DASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDxmiiigAoOcA449aKKACilx8ucjr0pKACgYzzSrgt8xwPXGaHYM2QoXgDAoASilx1yQMD86TFABRRRQAUUdqKAClApKseZEYEjEQVwSWkyfmHYY9v60AV6KO3vRQAUE5xwBgdqBzS4J7dKAE70DBPJx70UUAFKDg+tBPygYAx39aSgAooooAM81ZnukkhiSK3jiKJtdlyTIcnk56HtxVaigAoo4x70AZoAKMHrinPG8eN6ldwyMjGR602gAooooAKOMdDn1zRSgA5ycY/WgBKBR0ooAfJK8mN7s20bRk5wPSmUUUAFFFFABSjGfmzj2pKU5Hy56H14oASiijjmgAooooAKKUilZGQgMMZAI+hoAaPejjHvQcUUAFFFFABRRS8UAf/Z", "mk-2": "data:image/jpeg;base64,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", "mk-3": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAoHBwgHBgoICAgLCgoLDhgQDg0NDh0VFhEYIx8lJCIfIiEmKzcvJik0KSEiMEExNDk7Pj4+JS5ESUM8SDc9Pjv/2wBDAQoLCw4NDhwQEBw7KCIoOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozv/wAARCABwAFADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDyWlpO9FAC0UClx7UAJijFOxR0oAbRQaKAEopaMUAJS0UuKAACnqpPFIq1dsxmZF2hgxwQaQ0iv5ZxSeVkdK6DUdNigRWjZTn0qiliz9AaAasZnkk9BR5J9K2DYFOoANRSwBRk0CMry8U0qatyjb2qBjmmBCKeCKYKcoJNAEgPtU8LOrh1G0LRDCWxwPxre03SlumAZgSeAAOBSKJtL0+81NQ5UlfWugn0cWNuNq8jqa2/DejxWsilbs4XrGRgNU3iWSIswgHyrx+NVFX0M5O2pwdzF85yce1UpIdy9Rn0q9eSZY5GaqhlDAHv+lS1YuLuY91CUYiqTrgYrYul3SEmsydcE4oQ3oVBipEwBUQNPU0xFuBjuA9a6jTpVtI1yeTXKW7fvVPvWpJcZxtPTFJ7DjudaNcWNCN2D6iqcutSTDZI5Ze2TXO+eSCc0nmHGSaE7DkrmjczKeQM1nyynOSaia5YcGomuQRzSBJE11NuO4HrVNzuXNNMw3H0zUUkmehoB6lelBNNpc8YqiC1b/ez2HWrCy5UgdqpxECpAduaQyXeRxmlaU4qBpCD6U0yEjHagdyYy9eahYmm7qXNADSTzTRknmnGkBAPNAhnaikopiHqeafuI4qIGlzmgCQtTc0lB9KAD8aCaAOKXaKBjd3vSjBHJo2gUlAhtLSUUALRSUUASmN1jV2QhW6NjrTcinNNI8Sxs5KL91SeBUZOe1ADt1JupKSgB2aQmkooA//Z", "mk-4": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAoHBwgHBgoICAgLCgoLDhgQDg0NDh0VFhEYIx8lJCIfIiEmKzcvJik0KSEiMEExNDk7Pj4+JS5ESUM8SDc9Pjv/2wBDAQoLCw4NDhwQEBw7KCIoOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozv/wAARCABwAHADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDySkpx4x70lUUFFKACCcgYGcHvSUAO3/JtwMZznHNNoooAOtFFFAC9qAcc0naigBc//WpKO9B4NABS0lLQAnY0UUE9OMUALg4z26UlGfXmg8k8YoAKMc4opQDgkdB1PpQAlFFFACZopcUYoADgAHOc9vSigY70UgAUp4PPB96ASCCDgilZizFmJJPJJ70wGUfhS0UAAJByDg0N17Y9qKMUAJS0UoBxnHFACAE04KasWEImuVVhx3roh4fcWyztbt5bHAbHFJuwHLbDTtgIGAQcc5rSu7HyJmGML61QlZVGF60XArtwetGc0ZBYZ4HfFGKACnZJwBkgHgUgJAIHfg0DimBPZ2r3tzHbxYLyMFXJxzSXds9pcPBJjejYODnmoUcoQVJBHeh3Zzljkn1pAJjIzRQPSpFj3Rs24Ar29qAI6VRkjPSkpy8c0wNTSFC3ka4yScCvQjd6jPpJto7ZDHkkOTjtXnWkzeXqML9QGFetab9lukXzn2ogIIUZwe3FZzS3Y03seY60t1DP5dxE0fpnvWHIOa9K8VWMU9g5XGQCyj0xXm0nWqWwiMgBiM5x3HelBwQcA+xpMUE1QBz+VFFKrFG3KeaAG0uOM0cYPXPajJwR2oAVV3OFBAycZJwBSHg0UUAHbOaXOaT8qKAJY2ZTlSRiux0zxFshj81S8qgLkd/rXFow71chuxDnHNIDrNT1rzraaSQAYQqoriHOTU9zevPweF9Kqk5oAM8EYH1oPSkxxmigBaUCkpVznAzk+lACfhRRSUwClOOxzSUUALQOcAnAoALZ2gnAyfpS/Lsxg7s/higAABbGQOetJ36/lRR2oAKSl470ZOKADJxjJx6UlB7UUgFJHYY4pQSD6GkySAvYUo4IPBx60ABoIUYwc5HPGMGjr36UlMAxQVIxkYyMijGMe9FABRR2ooAKMnFFFABRRR9KAAD3HFH9aKSgCR4yiqxZOf4VbJH1pBjnjOelN4AGDz9KUdc5x6GkB//Z", "mk-5": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAoHBwgHBgoICAgLCgoLDhgQDg0NDh0VFhEYIx8lJCIfIiEmKzcvJik0KSEiMEExNDk7Pj4+JS5ESUM8SDc9Pjv/2wBDAQoLCw4NDhwQEBw7KCIoOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozv/wAARCABwAHADASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDxuijPFJQAUvekpzNuxhQOMcUAJRnpxSUtABRmkooAWikooAKPeil6UAJ+NFFKDxjHfrQAZxxSUA4pcHaTjj1oASjPvS4OCce1JQAUUAUfjQAoBOcfjSUuKSgAooooAKM+9FKRjsD9O1ACUUo5PPANIPrQAoBJGOtJ2xmjtR1NABRjHvS4wRkfhR36UAHbpzRiinLGzHAGaAG/hQBnPQYFWZLC6ji85oHEf97HFV8c80AJ14FJTgSGBUkEdCKTOevJoAOMe9JS9etGcnJoAO3NJSj8KTt1oAUkkYJ6fpTv3YQfeLZOR2x2ppNJmgBT6HPFKoBPJx70nXmjjNACnbgYz05z61qaVH5hARctnmsod6v6Rqb6ZfJcKoYDhlPcU07aiauekWNpbx2JS7XbGVyWI/lXn2t2dvBeO1sSYmORnqK6ubxPZXdmT9pAJX7hBBrjr67SYFVBJJ61c3B6omPMtGUBxSHrS9eByTSAjuM81mWJmlIwP/r0lGOKACil70Hjj07jvQAlKcZyBx/KlLHYqEKAMnIHJ+tN4oAUUlKRjrxR8u3OTn0xQAUUe5owScAc9KAF3YFGfT86TGM+opKAFo4z1o5o4xQAdM8EGikooAKKXvSttLfLkD3oAbR0oxRQAUoJHIpBS0AHSiijPFABRjjjpRjBwaSgBelAODnGfajrQPSgBKXtSUtACE5o6Uc5zS8gdetABnJyeaSlNHbFABjnseKPxpKKAA0UUH8vagApR8pU4B74pOetAoAVjlicY9h2o69unWl28ZzgYptABS5zR0pO2MfjQAdDzSgZ7jpnmk5PFAGaAP/Z", "mk-6": "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAoHBwgHBgoICAgLCgoLDhgQDg0NDh0VFhEYIx8lJCIfIiEmKzcvJik0KSEiMEExNDk7Pj4+JS5ESUM8SDc9Pjv/2wBDAQoLCw4NDhwQEBw7KCIoOzs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozs7Ozv/wAARCABwAFUDASIAAhEBAxEB/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/8QAHwEAAwEBAQEBAQEBAQAAAAAAAAECAwQFBgcICQoL/8QAtREAAgECBAQDBAcFBAQAAQJ3AAECAxEEBSExBhJBUQdhcRMiMoEIFEKRobHBCSMzUvAVYnLRChYkNOEl8RcYGRomJygpKjU2Nzg5OkNERUZHSElKU1RVVldYWVpjZGVmZ2hpanN0dXZ3eHl6goOEhYaHiImKkpOUlZaXmJmaoqOkpaanqKmqsrO0tba3uLm6wsPExcbHyMnK0tPU1dbX2Nna4uPk5ebn6Onq8vP09fb3+Pn6/9oADAMBAAIRAxEAPwDyteef60MKatPwKAG96M0oGc+1JtLHii4CMcnikxyeKk2gdetB6dKLgRUnU0pFGOppiClz680nFLxjvmgA2knhSaKASOmaKAFWpE4PXn0qPAxSk/MO+KQyysG5+nFPdAhKgVJA6tEpBOS2PpU95D8w2A9B0qFuaNKxmlcmkKgg889hVr7Occ1G0WKszKpFJxipmj4zUJoAQ0lLx3oFMQgBPQZooLHsTRQA7t1oxSc4xVm0t/NlCk0mNaklnDJJIAgJ74rpYbX7XYmUEbozsI7j0qXTNGhgtmnkG6RkwnfBrU02zVbCRGVVkdtxx3HYfhV0Yc0rvYKkuVWOZksXMm1ATmorm1WBfn5OOldYbRIwT2HSub1V8zsrD8q6alKMI3MYzcnYw5juIAGMVWcY44q26ncfLBPFVW5PI6VxmwkUTSyCNcbj6nFNZcd6CcUe/bNMQ0DIooooAcBVm0cxSqw6g1AmCKep2nmkxo7fTtcaKBWaEOOgA9amWaS+QlMROhO4KcY9K5K0vn8xV3YQHpnrWqsiANLFIRJ1LjuPSkpuLt0L5FJeZZuYLrAmaVtq9gSayL2ZZS5VW6dcV0H+thwJG5HOehppjgt0KCBXLdGPO2tZNSWjM0mtzjyzqCRuXPBqB2xW9fWkKxEIuWz96sSWMg9KzGQE0metOZcc03GKYgz7mij8KKAHjIGRRk0uMCkpDF3Yq9b3kgwCxHGOKocc8ZoDFTkGk1cadjqbHU3ijw7AqPu8ZNTzXKzqME59elczDeFcBj0q+t2rpgPz6ios0aXTRalkaGIjbnPWsyfbuyKdLdllKs3I6VB5i4y3Xtindk2VyvIvU44NRkjFTsCVPH41EV9KtEMaDRSYwKKYidgCDjtURFGcUhbPSkMTnNBIwPWjr1NApiFzx070+NiGGMVGelKOmQKGBMzcYNM344FCj5d3YcUHHXHNSUGWABpD+tB60nUUCF/GigCimAwc0UnbNFMQp5pVxzuz7UnajHWgBeuelGTgDsKARzkZz0PpSGgBwNPDdOOlRD604HFIY44oyB0pu6jr09aAFwR/OikUsxOBn8KKLCP/2Q=="}</script>
+<div id="thumbtip"><img alt=""></div>
 </div>
 <script>
 // ---- filtering: search text AND current zoom viewport ----------------
@@ -283,12 +301,19 @@ const searchBox = document.getElementById('search');
 const countEl = document.getElementById('count');
 const cards = Array.from(document.querySelectorAll('.legend li')).map(li => {
   const mk = document.getElementById(li.dataset.target);
+  const desig = li.querySelector('.desig');
+  const desigText = desig && desig.firstChild ? desig.firstChild.textContent : '';
+  const rest = Array.from(li.querySelectorAll('.common, .meta, .coord'))
+    .map(el => el.textContent)
+    .join(' ');
   return {
     li, mk,
     svg: mk ? mk.closest('svg') : null,
     x: mk ? parseFloat(mk.style.getPropertyValue('--tx')) : 0,
     y: mk ? parseFloat(mk.style.getPropertyValue('--ty')) : 0,
-    text: li.textContent.toLowerCase(),
+    // designation + name + type + coords only: the SIMBAD/PHOTO/ANNOTATED
+    // labels appear on every card and would make junk queries match all
+    text: (desigText + ' ' + rest).toLowerCase(),
   };
 });
 function inView(c) {
@@ -348,6 +373,9 @@ cards.forEach(c => {
 function attachPanZoom(svg, w, h, onChange) {
   let vb = [0, 0, w, h], pan = null, moved = 0;
   const maxZ = 8;
+  // dragging to pan must never read as text selection (uranometria-8)
+  svg.style.userSelect = 'none';
+  svg.style.webkitUserSelect = 'none';
   const apply = () => {
     svg.setAttribute('viewBox', vb.join(' '));
     svg.style.setProperty('--z', w / vb[2]);
@@ -373,26 +401,40 @@ function attachPanZoom(svg, w, h, onChange) {
     e.preventDefault();
     const [px, py] = toLocal(e.clientX, e.clientY);
     const f = e.deltaY < 0 ? 1 / 1.25 : 1.25;
-    vb[0] = px - (px - vb[0]) * f;
-    vb[1] = py - (py - vb[1]) * f;
-    vb[2] *= f;
+    // clamp the scale FIRST and apply only the factor that survives:
+    // at the zoom limits the leftover origin shift used to become a pan
+    // toward the cursor (uranometria-9)
+    const nz = Math.min(w, Math.max(w / maxZ, vb[2] * f));
+    const g = nz / vb[2];
+    if (g === 1) return;
+    vb[0] = px - (px - vb[0]) * g;
+    vb[1] = py - (py - vb[1]) * g;
+    vb[2] = nz;
     clamp(); apply();
   }, { passive: false });
   svg.addEventListener('pointerdown', e => {
-    pan = [e.clientX, e.clientY, vb[0], vb[1]]; moved = 0;
-    svg.setPointerCapture(e.pointerId);
+    pan = [e.clientX, e.clientY, vb[0], vb[1], e.pointerId]; moved = 0;
+    const sel = window.getSelection ? window.getSelection() : null;
+    if (sel && !sel.isCollapsed) sel.removeAllRanges();
+    // capture waits until a real drag: capturing on pointerdown retargets
+    // the click to the svg, which made plain clicks on markers dead
   });
   svg.addEventListener('pointermove', e => {
     if (!pan) return;
+    if (!e.buttons) { pan = null; return; }  // release landed off-svg pre-capture
     const r = svg.getBoundingClientRect();
     const s = Math.min(r.width / vb[2], r.height / vb[3]);
     const dx = e.clientX - pan[0], dy = e.clientY - pan[1];
     moved = Math.max(moved, Math.abs(dx) + Math.abs(dy));
+    if (moved > 4 && !svg.hasPointerCapture(pan[4])) {
+      svg.setPointerCapture(pan[4]);
+    }
     vb[0] = pan[2] - dx / s;
     vb[1] = pan[3] - dy / s;
     clamp(); apply();
   });
   svg.addEventListener('pointerup', () => { pan = null; });
+  svg.addEventListener('pointercancel', () => { pan = null; });
   svg.addEventListener('click', e => {
     if (moved > 5) { e.stopPropagation(); }
     moved = 0;
@@ -413,8 +455,101 @@ function dsoColor(t, C) {
   return C.other;
 }
 
+// ---- thumbnails: deep-zoom marker thumbs + hover tooltip (opt-in) -----
+const THUMBS = JSON.parse(document.getElementById('chart-thumbs').textContent);
+const DEEP_ZOOM = 4;
+
+function ensureMarkerThumbs(svg) {
+  if (svg._thumbed) return;
+  svg._thumbed = true;
+  svg.querySelectorAll('.marker').forEach(m => {
+    const t = THUMBS[m.id];
+    if (!t) return;
+    const im = document.createElementNS('http://www.w3.org/2000/svg', 'image');
+    im.setAttribute('href', t);
+    im.setAttribute('x', 12);
+    im.setAttribute('y', -68);
+    im.setAttribute('width', 56);
+    im.setAttribute('height', 56);
+    im.setAttribute('class', 'thumb');
+    // before the <text> so the haloed label stays legible on top; markers
+    // near the viewport edge may clip the thumb (hover tooltip still works)
+    m.insertBefore(im, m.querySelector('text'));
+  });
+}
+
+const tip = document.getElementById('thumbtip');
+const tipImg = tip.querySelector('img');
+let lastTipEv = null;
+let tipKey = null;
+let tipHide = null;
+tipImg.addEventListener('load', () => { if (lastTipEv) moveTip(lastTipEv); });
+function hideTipSoon() {
+  clearTimeout(tipHide);
+  tipHide = setTimeout(() => { tip.style.display = 'none'; tipKey = null; }, 120);
+}
+tip.addEventListener('mouseenter', () => clearTimeout(tipHide));
+tip.addEventListener('mouseleave', hideTipSoon);
+tip.addEventListener('click', () => {
+  const mk = tipKey && document.getElementById(tipKey);
+  tip.style.display = 'none';
+  if (mk && mk.dataset.img) {
+    openLightbox(mk.dataset.img, (mk.dataset.cap || '').split('|'), ANNOTATIONS[tipKey]);
+  }
+});
+function anchorTipToMarker(key) {
+  const mk = document.getElementById(key);
+  if (!mk) return;
+  const r = mk.getBoundingClientRect();
+  if (!r.width && !r.height && !r.left && !r.top) return; // hidden hemisphere
+  clearTimeout(tipHide);
+  tipKey = key;
+  tipImg.src = THUMBS[key];
+  tip.style.display = 'block';
+  moveTip({ clientX: r.right + 4, clientY: r.top - 4 });
+}
+function moveTip(ev) {
+  lastTipEv = ev;
+  const pad = 14;
+  const r = tip.getBoundingClientRect();
+  let x = ev.clientX + pad, y = ev.clientY + pad;
+  if (x + r.width > innerWidth - 4) x = ev.clientX - r.width - pad;
+  if (y + r.height > innerHeight - 4) y = ev.clientY - r.height - pad;
+  tip.style.left = x + 'px';
+  tip.style.top = y + 'px';
+}
+if (Object.keys(THUMBS).length) {
+  // map markers: floating tooltip by the cursor (clickable)
+  document.querySelectorAll('.marker').forEach(el => {
+    const key = el.id;
+    if (!THUMBS[key]) return;
+    el.addEventListener('mouseenter', ev => {
+      clearTimeout(tipHide);
+      tipKey = key;
+      tipImg.src = THUMBS[key];
+      tip.style.display = 'block';
+      moveTip(ev);
+    });
+    el.addEventListener('mousemove', moveTip);
+    el.addEventListener('mouseleave', hideTipSoon);
+  });
+  // legend cards: show the full-size tooltip anchored at the object's
+  // marker on the chart, so the eye goes straight to the map
+  document.querySelectorAll('.legend li[data-target]').forEach(el => {
+    const key = el.dataset.target;
+    if (!THUMBS[key]) return;
+    el.addEventListener('mouseenter', () => anchorTipToMarker(key));
+    el.addEventListener('mouseleave', hideTipSoon);
+  });
+}
+
 document.querySelectorAll('svg.sky').forEach(svg => {
-  attachPanZoom(svg, 1000, 1000, applyFilter);
+  attachPanZoom(svg, 1000, 1000, vb => {
+    const deep = 1000 / vb[2] >= DEEP_ZOOM;
+    if (deep) ensureMarkerThumbs(svg);
+    svg.classList.toggle('deepzoom', deep);
+    applyFilter();
+  });
 });
 
 // ---- lightbox: zoom/pan image, optional annotation overlay -------------
@@ -479,7 +614,7 @@ function buildAnnotationUI(opts) {
   const w = model.image_size[0], h = model.image_size[1];
   const r = 0.02 * Math.min(w, h);
   const fs = Math.max(12, 0.016 * Math.min(w, h)) * (opts.labelScale || 1);
-  const anns = [], cards = [];
+  const anns = [], cards = [], texts = [];
   opts.listEl.textContent = '';
   model.objects.forEach((o, i) => {
     const color = annColor(o, C);
@@ -549,6 +684,10 @@ function buildAnnotationUI(opts) {
     li.appendChild(box);
     opts.listEl.appendChild(li);
     cards.push(li);
+    // searchable text excludes the link labels: SIMBAD appears on every
+    // card, so junk queries like 'sim' would otherwise match everything
+    texts.push(
+      (desig.textContent + ' ' + (o.name || '') + ' ' + bits.join(' ')).toLowerCase());
     li.addEventListener('mouseenter', () => {
       opts.svg.classList.add('focus');
       g.classList.add('lit');
@@ -569,7 +708,7 @@ function buildAnnotationUI(opts) {
     const zoomed = vb && vb[2] < w - 1;
     let shown = 0;
     cards.forEach((li, i) => {
-      const hit = (!q || li.textContent.toLowerCase().includes(q)) && inView(i);
+      const hit = (!q || texts[i].includes(q)) && inView(i);
       li.style.display = hit ? '' : 'none';
       if (hit) shown++;
       anns[i].classList.toggle('lit', !!q && hit);
@@ -592,6 +731,8 @@ function buildAnnotationUI(opts) {
 
 let openSeq = 0;
 function openLightbox(src, cap, ann, forceAnn) {
+  clearTimeout(tipHide);
+  tip.style.display = 'none';
   lbName.textContent = cap[0] || '';
   lbSub.textContent = cap[1] || '';
   const seq = ++openSeq;
@@ -642,13 +783,14 @@ function openLightbox(src, cap, ann, forceAnn) {
 
 document.querySelectorAll('[data-img]').forEach(el => {
   el.addEventListener('click', e => {
+    if (e.target.closest && e.target.closest('a[href]')) return;
     const annEl = e.target.closest ? e.target.closest('.annlink') : null;
-    if (annEl && annEl.tagName === 'A') return;
     const cap = (el.dataset.cap || '').split('|');
     const key = el.id || el.dataset.target;
     openLightbox(el.dataset.img, cap, ANNOTATIONS[key], !!annEl);
   });
   el.addEventListener('keydown', e => {
+    if (e.target.closest && e.target.closest('a[href]')) return;
     if (e.key !== 'Enter' || !e.target.classList || !e.target.classList.contains('annlink')) return;
     const cap = (el.dataset.cap || '').split('|');
     const key = el.id || el.dataset.target;
@@ -661,6 +803,10 @@ function closeLightbox() {
 }
 lb.addEventListener('click', closeLightbox);
 document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && lb.hidden) {
+    openSeq++;  // cancel any still-probing open (slow remote image)
+    return;
+  }
   if (e.key !== 'Escape' || lb.hidden) return;
   if (e.target === lbSearch && lbSearch.value) {
     lbSearch.value = '';

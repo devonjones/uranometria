@@ -1,5 +1,7 @@
 # uranometria documentation
 
+- [API reference](https://devonjones.github.io/uranometria/api/): generated
+  from docstrings on every push to master.
 - [Sky charts](charts.md): the `chart` command, the interactive HTML page it
   produces, and how to regenerate your map as your library grows.
 - [Chart config reference](chart-config.md): every key the YAML accepts, the

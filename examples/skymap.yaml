@@ -22,17 +22,31 @@ subtitle: Seven deep-sky objects · Seestar S50 · Epoch J2000
 # mag_limit: 5.0        # faintest stars drawn
 # show_ecliptic: true
 # mirror: false         # true for the mirrored (celestial-globe) orientation
+thumbnails: true        # hover/deep-zoom photo thumbs (opt-in; needs Pillow)
+# Per-object colors below reuse the annotation palette (webui.py), so the
+# chart legend and annotated-image legends share one color language:
+# galaxies #82B4F5, emission nebulae #F48FB1, planetaries #80DEEA,
+# clusters #FFCC80, everything else #C5CAE9.
 objects:
   - id: M31
     image: images/M31.jpg
+    color: "#82B4F5"     # galaxy
   - id: M45
     image: images/M45.jpg
+    color: "#FFCC80"     # open cluster
   - id: M1
     image: images/M1.jpg
+    color: "#C5CAE9"     # supernova remnant (the catch-all hue)
   - id: M42
     image: images/M42.jpg
+    color: "#F48FB1"     # emission nebula: Cl+N in OpenNGC, but it reads
+                         # as the nebula, so it gets the nebula color
   - id: M51
     image: images/M51.jpg
+    color: "#82B4F5"     # galaxy
+    links:               # article links shown on the legend card, next to
+      SEDS: https://www.messier.seds.org/m/m051.html  # the automatic
+                                              # SIMBAD/Wikipedia pair
     annotations: annotated/m51.annotations.json  # annotation model from
                                               # `uranometria annotate`; powers the
                                               # in-lightbox overlay and object list
@@ -42,10 +56,11 @@ objects:
                                               # the annotations above win
   - id: M27
     image: images/M27.jpg
+    color: "#80DEEA"     # planetary nebula
   - id: Sh2-142
     label: NGC 7380
     name: Wizard Nebula · Sh2-142
     type: Emission nebula + cluster
     constellation: Cepheus
-    color: "#D98A7E"     # per-object marker/legend accent
+    color: "#F48FB1"     # emission nebula
     image: images/Sh2-142.jpg
