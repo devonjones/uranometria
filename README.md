@@ -120,7 +120,7 @@ database.
 Add `--html` for an interactive page: the photo with pan/zoom, a LABELS
 toggle, and a searchable sidebar linking each object to SIMBAD and
 Wikipedia, all in one self-contained file
-([live sample](https://devonjones.github.io/uranometria/examples/annotated/M51_annotated.html)).
+(**[live sample](https://devonjones.github.io/uranometria/examples/annotated/M51_annotated.html)**).
 Drop the model JSON next to a chart image as `<image>.annotations.json` and
 the sky map's photo lightbox gains the same overlay with a labels toggle.
 
@@ -199,6 +199,33 @@ def publish_skymap(objects, out_path):
     ]}
     return uranometria.generate(cfg, out_path)
 ```
+
+The annotation pipeline integrates the same way. `build_model` solves and
+cross-matches once; the two renderers consume the model, so a host can cache
+the JSON per target and re-render on demand:
+
+```python
+from uranometria.annotate import build_model, write_model
+from uranometria.annotate.render_png import render_png
+from uranometria.annotate.render_html import render_html
+
+def annotate_target(stack_path, out_dir, ra_hours=None, dec=None):
+    model = build_model(
+        stack_path,
+        allow_online=True,                    # False: bundled-catalog DSOs only
+        solve_kwargs={"ra_hours": ra_hours, "dec": dec},
+    )
+    write_model(model, out_dir / "annotations.json")
+    render_png(model, stack_path, out_dir / "annotated.png")
+    render_html(model, stack_path, out_dir / "annotated.html", label_scale=1.0)
+    return model["warnings"]
+```
+
+`build_model` needs the ASTAP solver on the host (`ASTAP_CLI`/`ASTAP_DB` or
+the `astap`/`db_dir` entries in `solve_kwargs`); rendering from an existing
+model needs neither the solver nor the network. Solver problems raise
+`uranometria.annotate.AstapError`; per-object lookup failures degrade to
+warning strings, same as the chart pipeline.
 
 ## Documentation
 
