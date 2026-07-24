@@ -83,11 +83,11 @@ svg.focus .marker.lit { opacity:1; }
 svg.focus .marker.lit .halo { opacity:0.35; }
 .legend h2 { font-family:'Marcellus',serif; font-weight:400; color:var(--star);
   font-size:15px; letter-spacing:0.22em; text-align:center; margin:0 0 14px; }
-.legend .search { width:100%; box-sizing:border-box; margin-bottom:12px;
+.search { width:100%; box-sizing:border-box; margin-bottom:12px;
   background:var(--sky); border:1px solid var(--grid); color:var(--star);
   font-family:'Plex Mono',monospace; font-size:12.5px; padding:9px 12px; outline:none; }
-.legend .search:focus { border-color:var(--accent); }
-.legend .search::placeholder { color:var(--dim); }
+.search:focus { border-color:var(--accent); }
+.search::placeholder { color:var(--dim); }
 .legend .count { color:var(--dim); font-size:10px; letter-spacing:0.1em;
   margin:0 0 10px 2px; }
 .legend ul { list-style:none; margin:0; padding:0 6px 6px 0; display:grid;
@@ -103,6 +103,9 @@ svg.focus .marker.lit .halo { opacity:0.35; }
 .legend .obj { display:flex; flex-direction:column; gap:3px; min-width:0; }
 .legend .desig { color:var(--accent); font-weight:500; font-size:13px; letter-spacing:0.05em; }
 .legend .photo { color:var(--dim); font-size:9px; letter-spacing:0.14em; margin-left:8px; }
+.legend .annlink { color:var(--dim); font-size:9px; letter-spacing:0.14em; margin-left:8px;
+  text-decoration:none; border-bottom:1px dotted var(--dim); cursor:pointer; }
+.legend .annlink:hover { color:var(--gold); border-color:var(--gold); }
 .legend li:hover .photo { color:var(--accent); }
 .legend .common { font-family:'Marcellus',serif; color:var(--star); font-size:15px; }
 .legend .meta { color:var(--ink); font-size:11px; }
@@ -110,10 +113,56 @@ svg.focus .marker.lit .halo { opacity:0.35; }
 .lightbox { position:fixed; inset:0; z-index:10; display:flex; align-items:center;
   justify-content:center; background:rgba(4,6,16,0.93); cursor:zoom-out; }
 .lightbox[hidden] { display:none; }
-.lightbox figure { margin:0; display:flex; flex-direction:column; align-items:center; gap:16px;
-  max-width:94vw; }
-.lightbox img { max-width:94vw; max-height:80vh; border:1px solid var(--equator);
-  box-shadow:0 12px 60px rgba(0,0,0,0.7); }
+.lb-stage { display:flex; flex-direction:row; align-items:stretch; gap:14px;
+  max-width:96vw; cursor:auto; }
+#lb-svg { max-width:94vw; max-height:78vh; border:1px solid var(--equator);
+  box-shadow:0 12px 60px rgba(0,0,0,0.7); background:#000; cursor:grab;
+  touch-action:none; display:block; }
+#lb-svg:active { cursor:grabbing; }
+.lb-tools { display:flex; gap:10px; min-height:26px; align-items:center; }
+.lb-btn { font-family:'Plex Mono',monospace; font-size:10px; letter-spacing:0.16em;
+  color:var(--dim); background:var(--sky); border:1px solid var(--grid);
+  padding:5px 14px; cursor:pointer; }
+.lb-btn.on { color:var(--gold); border-color:var(--gold); }
+.lb-hint { color:var(--dim); font-size:9px; letter-spacing:0.1em; }
+
+.ann { transform:translate(var(--tx),var(--ty)) scale(calc(1 / var(--z,1))); }
+.ann circle { fill:none; stroke:currentColor; stroke-width:1.6; }
+.ann text { fill:currentColor; font-family:'Plex Mono',monospace;
+  font-weight:500; paint-order:stroke; stroke:rgba(0,0,0,0.8); }
+svg.focus .ann { opacity:0.25; }
+svg.focus .ann.lit { opacity:1; }
+
+.lb-hide-ann #lb-overlay, .lb-hide-ann #lb-panel { display:none; }
+.lb-viewer { display:flex; flex-direction:column; align-items:center; gap:12px; min-width:0; }
+#lb-panel { width:270px; max-height:82vh; display:flex; flex-direction:column;
+  background:var(--deep); border:1px solid var(--grid); padding:12px; }
+#lb-panel[hidden] { display:none; }
+.lb-count { color:var(--dim); font-size:9.5px; letter-spacing:0.1em; margin:0 0 8px 2px; }
+.lb-scroll { flex:1 1 0; overflow-y:auto; min-height:0; scrollbar-width:thin;
+  scrollbar-color:var(--grid) transparent; }
+#lb-panel .search { margin-bottom:8px; font-size:11px; padding:6px 10px; }
+#lb-cards { list-style:none; margin:0; padding:0 4px 0 0; display:grid; gap:6px; }
+#lb-cards li { padding:8px 10px; border:1px solid var(--grid); background:var(--sky); }
+#lb-cards li:hover { border-color:var(--accent); }
+#lb-cards .obj { display:flex; flex-direction:column; gap:3px; }
+#lb-cards .desig { color:var(--accent); font-weight:500; font-size:11.5px; }
+#lb-cards .keybadge { display:inline-block; min-width:14px; text-align:center;
+  border:1px solid var(--accent); font-size:9px; margin-right:7px; padding:0 3px; }
+#lb-cards .common { font-family:'Marcellus',serif; color:var(--star); font-size:13px; }
+#lb-cards .meta { color:var(--ink); font-size:10px; }
+#lb-cards .linkrow a { color:var(--dim); font-size:9.5px; letter-spacing:0.08em;
+  text-decoration:none; border-bottom:1px dotted var(--dim); margin-right:8px; }
+#lb-cards .linkrow a:hover { color:var(--gold); border-color:var(--gold); }
+.lightbox.lb-max .lb-stage { width:96vw; height:94vh; max-width:none; }
+.lb-max .lb-viewer { flex:1 1 0; min-width:0; align-self:stretch; }
+.lb-max #lb-svg { flex:1 1 0; min-height:0; width:100%; height:100%;
+  max-width:none; max-height:none; }
+.lb-max #lb-panel { max-height:none; }
+@media (max-width:900px) {
+  .lb-stage { flex-direction:column; overflow-y:auto; max-height:94vh; }
+  #lb-panel { width:auto; max-height:30vh; }
+}
 .lightbox figcaption { text-align:center; }
 .lightbox .cap-name { font-family:'Marcellus',serif; color:var(--star); font-size:18px;
   letter-spacing:0.08em; }
@@ -187,7 +236,7 @@ footer { margin-top:14px; text-align:center; color:var(--dim); font-size:10px;
   <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
     <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
     <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
-  <div class="obj"><span class="desig">M51 <span class="photo">PHOTO ↗</span></span><span class="common">Whirlpool Galaxy</span>
+  <div class="obj"><span class="desig">M51 <span class="photo">PHOTO ↗</span> <span class="annlink" role="button" tabindex="0">ANNOTATED</span></span><span class="common">Whirlpool Galaxy</span>
     <span class="meta">Galaxy — Canes Venatici</span>
     <span class="coord">13h 30m  +47° 12′</span></div>
 </li><li data-target="mk-5" data-img="images/M27.jpg" data-cap="M27 — Dumbbell Nebula|Planetary nebula   ·   20h 00m  +22° 43′">
@@ -208,11 +257,25 @@ footer { margin-top:14px; text-align:center; color:var(--dim); font-size:10px;
 </aside>
 </div>
 <div class="lightbox" id="lightbox" hidden>
-  <figure>
-    <img id="lb-img" src="" alt="">
-    <figcaption><div class="cap-name" id="lb-name"></div><div class="cap-sub" id="lb-sub"></div></figcaption>
-  </figure>
+  <div class="lb-stage">
+    <div class="lb-viewer">
+      <div class="lb-tools">
+        <button id="lb-ann" class="lb-btn" hidden>ANNOTATIONS ON</button>
+        <button id="lb-expand" class="lb-btn">EXPAND ⤢</button>
+        <span class="lb-hint">SCROLL TO ZOOM · DRAG TO PAN · CLICK OUTSIDE OR ESC TO CLOSE</span>
+      </div>
+      <svg id="lb-svg" viewBox="0 0 1 1" role="img" aria-label="photograph"></svg>
+      <figcaption><div class="cap-name" id="lb-name"></div><div class="cap-sub" id="lb-sub"></div></figcaption>
+    </div>
+    <aside id="lb-panel" hidden>
+      <input class="search" id="lb-search" type="search" placeholder="Search objects…"
+             aria-label="Search annotated objects">
+      <p class="lb-count" id="lb-count"></p>
+      <div class="lb-scroll"><ul id="lb-cards"></ul></div>
+    </aside>
+  </div>
 </div>
+<script type="application/json" id="lb-annotations">{"mk-4": {"image_size": [2160, 2160], "objects": [{"kind": "dso", "designation": "NGC 5195", "aliases": [], "name": null, "type": "Galaxy", "named": null, "key": null, "mag": null, "band": null, "dist_ly": 26679728, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=NGC+5195"}, "x": 1149.5, "y": 953.5}, {"kind": "dso", "designation": "M51", "aliases": ["NGC 5194"], "name": "Whirlpool Galaxy", "type": "Galaxy", "named": null, "key": null, "mag": null, "band": null, "dist_ly": 21651088, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=M51", "wikipedia": "https://en.wikipedia.org/wiki/Messier_51"}, "x": 1210.6, "y": 1167.9}, {"kind": "dso", "designation": "IC 4278", "aliases": [], "name": null, "type": "Galaxy", "named": null, "key": null, "mag": null, "band": null, "dist_ly": null, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=IC+4278"}, "x": 910.6, "y": 1014.0}, {"kind": "dso", "designation": "IC 4277", "aliases": [], "name": null, "type": "Galaxy", "named": null, "key": null, "mag": null, "band": null, "dist_ly": null, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=IC+4277"}, "x": 1001.5, "y": 809.4}, {"kind": "dso", "designation": "IC 4282", "aliases": [], "name": null, "type": "Galaxy", "named": null, "key": null, "mag": null, "band": null, "dist_ly": null, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=IC+4282"}, "x": 464.6, "y": 1208.1}, {"kind": "dso", "designation": "IC 4263", "aliases": [], "name": null, "type": "Galaxy", "named": null, "key": null, "mag": null, "band": null, "dist_ly": 125017575, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=IC+4263"}, "x": 1904.1, "y": 1971.0}, {"kind": "star", "designation": "HD 117815", "aliases": [], "name": null, "type": "Star (A5)", "named": true, "key": null, "mag": 7.08, "band": "V", "dist_ly": 366, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=HD+117815"}, "x": 152.5, "y": 1056.4}, {"kind": "star", "designation": "TYC 3463-582-1", "aliases": [], "name": null, "type": null, "named": false, "key": 1, "mag": 10.9, "band": "G", "dist_ly": 3197, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3463-582-1"}, "x": 845.0, "y": 1770.6}, {"kind": "star", "designation": "TYC 3463-58-1", "aliases": [], "name": null, "type": null, "named": false, "key": 2, "mag": 10.9, "band": "G", "dist_ly": 3181, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3463-58-1"}, "x": 570.1, "y": 1208.0}, {"kind": "star", "designation": "TYC 3460-285-1", "aliases": [], "name": null, "type": null, "named": false, "key": 3, "mag": 11.1, "band": "G", "dist_ly": 2169, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3460-285-1"}, "x": 2008.5, "y": 467.2}, {"kind": "star", "designation": "Gaia DR3 1551933213472189952", "aliases": [], "name": null, "type": null, "named": false, "key": 4, "mag": 11.2, "band": "G", "dist_ly": 207, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=Gaia+DR3+1551933213472189952"}, "x": 195.4, "y": 1943.3}, {"kind": "star", "designation": "TYC 3463-587-1", "aliases": [], "name": null, "type": null, "named": false, "key": 5, "mag": 11.2, "band": "G", "dist_ly": 911, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3463-587-1"}, "x": 453.1, "y": 1353.5}, {"kind": "star", "designation": "TYC 3463-348-1", "aliases": [], "name": null, "type": null, "named": false, "key": 6, "mag": 11.3, "band": "G", "dist_ly": 6005, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3463-348-1"}, "x": 542.0, "y": 1181.0}, {"kind": "star", "designation": "TYC 3460-642-1", "aliases": [], "name": null, "type": null, "named": false, "key": 7, "mag": 11.3, "band": "G", "dist_ly": 4853, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3460-642-1"}, "x": 2136.3, "y": 1100.9}, {"kind": "star", "designation": "TYC 3466-1146-1", "aliases": [], "name": null, "type": null, "named": false, "key": 8, "mag": 11.5, "band": "G", "dist_ly": 1188, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3466-1146-1"}, "x": 692.2, "y": 33.5}, {"kind": "star", "designation": "TYC 3463-464-1", "aliases": [], "name": null, "type": null, "named": false, "key": 9, "mag": 11.7, "band": "G", "dist_ly": 1118, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+3463-464-1"}, "x": 414.6, "y": 266.8}, {"kind": "star", "designation": "Gaia DR3 1551935751795702912", "aliases": [], "name": null, "type": null, "named": false, "key": 10, "mag": 12.2, "band": "G", "dist_ly": 925, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=Gaia+DR3+1551935751795702912"}, "x": 731.2, "y": 1837.7}, {"kind": "star", "designation": "Gaia DR3 1551890126360075264", "aliases": [], "name": null, "type": null, "named": false, "key": 11, "mag": 12.3, "band": "G", "dist_ly": 2881, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=Gaia+DR3+1551890126360075264"}, "x": 1074.7, "y": 1650.4}, {"kind": "star", "designation": "Gaia DR3 1552001417552726400", "aliases": [], "name": null, "type": null, "named": false, "key": 12, "mag": 12.4, "band": "G", "dist_ly": 303, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=Gaia+DR3+1552001417552726400"}, "x": 1548.7, "y": 1034.7}, {"kind": "star", "designation": "Gaia DR3 1552003754014939520", "aliases": [], "name": null, "type": null, "named": false, "key": 13, "mag": 12.4, "band": "G", "dist_ly": 1705, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=Gaia+DR3+1552003754014939520"}, "x": 1433.8, "y": 685.6}, {"kind": "star", "designation": "Gaia DR3 1551912112296179072", "aliases": [], "name": null, "type": null, "named": false, "key": 14, "mag": 12.5, "band": "G", "dist_ly": 1580, "links": {"simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=Gaia+DR3+1551912112296179072"}, "x": 1956.4, "y": 795.0}]}}</script>
 </div>
 <script>
 // ---- filtering: search text AND current zoom viewport ----------------
@@ -280,33 +343,39 @@ cards.forEach(c => {
   c.li.addEventListener('mouseleave', applyFilter);
 });
 
-// ---- pan & zoom ------------------------------------------------------
-document.querySelectorAll('svg.sky').forEach(svg => {
-  let vb = [0, 0, 1000, 1000], pan = null, moved = 0;
-  svg._vb = vb;
+// ---- pan & zoom (shared) ---------------------------------------------
+
+function attachPanZoom(svg, w, h, onChange) {
+  let vb = [0, 0, w, h], pan = null, moved = 0;
+  const maxZ = 8;
   const apply = () => {
     svg.setAttribute('viewBox', vb.join(' '));
-    svg.style.setProperty('--z', 1000 / vb[2]);
+    svg.style.setProperty('--z', w / vb[2]);
     svg._vb = vb;
-    applyFilter();
+    if (onChange) onChange(vb);
   };
   const clamp = () => {
-    vb[2] = vb[3] = Math.min(1000, Math.max(125, vb[2]));
-    vb[0] = Math.max(0, Math.min(1000 - vb[2], vb[0]));
-    vb[1] = Math.max(0, Math.min(1000 - vb[3], vb[1]));
+    vb[2] = Math.min(w, Math.max(w / maxZ, vb[2]));
+    vb[3] = vb[2] * (h / w);
+    vb[0] = Math.max(0, Math.min(w - vb[2], vb[0]));
+    vb[1] = Math.max(0, Math.min(h - vb[3], vb[1]));
   };
-  const toSvg = (cx, cy) => {
+  // the element box may be letterboxed (CSS-forced size vs viewBox aspect):
+  // map through the true rendered scale, not the raw box dimensions
+  const toLocal = (cx, cy) => {
     const r = svg.getBoundingClientRect();
-    return [vb[0] + (cx - r.left) / r.width * vb[2],
-            vb[1] + (cy - r.top) / r.height * vb[3]];
+    const s = Math.min(r.width / vb[2], r.height / vb[3]);
+    const ox = (r.width - vb[2] * s) / 2, oy = (r.height - vb[3] * s) / 2;
+    return [vb[0] + (cx - r.left - ox) / s,
+            vb[1] + (cy - r.top - oy) / s];
   };
   svg.addEventListener('wheel', e => {
     e.preventDefault();
-    const [px, py] = toSvg(e.clientX, e.clientY);
+    const [px, py] = toLocal(e.clientX, e.clientY);
     const f = e.deltaY < 0 ? 1 / 1.25 : 1.25;
     vb[0] = px - (px - vb[0]) * f;
     vb[1] = py - (py - vb[1]) * f;
-    vb[2] *= f; vb[3] = vb[2];
+    vb[2] *= f;
     clamp(); apply();
   }, { passive: false });
   svg.addEventListener('pointerdown', e => {
@@ -316,33 +385,288 @@ document.querySelectorAll('svg.sky').forEach(svg => {
   svg.addEventListener('pointermove', e => {
     if (!pan) return;
     const r = svg.getBoundingClientRect();
+    const s = Math.min(r.width / vb[2], r.height / vb[3]);
     const dx = e.clientX - pan[0], dy = e.clientY - pan[1];
     moved = Math.max(moved, Math.abs(dx) + Math.abs(dy));
-    vb[0] = pan[2] - dx / r.width * vb[2];
-    vb[1] = pan[3] - dy / r.height * vb[3];
+    vb[0] = pan[2] - dx / s;
+    vb[1] = pan[3] - dy / s;
     clamp(); apply();
   });
   svg.addEventListener('pointerup', () => { pan = null; });
   svg.addEventListener('click', e => {
-    if (moved > 5) e.stopPropagation();   // a drag is not a marker click
+    if (moved > 5) { e.stopPropagation(); }
     moved = 0;
   }, true);
-  svg.addEventListener('dblclick', () => { vb = [0, 0, 1000, 1000]; apply(); });
+  svg.addEventListener('dblclick', () => { vb = [0, 0, w, h]; apply(); });
+  apply();
+  return () => { vb = [0, 0, w, h]; apply(); };
+}
+
+
+function dsoColor(t, C) {
+  t = (t || '').toLowerCase();
+  if (t.includes('galaxy')) return C.galaxy;
+  if (t.includes('planetary')) return C.planetary;
+  if (t.includes('dark')) return C.dark;
+  if (t.includes('cluster') || t.includes('association')) return C.cluster;
+  if (t.includes('emission') || t.includes('h ii') || t.includes('nebula')) return C.emission;
+  return C.other;
+}
+
+document.querySelectorAll('svg.sky').forEach(svg => {
+  attachPanZoom(svg, 1000, 1000, applyFilter);
 });
+
+// ---- lightbox: zoom/pan image, optional annotation overlay -------------
+const ANN_COLORS = {"galaxy": "#82B4F5", "emission": "#F48FB1", "planetary": "#80DEEA", "cluster": "#FFCC80", "dark": "#B39DDB", "other": "#C5CAE9", "named_star": "#FFD54F", "field_star": "#69F0AE", "ink": "#ECEFF4", "dim": "#9BA6B5"};
+const ANNOTATIONS = JSON.parse(document.getElementById('lb-annotations').textContent);
 const lb = document.getElementById('lightbox');
-const lbImg = document.getElementById('lb-img');
+const lbStage = lb.querySelector('.lb-stage');
 const lbName = document.getElementById('lb-name');
 const lbSub = document.getElementById('lb-sub');
-document.querySelectorAll('[data-img]').forEach(el => {
-  el.addEventListener('click', () => {
-    const cap = (el.dataset.cap || '').split('|');
-    lbImg.src = el.dataset.img;
-    lbImg.alt = cap[0] || '';
-    lbName.textContent = cap[0] || '';
-    lbSub.textContent = cap[1] || '';
+const lbAnnBtn = document.getElementById('lb-ann');
+const lbExpandBtn = document.getElementById('lb-expand');
+const lbPanel = document.getElementById('lb-panel');
+const lbCards = document.getElementById('lb-cards');
+const lbCount = document.getElementById('lb-count');
+const lbSearch = document.getElementById('lb-search');
+const SVGNS = 'http://www.w3.org/2000/svg';
+let annOn = sessionStorage.getItem('uranometria-annotations') !== 'off';
+let annShown = annOn;
+
+function setAnn(on, persist) {
+  annShown = on;
+  if (persist) {
+    annOn = on;
+    sessionStorage.setItem('uranometria-annotations', on ? 'on' : 'off');
+  }
+  lbStage.classList.toggle('lb-hide-ann', !on);
+  lbAnnBtn.textContent = on ? 'ANNOTATIONS ON' : 'ANNOTATIONS OFF';
+  lbAnnBtn.classList.toggle('on', on);
+}
+lbAnnBtn.addEventListener('click', () => setAnn(!annShown, true));
+let lbMax = false;
+function setMax(on) {
+  lbMax = on;
+  lb.classList.toggle('lb-max', on);
+  lbExpandBtn.textContent = on ? 'SHRINK ⤡' : 'EXPAND ⤢';
+  lbExpandBtn.classList.toggle('on', on);
+}
+lbExpandBtn.addEventListener('click', () => setMax(!lbMax));
+lbStage.addEventListener('click', e => e.stopPropagation());
+
+const ANN_LABEL_SCALE = 1.0;
+
+function annColor(o, C) {
+  if (o.kind === 'dso') return dsoColor(o.type, C);
+  return o.named ? C.named_star : C.field_star;
+}
+function annFmtLy(ly, approx) {
+  if (!ly) return null;
+  if (ly < 1e5) {
+    if (approx) {
+      const mag = Math.pow(10, Math.floor(Math.log10(ly)) - 1);
+      return '~' + (Math.round(ly / mag) * mag).toLocaleString('en-US') + ' ly';
+    }
+    return Math.round(ly).toLocaleString('en-US') + ' ly';
+  }
+  const m = ly / 1e6;
+  return '~' + (m < 10 ? m.toFixed(1) : String(Math.round(m))) + ' Mly';
+}
+function buildAnnotationUI(opts) {
+  const NS = 'http://www.w3.org/2000/svg';
+  const model = opts.model, C = opts.colors;
+  const w = model.image_size[0], h = model.image_size[1];
+  const r = 0.02 * Math.min(w, h);
+  const fs = Math.max(12, 0.016 * Math.min(w, h)) * (opts.labelScale || 1);
+  const anns = [], cards = [];
+  opts.listEl.textContent = '';
+  model.objects.forEach((o, i) => {
+    const color = annColor(o, C);
+    const fieldStar = o.kind === 'star' && !o.named;
+    const g = document.createElementNS(NS, 'g');
+    g.setAttribute('class', 'ann');
+    g.style.setProperty('--tx', o.x + 'px');
+    g.style.setProperty('--ty', o.y + 'px');
+    g.style.color = color;
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('r', o.kind === 'dso' ? r * 1.4 : o.named ? r : r * 0.6);
+    g.appendChild(c);
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('x', r * 1.6);
+    t.setAttribute('y', -r * 0.8);
+    t.style.fontSize = fs + 'px';
+    t.style.strokeWidth = (fs / 4) + 'px';
+    t.textContent = fieldStar ? String(o.key) : o.designation;
+    g.appendChild(t);
+    opts.overlayEl.appendChild(g);
+    anns.push(g);
+    const li = document.createElement('li');
+    li.style.setProperty('--accent', color);
+    const box = document.createElement('div');
+    box.className = 'obj';
+    const desig = document.createElement('span');
+    desig.className = 'desig';
+    if (fieldStar) {
+      const kb = document.createElement('span');
+      kb.className = 'keybadge';
+      kb.textContent = o.key;
+      desig.appendChild(kb);
+    }
+    desig.appendChild(document.createTextNode(
+      [o.designation].concat(o.aliases || []).join(' · ')));
+    box.appendChild(desig);
+    if (o.name) {
+      const n = document.createElement('span');
+      n.className = 'common';
+      n.textContent = o.name;
+      box.appendChild(n);
+    }
+    const bits = [];
+    if (o.type) bits.push(o.type);
+    if (o.mag != null) bits.push((o.band || '') + '=' + o.mag);
+    const d = annFmtLy(o.dist_ly, o.kind === 'dso');
+    if (d) bits.push(d);
+    if (bits.length) {
+      const meta = document.createElement('span');
+      meta.className = 'meta';
+      meta.textContent = bits.join(' · ');
+      box.appendChild(meta);
+    }
+    const linkRow = document.createElement('span');
+    linkRow.className = 'linkrow';
+    for (const [label, key] of [['SIMBAD', 'simbad'], ['Wikipedia', 'wikipedia']]) {
+      const url = (o.links || {})[key];
+      if (!url || !/^https?:\/\//i.test(url)) continue;
+      const a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      a.rel = 'noopener';
+      a.textContent = label;
+      linkRow.appendChild(a);
+    }
+    if (linkRow.childNodes.length) box.appendChild(linkRow);
+    li.appendChild(box);
+    opts.listEl.appendChild(li);
+    cards.push(li);
+    li.addEventListener('mouseenter', () => {
+      opts.svg.classList.add('focus');
+      g.classList.add('lit');
+    });
+    li.addEventListener('mouseleave', applyFilter);
+  });
+  function inView(i) {
+    const vb = opts.svg._vb;
+    if (!vb || vb[2] >= w - 1) return true;
+    const m = 20 / (w / vb[2]);
+    const o = model.objects[i];
+    return o.x >= vb[0] - m && o.x <= vb[0] + vb[2] + m &&
+           o.y >= vb[1] - m && o.y <= vb[1] + vb[3] + m;
+  }
+  function applyFilter() {
+    const q = opts.searchEl ? opts.searchEl.value.trim().toLowerCase() : '';
+    const vb = opts.svg._vb;
+    const zoomed = vb && vb[2] < w - 1;
+    let shown = 0;
+    cards.forEach((li, i) => {
+      const hit = (!q || li.textContent.toLowerCase().includes(q)) && inView(i);
+      li.style.display = hit ? '' : 'none';
+      if (hit) shown++;
+      anns[i].classList.toggle('lit', !!q && hit);
+    });
+    opts.svg.classList.toggle('focus', !!q);
+    opts.countEl.textContent = shown < cards.length
+      ? shown + ' OF ' + cards.length + ' OBJECTS' + (zoomed ? ' · IN VIEW' : '')
+      : cards.length + ' OBJECTS';
+  }
+  if (opts.searchEl) {
+    if (opts.searchEl._annFilter)
+      opts.searchEl.removeEventListener('input', opts.searchEl._annFilter);
+    opts.searchEl._annFilter = applyFilter;
+    opts.searchEl.addEventListener('input', applyFilter);
+  }
+  applyFilter();
+  return applyFilter;
+}
+
+
+let openSeq = 0;
+function openLightbox(src, cap, ann, forceAnn) {
+  lbName.textContent = cap[0] || '';
+  lbSub.textContent = cap[1] || '';
+  const seq = ++openSeq;
+  const probe = new Image();
+  const show = (w, h, failed) => {
+    if (seq !== openSeq) return;  // a newer click already superseded this load
+    const old = document.getElementById('lb-svg');
+    const svg = document.createElementNS(SVGNS, 'svg');
+    svg.setAttribute('id', 'lb-svg');
+    svg.setAttribute('role', 'img');
+    const im = document.createElementNS(SVGNS, 'image');
+    im.setAttribute('href', src);
+    im.setAttribute('width', w);
+    im.setAttribute('height', h);
+    svg.appendChild(im);
+    const usable =
+      !failed && ann && ann.image_size && ann.image_size[0] === w && ann.image_size[1] === h;
+    lbAnnBtn.hidden = !usable;
+    lbPanel.hidden = !usable;
+    old.replaceWith(svg);
+    let onChange = null;
+    if (usable) {
+      const gEl = document.createElementNS(SVGNS, 'g');
+      gEl.setAttribute('id', 'lb-overlay');
+      svg.appendChild(gEl);
+      lbSearch.value = '';
+      onChange = buildAnnotationUI({
+        svg,
+        overlayEl: gEl,
+        listEl: lbCards,
+        countEl: lbCount,
+        searchEl: lbSearch,
+        model: ann,
+        colors: ANN_COLORS,
+        labelScale: ANN_LABEL_SCALE,
+      });
+    } else {
+      lbCards.textContent = '';
+    }
+    setAnn(usable && (annOn || forceAnn), false);
+    attachPanZoom(svg, w, h, onChange);
     lb.hidden = false;
+  };
+  probe.onload = () => show(probe.naturalWidth, probe.naturalHeight);
+  probe.onerror = () => show(800, 600, true);  // open anyway: caption, empty stage
+  probe.src = src;
+}
+
+document.querySelectorAll('[data-img]').forEach(el => {
+  el.addEventListener('click', e => {
+    const annEl = e.target.closest ? e.target.closest('.annlink') : null;
+    if (annEl && annEl.tagName === 'A') return;
+    const cap = (el.dataset.cap || '').split('|');
+    const key = el.id || el.dataset.target;
+    openLightbox(el.dataset.img, cap, ANNOTATIONS[key], !!annEl);
+  });
+  el.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' || !e.target.classList || !e.target.classList.contains('annlink')) return;
+    const cap = (el.dataset.cap || '').split('|');
+    const key = el.id || el.dataset.target;
+    openLightbox(el.dataset.img, cap, ANNOTATIONS[key], true);
   });
 });
-lb.addEventListener('click', () => { lb.hidden = true; lbImg.src = ''; });
-document.addEventListener('keydown', e => { if (e.key === 'Escape') { lb.hidden = true; lbImg.src = ''; } });
+function closeLightbox() {
+  openSeq++;  // a dismissal also invalidates any pending image load
+  lb.hidden = true;
+}
+lb.addEventListener('click', closeLightbox);
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape' || lb.hidden) return;
+  if (e.target === lbSearch && lbSearch.value) {
+    lbSearch.value = '';
+    lbSearch.dispatchEvent(new Event('input'));
+  } else {
+    closeLightbox();
+  }
+});
 </script>

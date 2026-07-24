@@ -2,8 +2,11 @@
 
 import html
 
+import json as _json
+
 from .chart import Chart, DEC_EDGE, accent_value, photo_attrs
 from .resources import asset_text, sky_data
+from .webui import ANNOTATION_UI_CSS, ANNOTATION_UI_JS, DSO_COLOR_JS, PANZOOM_JS, js_color_map
 
 
 def _legend_html(objects):
@@ -15,6 +18,15 @@ def _legend_html(objects):
         attrs = f' style="--accent:{accent}"' if accent else ""
         attrs += photo_attrs(o)
         photo = ' <span class="photo">PHOTO ↗</span>' if o.get("href") else ""
+        if o.get("annotation"):
+            # model is embedded in this page: open the lightbox in
+            # annotation mode instead of leaving for the standalone file
+            photo += ' <span class="annlink" role="button" tabindex="0">ANNOTATED</span>'
+        elif o.get("annotated_href"):
+            photo += (
+                f' <a class="annlink" href="{html.escape(o["annotated_href"], quote=True)}"'
+                f' target="_blank" rel="noopener">ANNOTATED \u2197</a>'
+            )
         items.append(f"""<li data-target="mk-{i}"{attrs}>
   <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
     <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
@@ -73,6 +85,19 @@ def build_page(cfg, objects):
 
     def b64(fn):
         return asset_text(fn + ".b64")
+
+    annotations = {f"mk-{i}": o["annotation"] for i, o in enumerate(objects) if o.get("annotation")}
+    # </script> can never appear inside the JSON payload
+    # \u003c-escape every "<" so no payload string can toy with the HTML
+    # script-data parser states (e.g. "<!--<script" double-escape tricks)
+    annotations_json = _json.dumps(annotations, allow_nan=False).replace("<", "\\u003c")
+    ann_label_scale = float(cfg.get("annotation_label_scale", 1.0))
+
+    panzoom_js = PANZOOM_JS
+    dso_color_js = DSO_COLOR_JS
+    ann_ui_js = ANNOTATION_UI_JS
+    ann_ui_css = ANNOTATION_UI_CSS
+    ann_colors = js_color_map()
 
     return f"""<title>{tab_title} — Photographed Objects</title>
 <style>
@@ -159,11 +184,11 @@ svg.focus .marker.lit {{ opacity:1; }}
 svg.focus .marker.lit .halo {{ opacity:0.35; }}
 .legend h2 {{ font-family:'Marcellus',serif; font-weight:400; color:var(--star);
   font-size:15px; letter-spacing:0.22em; text-align:center; margin:0 0 14px; }}
-.legend .search {{ width:100%; box-sizing:border-box; margin-bottom:12px;
+.search {{ width:100%; box-sizing:border-box; margin-bottom:12px;
   background:var(--sky); border:1px solid var(--grid); color:var(--star);
   font-family:'Plex Mono',monospace; font-size:12.5px; padding:9px 12px; outline:none; }}
-.legend .search:focus {{ border-color:var(--accent); }}
-.legend .search::placeholder {{ color:var(--dim); }}
+.search:focus {{ border-color:var(--accent); }}
+.search::placeholder {{ color:var(--dim); }}
 .legend .count {{ color:var(--dim); font-size:10px; letter-spacing:0.1em;
   margin:0 0 10px 2px; }}
 .legend ul {{ list-style:none; margin:0; padding:0 6px 6px 0; display:grid;
@@ -179,6 +204,9 @@ svg.focus .marker.lit .halo {{ opacity:0.35; }}
 .legend .obj {{ display:flex; flex-direction:column; gap:3px; min-width:0; }}
 .legend .desig {{ color:var(--accent); font-weight:500; font-size:13px; letter-spacing:0.05em; }}
 .legend .photo {{ color:var(--dim); font-size:9px; letter-spacing:0.14em; margin-left:8px; }}
+.legend .annlink {{ color:var(--dim); font-size:9px; letter-spacing:0.14em; margin-left:8px;
+  text-decoration:none; border-bottom:1px dotted var(--dim); cursor:pointer; }}
+.legend .annlink:hover {{ color:var(--gold); border-color:var(--gold); }}
 .legend li:hover .photo {{ color:var(--accent); }}
 .legend .common {{ font-family:'Marcellus',serif; color:var(--star); font-size:15px; }}
 .legend .meta {{ color:var(--ink); font-size:11px; }}
@@ -186,10 +214,49 @@ svg.focus .marker.lit .halo {{ opacity:0.35; }}
 .lightbox {{ position:fixed; inset:0; z-index:10; display:flex; align-items:center;
   justify-content:center; background:rgba(4,6,16,0.93); cursor:zoom-out; }}
 .lightbox[hidden] {{ display:none; }}
-.lightbox figure {{ margin:0; display:flex; flex-direction:column; align-items:center; gap:16px;
-  max-width:94vw; }}
-.lightbox img {{ max-width:94vw; max-height:80vh; border:1px solid var(--equator);
-  box-shadow:0 12px 60px rgba(0,0,0,0.7); }}
+.lb-stage {{ display:flex; flex-direction:row; align-items:stretch; gap:14px;
+  max-width:96vw; cursor:auto; }}
+#lb-svg {{ max-width:94vw; max-height:78vh; border:1px solid var(--equator);
+  box-shadow:0 12px 60px rgba(0,0,0,0.7); background:#000; cursor:grab;
+  touch-action:none; display:block; }}
+#lb-svg:active {{ cursor:grabbing; }}
+.lb-tools {{ display:flex; gap:10px; min-height:26px; align-items:center; }}
+.lb-btn {{ font-family:'Plex Mono',monospace; font-size:10px; letter-spacing:0.16em;
+  color:var(--dim); background:var(--sky); border:1px solid var(--grid);
+  padding:5px 14px; cursor:pointer; }}
+.lb-btn.on {{ color:var(--gold); border-color:var(--gold); }}
+.lb-hint {{ color:var(--dim); font-size:9px; letter-spacing:0.1em; }}
+{ann_ui_css}
+.lb-hide-ann #lb-overlay, .lb-hide-ann #lb-panel {{ display:none; }}
+.lb-viewer {{ display:flex; flex-direction:column; align-items:center; gap:12px; min-width:0; }}
+#lb-panel {{ width:270px; max-height:82vh; display:flex; flex-direction:column;
+  background:var(--deep); border:1px solid var(--grid); padding:12px; }}
+#lb-panel[hidden] {{ display:none; }}
+.lb-count {{ color:var(--dim); font-size:9.5px; letter-spacing:0.1em; margin:0 0 8px 2px; }}
+.lb-scroll {{ flex:1 1 0; overflow-y:auto; min-height:0; scrollbar-width:thin;
+  scrollbar-color:var(--grid) transparent; }}
+#lb-panel .search {{ margin-bottom:8px; font-size:11px; padding:6px 10px; }}
+#lb-cards {{ list-style:none; margin:0; padding:0 4px 0 0; display:grid; gap:6px; }}
+#lb-cards li {{ padding:8px 10px; border:1px solid var(--grid); background:var(--sky); }}
+#lb-cards li:hover {{ border-color:var(--accent); }}
+#lb-cards .obj {{ display:flex; flex-direction:column; gap:3px; }}
+#lb-cards .desig {{ color:var(--accent); font-weight:500; font-size:11.5px; }}
+#lb-cards .keybadge {{ display:inline-block; min-width:14px; text-align:center;
+  border:1px solid var(--accent); font-size:9px; margin-right:7px; padding:0 3px; }}
+#lb-cards .common {{ font-family:'Marcellus',serif; color:var(--star); font-size:13px; }}
+#lb-cards .meta {{ color:var(--ink); font-size:10px; }}
+#lb-cards .linkrow a {{ color:var(--dim); font-size:9.5px; letter-spacing:0.08em;
+  text-decoration:none; border-bottom:1px dotted var(--dim); margin-right:8px; }}
+#lb-cards .linkrow a:hover {{ color:var(--gold); border-color:var(--gold); }}
+.lightbox.lb-max .lb-stage {{ width:96vw; height:94vh; max-width:none; }}
+.lb-max .lb-viewer {{ flex:1 1 0; min-width:0; align-self:stretch; }}
+.lb-max #lb-svg {{ flex:1 1 0; min-height:0; width:100%; height:100%;
+  max-width:none; max-height:none; }}
+.lb-max #lb-panel {{ max-height:none; }}
+@media (max-width:900px) {{
+  .lb-stage {{ flex-direction:column; overflow-y:auto; max-height:94vh; }}
+  #lb-panel {{ width:auto; max-height:30vh; }}
+}}
 .lightbox figcaption {{ text-align:center; }}
 .lightbox .cap-name {{ font-family:'Marcellus',serif; color:var(--star); font-size:18px;
   letter-spacing:0.08em; }}
@@ -222,11 +289,25 @@ footer {{ margin-top:14px; text-align:center; color:var(--dim); font-size:10px;
 </aside>
 </div>
 <div class="lightbox" id="lightbox" hidden>
-  <figure>
-    <img id="lb-img" src="" alt="">
-    <figcaption><div class="cap-name" id="lb-name"></div><div class="cap-sub" id="lb-sub"></div></figcaption>
-  </figure>
+  <div class="lb-stage">
+    <div class="lb-viewer">
+      <div class="lb-tools">
+        <button id="lb-ann" class="lb-btn" hidden>ANNOTATIONS ON</button>
+        <button id="lb-expand" class="lb-btn">EXPAND \u2922</button>
+        <span class="lb-hint">SCROLL TO ZOOM \u00b7 DRAG TO PAN \u00b7 CLICK OUTSIDE OR ESC TO CLOSE</span>
+      </div>
+      <svg id="lb-svg" viewBox="0 0 1 1" role="img" aria-label="photograph"></svg>
+      <figcaption><div class="cap-name" id="lb-name"></div><div class="cap-sub" id="lb-sub"></div></figcaption>
+    </div>
+    <aside id="lb-panel" hidden>
+      <input class="search" id="lb-search" type="search" placeholder="Search objects\u2026"
+             aria-label="Search annotated objects">
+      <p class="lb-count" id="lb-count"></p>
+      <div class="lb-scroll"><ul id="lb-cards"></ul></div>
+    </aside>
+  </div>
 </div>
+<script type="application/json" id="lb-annotations">{annotations_json}</script>
 </div>
 <script>
 // ---- filtering: search text AND current zoom viewport ----------------
@@ -294,70 +375,132 @@ cards.forEach(c => {{
   c.li.addEventListener('mouseleave', applyFilter);
 }});
 
-// ---- pan & zoom ------------------------------------------------------
+// ---- pan & zoom (shared) ---------------------------------------------
+{panzoom_js}
+{dso_color_js}
 document.querySelectorAll('svg.sky').forEach(svg => {{
-  let vb = [0, 0, 1000, 1000], pan = null, moved = 0;
-  svg._vb = vb;
-  const apply = () => {{
-    svg.setAttribute('viewBox', vb.join(' '));
-    svg.style.setProperty('--z', 1000 / vb[2]);
-    svg._vb = vb;
-    applyFilter();
-  }};
-  const clamp = () => {{
-    vb[2] = vb[3] = Math.min(1000, Math.max(125, vb[2]));
-    vb[0] = Math.max(0, Math.min(1000 - vb[2], vb[0]));
-    vb[1] = Math.max(0, Math.min(1000 - vb[3], vb[1]));
-  }};
-  const toSvg = (cx, cy) => {{
-    const r = svg.getBoundingClientRect();
-    return [vb[0] + (cx - r.left) / r.width * vb[2],
-            vb[1] + (cy - r.top) / r.height * vb[3]];
-  }};
-  svg.addEventListener('wheel', e => {{
-    e.preventDefault();
-    const [px, py] = toSvg(e.clientX, e.clientY);
-    const f = e.deltaY < 0 ? 1 / 1.25 : 1.25;
-    vb[0] = px - (px - vb[0]) * f;
-    vb[1] = py - (py - vb[1]) * f;
-    vb[2] *= f; vb[3] = vb[2];
-    clamp(); apply();
-  }}, {{ passive: false }});
-  svg.addEventListener('pointerdown', e => {{
-    pan = [e.clientX, e.clientY, vb[0], vb[1]]; moved = 0;
-    svg.setPointerCapture(e.pointerId);
-  }});
-  svg.addEventListener('pointermove', e => {{
-    if (!pan) return;
-    const r = svg.getBoundingClientRect();
-    const dx = e.clientX - pan[0], dy = e.clientY - pan[1];
-    moved = Math.max(moved, Math.abs(dx) + Math.abs(dy));
-    vb[0] = pan[2] - dx / r.width * vb[2];
-    vb[1] = pan[3] - dy / r.height * vb[3];
-    clamp(); apply();
-  }});
-  svg.addEventListener('pointerup', () => {{ pan = null; }});
-  svg.addEventListener('click', e => {{
-    if (moved > 5) e.stopPropagation();   // a drag is not a marker click
-    moved = 0;
-  }}, true);
-  svg.addEventListener('dblclick', () => {{ vb = [0, 0, 1000, 1000]; apply(); }});
+  attachPanZoom(svg, 1000, 1000, applyFilter);
 }});
+
+// ---- lightbox: zoom/pan image, optional annotation overlay -------------
+const ANN_COLORS = {ann_colors};
+const ANNOTATIONS = JSON.parse(document.getElementById('lb-annotations').textContent);
 const lb = document.getElementById('lightbox');
-const lbImg = document.getElementById('lb-img');
+const lbStage = lb.querySelector('.lb-stage');
 const lbName = document.getElementById('lb-name');
 const lbSub = document.getElementById('lb-sub');
-document.querySelectorAll('[data-img]').forEach(el => {{
-  el.addEventListener('click', () => {{
-    const cap = (el.dataset.cap || '').split('|');
-    lbImg.src = el.dataset.img;
-    lbImg.alt = cap[0] || '';
-    lbName.textContent = cap[0] || '';
-    lbSub.textContent = cap[1] || '';
+const lbAnnBtn = document.getElementById('lb-ann');
+const lbExpandBtn = document.getElementById('lb-expand');
+const lbPanel = document.getElementById('lb-panel');
+const lbCards = document.getElementById('lb-cards');
+const lbCount = document.getElementById('lb-count');
+const lbSearch = document.getElementById('lb-search');
+const SVGNS = 'http://www.w3.org/2000/svg';
+let annOn = sessionStorage.getItem('uranometria-annotations') !== 'off';
+let annShown = annOn;
+
+function setAnn(on, persist) {{
+  annShown = on;
+  if (persist) {{
+    annOn = on;
+    sessionStorage.setItem('uranometria-annotations', on ? 'on' : 'off');
+  }}
+  lbStage.classList.toggle('lb-hide-ann', !on);
+  lbAnnBtn.textContent = on ? 'ANNOTATIONS ON' : 'ANNOTATIONS OFF';
+  lbAnnBtn.classList.toggle('on', on);
+}}
+lbAnnBtn.addEventListener('click', () => setAnn(!annShown, true));
+let lbMax = false;
+function setMax(on) {{
+  lbMax = on;
+  lb.classList.toggle('lb-max', on);
+  lbExpandBtn.textContent = on ? 'SHRINK \u2921' : 'EXPAND \u2922';
+  lbExpandBtn.classList.toggle('on', on);
+}}
+lbExpandBtn.addEventListener('click', () => setMax(!lbMax));
+lbStage.addEventListener('click', e => e.stopPropagation());
+
+const ANN_LABEL_SCALE = {ann_label_scale};
+{ann_ui_js}
+
+let openSeq = 0;
+function openLightbox(src, cap, ann, forceAnn) {{
+  lbName.textContent = cap[0] || '';
+  lbSub.textContent = cap[1] || '';
+  const seq = ++openSeq;
+  const probe = new Image();
+  const show = (w, h, failed) => {{
+    if (seq !== openSeq) return;  // a newer click already superseded this load
+    const old = document.getElementById('lb-svg');
+    const svg = document.createElementNS(SVGNS, 'svg');
+    svg.setAttribute('id', 'lb-svg');
+    svg.setAttribute('role', 'img');
+    const im = document.createElementNS(SVGNS, 'image');
+    im.setAttribute('href', src);
+    im.setAttribute('width', w);
+    im.setAttribute('height', h);
+    svg.appendChild(im);
+    const usable =
+      !failed && ann && ann.image_size && ann.image_size[0] === w && ann.image_size[1] === h;
+    lbAnnBtn.hidden = !usable;
+    lbPanel.hidden = !usable;
+    old.replaceWith(svg);
+    let onChange = null;
+    if (usable) {{
+      const gEl = document.createElementNS(SVGNS, 'g');
+      gEl.setAttribute('id', 'lb-overlay');
+      svg.appendChild(gEl);
+      lbSearch.value = '';
+      onChange = buildAnnotationUI({{
+        svg,
+        overlayEl: gEl,
+        listEl: lbCards,
+        countEl: lbCount,
+        searchEl: lbSearch,
+        model: ann,
+        colors: ANN_COLORS,
+        labelScale: ANN_LABEL_SCALE,
+      }});
+    }} else {{
+      lbCards.textContent = '';
+    }}
+    setAnn(usable && (annOn || forceAnn), false);
+    attachPanZoom(svg, w, h, onChange);
     lb.hidden = false;
+  }};
+  probe.onload = () => show(probe.naturalWidth, probe.naturalHeight);
+  probe.onerror = () => show(800, 600, true);  // open anyway: caption, empty stage
+  probe.src = src;
+}}
+
+document.querySelectorAll('[data-img]').forEach(el => {{
+  el.addEventListener('click', e => {{
+    const annEl = e.target.closest ? e.target.closest('.annlink') : null;
+    if (annEl && annEl.tagName === 'A') return;
+    const cap = (el.dataset.cap || '').split('|');
+    const key = el.id || el.dataset.target;
+    openLightbox(el.dataset.img, cap, ANNOTATIONS[key], !!annEl);
+  }});
+  el.addEventListener('keydown', e => {{
+    if (e.key !== 'Enter' || !e.target.classList || !e.target.classList.contains('annlink')) return;
+    const cap = (el.dataset.cap || '').split('|');
+    const key = el.id || el.dataset.target;
+    openLightbox(el.dataset.img, cap, ANNOTATIONS[key], true);
   }});
 }});
-lb.addEventListener('click', () => {{ lb.hidden = true; lbImg.src = ''; }});
-document.addEventListener('keydown', e => {{ if (e.key === 'Escape') {{ lb.hidden = true; lbImg.src = ''; }} }});
+function closeLightbox() {{
+  openSeq++;  // a dismissal also invalidates any pending image load
+  lb.hidden = true;
+}}
+lb.addEventListener('click', closeLightbox);
+document.addEventListener('keydown', e => {{
+  if (e.key !== 'Escape' || lb.hidden) return;
+  if (e.target === lbSearch && lbSearch.value) {{
+    lbSearch.value = '';
+    lbSearch.dispatchEvent(new Event('input'));
+  }} else {{
+    closeLightbox();
+  }}
+}});
 </script>
 """

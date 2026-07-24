@@ -409,3 +409,249 @@ def test_manual_ra_normalized_in_object():
     assert objs[0]["ra"] == pytest.approx(10.0)
     objs, _ = resolve_objects([{"label": "Y", "ra": -10.0, "dec": 10.0}], allow_online=False)
     assert objs[0]["ra"] == pytest.approx(350.0)
+
+
+# ---- annotation overlays in the chart lightbox (uranometria-4/5) -----------
+
+
+def _sidecar_model(pixel_frame="raster0", h=60):
+    return {
+        "schema": 1,
+        "image": "pic.jpg",
+        "image_size": [80, h],
+        "solved": {"pixel_frame": pixel_frame},
+        "objects": [
+            {
+                "kind": "dso",
+                "designation": "M51",
+                "aliases": ["NGC 5194"],
+                "name": "Whirlpool Galaxy",
+                "type": "Galaxy",
+                "mag": 8.4,
+                "band": "V",
+                "dist_ly": 31000000,
+                "links": {"simbad": "https://simbad.example/M51"},
+                "x": 30.0,
+                "y": 10.0,
+            },
+            {
+                "kind": "star",
+                "named": False,
+                "key": 1,
+                "designation": "TYC 1",
+                "x": 50.0,
+                "y": 20.0,
+            },
+        ],
+        "warnings": [],
+    }
+
+
+def test_annotation_sidecar_discovery_and_flip(tmp_path):
+    import json
+
+    (tmp_path / "pic.jpg").write_bytes(b"\xff\xd8fake")
+    (tmp_path / "pic.jpg.annotations.json").write_text(
+        json.dumps(_sidecar_model(pixel_frame="fits0"))
+    )
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg"}]}
+    out = tmp_path / "map.html"
+    warnings = uranometria.generate(cfg, out, allow_online=False)
+    assert warnings == []
+    html = out.read_text()
+    assert 'id="lb-annotations"' in html
+    assert '"mk-0"' in html  # the annotation map carries this object
+    assert '"y": 49.0' in html or '"y": 49' in html  # fits0 flipped: 59 - 10
+    # enriched payload for the lightbox panel survives the embed
+    assert "NGC 5194" in html
+    assert "Whirlpool Galaxy" in html
+    assert '"dist_ly": 31000000' in html
+    assert "simbad.example/M51" in html
+    assert 'id="lb-panel"' in html
+    assert 'id="lb-cards"' in html
+    assert 'id="lb-search"' in html  # panel search, same as the standalone page
+    # embedded model: the legend ANNOTATED tag opens the lightbox in
+    # annotation mode instead of linking out
+    assert '<span class="annlink" role="button"' in html
+    assert 'id="lb-ann"' in html and 'id="lb-expand"' in html
+    assert "buildAnnotationUI" in html  # shared annotation viewer
+    assert "svg.focus .ann" in html  # hover spotlight styles present
+
+
+def test_annotation_sidecar_raster_no_flip(tmp_path):
+    import json
+
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    (tmp_path / "pic.jpg.annotations.json").write_text(json.dumps(_sidecar_model()))
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg"}]}
+    out = tmp_path / "map.html"
+    uranometria.generate(cfg, out, allow_online=False)
+    assert '"y": 10' in out.read_text()
+
+
+def test_annotation_explicit_path_and_bad_json(tmp_path):
+    import json
+
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    (tmp_path / "custom.json").write_text(json.dumps(_sidecar_model()))
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg", "annotations": "custom.json"}]}
+    out = tmp_path / "map.html"
+    assert uranometria.generate(cfg, out, allow_online=False) == []
+    assert '"mk-0"' in out.read_text()
+
+    (tmp_path / "pic.jpg.annotations.json").write_text("{not json")
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg"}]}
+    warnings = uranometria.generate(cfg, out, allow_online=False)
+    assert any("sidecar unreadable" in w for w in warnings)
+
+
+def test_annotation_label_scale_must_be_finite(tmp_path):
+    import pytest
+
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    cfg = {
+        "objects": [{"id": "M31", "image": "pic.jpg"}],
+        "annotation_label_scale": float("inf"),
+    }
+    with pytest.raises(uranometria.SkymapError, match="finite"):
+        uranometria.generate(cfg, tmp_path / "map.html", allow_online=False)
+
+
+def test_annotation_label_scale_must_be_numeric(tmp_path):
+    import pytest
+
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    for bad in ("big", ["x"]):
+        cfg = {
+            "objects": [{"id": "M31", "image": "pic.jpg"}],
+            "annotation_label_scale": bad,
+        }
+        with pytest.raises(uranometria.SkymapError, match="must be a number"):
+            uranometria.generate(cfg, tmp_path / "map.html", allow_online=False)
+
+
+def test_annotations_json_escapes_all_angle_brackets(tmp_path):
+    import json
+
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    m = _sidecar_model()
+    m["objects"][0]["name"] = "<!--<script>evil"
+    (tmp_path / "pic.jpg.annotations.json").write_text(json.dumps(m))
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg"}]}
+    out = tmp_path / "map.html"
+    uranometria.generate(cfg, out, allow_online=False)
+    html = out.read_text()
+    start = html.index('id="lb-annotations">') + len('id="lb-annotations">')
+    payload = html[start : html.index("</script>", start)]
+    assert "<" not in payload  # every < is backslash-u003c escaped
+    assert r"\u003c!--\u003cscript" in payload
+
+
+@pytest.mark.parametrize(
+    "field,value",
+    [("y", float("nan")), ("mag", float("inf")), ("dist_ly", float("nan"))],
+)
+def test_nan_in_sidecar_warns_not_breaks(tmp_path, field, value):
+    import json
+
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    m = _sidecar_model()
+    m["objects"][0][field] = value  # Python json accepts these; browsers don't
+    (tmp_path / "pic.jpg.annotations.json").write_text(json.dumps(m))
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg"}]}
+    out = tmp_path / "map.html"
+    warnings = uranometria.generate(cfg, out, allow_online=False)
+    assert any("sidecar unreadable" in w for w in warnings)
+    html = out.read_text()
+    assert 'id="lb-annotations">{}</script>' in html  # payload stays parseable
+    assert "NaN" not in html.split('id="lb-annotations">')[1].split("</script>")[0]
+
+
+def test_explicit_annotations_missing_warns(tmp_path):
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg", "annotations": "nope.json"}]}
+    out = tmp_path / "map.html"
+    warnings = uranometria.generate(cfg, out, allow_online=False)
+    assert any("annotations file not found" in w for w in warnings)
+    assert 'id="lb-annotations">{}</script>' in out.read_text()  # chart still builds
+
+
+def test_explicit_annotations_with_remote_image(tmp_path):
+    import json
+
+    (tmp_path / "m.json").write_text(json.dumps(_sidecar_model()))
+    cfg = {
+        "objects": [{"id": "M31", "image": "https://example.org/pic.jpg", "annotations": "m.json"}]
+    }
+    out = tmp_path / "map.html"
+    assert uranometria.generate(cfg, out, allow_online=False) == []
+    assert '"mk-0"' in out.read_text()  # model embedded despite remote hero
+
+
+def test_remote_hero_without_annotations_key(tmp_path):
+    cfg = {"objects": [{"id": "M31", "image": "https://example.org/pic.jpg"}]}
+    out = tmp_path / "map.html"
+    assert uranometria.generate(cfg, out, allow_online=False) == []
+    assert 'id="lb-annotations">{}</script>' in out.read_text()
+
+
+def test_remote_annotated_url_passthrough(tmp_path):
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    cfg = {
+        "objects": [{"id": "M31", "image": "pic.jpg", "annotated": "https://example.org/m51.html"}]
+    }
+    out = tmp_path / "map.html"
+    assert uranometria.generate(cfg, out, allow_online=False) == []
+    assert 'href="https://example.org/m51.html"' in out.read_text()
+
+
+def test_no_sidecar_means_empty_map(tmp_path):
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg"}]}
+    out = tmp_path / "map.html"
+    uranometria.generate(cfg, out, allow_online=False)
+    html = out.read_text()
+    assert 'id="lb-annotations">{}</script>' in html
+    assert "attachPanZoom" in html  # shared pan/zoom present
+    assert 'id="lb-ann"' in html  # toggle exists (hidden until usable)
+
+
+def test_annotated_page_link(tmp_path):
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    (tmp_path / "m51_page.html").write_text("<title>x</title>")
+    cfg = {"objects": [{"id": "M51", "image": "pic.jpg", "annotated": "m51_page.html"}]}
+    out = tmp_path / "map.html"
+    assert uranometria.generate(cfg, out, allow_online=False) == []
+    html = out.read_text()
+    # no embedded model here, so the external page is still the best we have
+    assert 'href="m51_page.html"' in html
+    assert "ANNOTATED" in html
+    assert "lb-annpage" not in html  # lightbox carries annotations itself now
+
+
+def test_annotated_link_prefers_embedded_viewer(tmp_path):
+    import json
+
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    (tmp_path / "pic.jpg.annotations.json").write_text(json.dumps(_sidecar_model()))
+    (tmp_path / "m51_page.html").write_text("<title>x</title>")
+    cfg = {"objects": [{"id": "M51", "image": "pic.jpg", "annotated": "m51_page.html"}]}
+    out = tmp_path / "map.html"
+    assert uranometria.generate(cfg, out, allow_online=False) == []
+    html = out.read_text()
+    assert '<span class="annlink" role="button"' in html  # in-page viewer wins
+    assert 'href="m51_page.html"' not in html  # external link not emitted
+
+
+def test_annotated_page_auto_discovery_and_missing(tmp_path):
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    (tmp_path / "pic_annotated.html").write_text("<title>x</title>")
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg"}]}
+    out = tmp_path / "map.html"
+    uranometria.generate(cfg, out, allow_online=False)
+    assert 'href="pic_annotated.html"' in out.read_text()
+
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg", "annotated": "missing.html"}]}
+    warnings = uranometria.generate(cfg, out, allow_online=False)
+    assert any("annotated page not found" in w for w in warnings)
+    assert 'class="annlink"' not in out.read_text()  # no link rendered

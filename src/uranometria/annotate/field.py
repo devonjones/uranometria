@@ -206,6 +206,7 @@ def dso_distances(designations):
         dc, uc = cols.get("mesdistance.dist"), cols.get("mesdistance.unit")
         if not dc or not uc:
             continue
+        values = []
         for row in t:
             dist, unit = row[dc], row[uc]
             try:
@@ -213,8 +214,12 @@ def dso_distances(designations):
                     continue
                 factor = _DIST_LY_PER_UNIT.get(str(unit).strip().lower())
                 if factor and float(dist) > 0:
-                    out[desig] = float(dist) * factor
-                    break
+                    values.append(float(dist) * factor)
             except (TypeError, ValueError):
                 continue
+        if values:
+            # the literature usually holds several measurements; the median
+            # beats whichever row happens to come back first
+            values.sort()
+            out[desig] = values[len(values) // 2]
     return out

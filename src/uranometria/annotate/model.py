@@ -59,6 +59,30 @@ def _links(designation, common=None):
     return links
 
 
+def _harmonize_pair_distances(objects):
+    """A nebula and the cluster that lights it (Sh2-142 / NGC 7380) are one
+    physical complex; cluster distances are the better-measured of the two
+    (Gaia member parallaxes), so a co-located nebula inherits the cluster's
+    distance instead of showing a contradictory literature value."""
+    from .field import sep_deg
+
+    clusters = [
+        o
+        for o in objects
+        if o["kind"] == "dso" and o.get("dist_ly") and "cluster" in (o.get("type") or "").lower()
+    ]
+    for o in objects:
+        if o["kind"] != "dso":
+            continue
+        t = (o.get("type") or "").lower()
+        if "cluster" in t or not ("nebula" in t or "h ii" in t or "emission" in t):
+            continue
+        for c in clusters:
+            if sep_deg(o["ra"], o["dec"], c["ra"], c["dec"]) < 0.35:
+                o["dist_ly"] = c["dist_ly"]
+                break
+
+
 def build_model(image, *, mag_limit=12.5, max_stars=15, allow_online=True, solve_kwargs=None):
     """Solve `image`, cross-match the field, and return the annotation model."""
     width, height = _image_size(image)
@@ -123,6 +147,7 @@ def build_model(image, *, mag_limit=12.5, max_stars=15, allow_online=True, solve
                         o["dist_ly"] = round(found[o["designation"]])
             except Exception as err:
                 warnings.append(f"SIMBAD distance lookup failed: {err}")
+        _harmonize_pair_distances(objects)
         try:
             named = named_bright_stars(center_ra, center_dec, radius)
         except Exception as err:  # network/service failure degrades, never crashes

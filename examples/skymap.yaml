@@ -33,6 +33,13 @@ objects:
     image: images/M42.jpg
   - id: M51
     image: images/M51.jpg
+    annotations: annotated/m51.annotations.json  # annotation model from
+                                              # `uranometria annotate`; powers the
+                                              # in-lightbox overlay and object list
+    annotated: annotated/M51_annotated.html   # standalone page; the legend
+                                              # links here only for objects
+                                              # without an embedded model, so
+                                              # the annotations above win
   - id: M27
     image: images/M27.jpg
   - id: Sh2-142

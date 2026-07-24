@@ -27,7 +27,7 @@
   "rotation_deg": -179.69938642926897,
   "solver": "ASTAP"
  },
- "generated": "2026-07-23T22:46:09+00:00",
+ "generated": "2026-07-24T00:59:40+00:00",
  "objects": [
   {
    "kind": "dso",
@@ -49,7 +49,7 @@
    "kind": "dso",
    "designation": "Sh2-142",
    "aliases": [],
-   "dist_ly": 11350,
+   "dist_ly": 7247,
    "name": null,
    "type": "Emission nebula (H II)",
    "constellation": null,

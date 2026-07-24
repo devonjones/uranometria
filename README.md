@@ -117,6 +117,18 @@ flips y when compositing a model onto an image of the other kind — the
 bundled renderer does this automatically. Solving is fully offline through ASTAP's bundled
 database.
 
+Add `--html` for an interactive page: the photo with pan/zoom, an
+ANNOTATIONS toggle, and a searchable sidebar linking each object to SIMBAD
+and Wikipedia, all in one self-contained file
+(**[live sample](https://devonjones.github.io/uranometria/examples/annotated/M51_annotated.html)**).
+Drop the model JSON next to a chart image as `<image>.annotations.json`
+(or name it with an `annotations:` key in the chart config) and the sky
+map's photo lightbox becomes the annotation viewer itself, running the same
+shared code as the standalone page: the overlay plus a searchable panel of
+every identified object with links and distances, an ANNOTATIONS toggle, and
+an EXPAND button to fill the window, all embedded in the chart page so it
+works even if the standalone annotated HTML moves.
+
 Add `--png` to also render the annotated image: markers and leader labels
 colored by object class (galaxies blue, emission nebulae pink, planetaries
 teal, clusters orange, named stars yellow), numbered circles for field
@@ -191,6 +203,45 @@ def publish_skymap(objects, out_path):
         for o in objects if o.has_captures
     ]}
     return uranometria.generate(cfg, out_path)
+```
+
+The annotation pipeline integrates the same way. `build_model` solves and
+cross-matches once; the two renderers consume the model, so a host can cache
+the JSON per target and re-render on demand:
+
+```python
+from uranometria.annotate import build_model, write_model
+from uranometria.annotate.render_png import render_png
+from uranometria.annotate.render_html import render_html
+
+def annotate_target(stack_path, out_dir, ra_hours=None, dec=None):
+    model = build_model(
+        stack_path,
+        allow_online=True,                    # False: bundled-catalog DSOs only
+        solve_kwargs={"ra_hours": ra_hours, "dec": dec},
+    )
+    write_model(model, out_dir / "annotations.json")
+    render_png(model, stack_path, out_dir / "annotated.png")
+    render_html(model, stack_path, out_dir / "annotated.html", label_scale=1.0)
+    return model["warnings"]
+```
+
+`build_model` needs the ASTAP solver on the host (`ASTAP_CLI`/`ASTAP_DB` or
+the `astap`/`db_dir` entries in `solve_kwargs`); rendering from an existing
+model needs neither the solver nor the network. Solver problems raise
+`uranometria.annotate.AstapError`; per-object lookup failures degrade to
+warning strings, same as the chart pipeline.
+
+The two pipelines meet in the chart config. Save the model as
+`<hero image>.annotations.json` next to the photo (or set `annotations:` on
+the object) and `generate` embeds it, so the sky map's lightbox shows the
+full annotation overlay and object panel with no external files to keep
+track of:
+
+```python
+write_model(model, hero_path.with_name(hero_path.name + ".annotations.json"))
+cfg["objects"][i]["image"] = os.path.relpath(hero_path, out_path.parent)
+uranometria.generate(cfg, out_path)
 ```
 
 ## Documentation

@@ -106,6 +106,55 @@ be:
 
 Paths with spaces are fine (they are URL-encoded).
 
+## Annotations
+
+`annotations:` names an [annotation model](annotation-model.md) for the
+object's photo (relative paths resolve against the output directory, like
+`image:`; URLs are not accepted). Naming a file that does not exist is a
+warning, and unlike the automatic sidecar, an explicit model is honored
+even when `image:` is a remote URL: the lightbox checks dimensions at view
+time. Without the key, a sidecar named `<image>.annotations.json` next to
+the photo is picked up automatically. When
+present and matching the photo's dimensions, the lightbox draws the overlay
+and shows a searchable side panel listing every identified object with
+aliases, magnitude, distance, and SIMBAD/Wikipedia links, filtered to the
+region in view as you zoom; an ANNOTATIONS button toggles the overlay and
+panel together, and EXPAND grows the viewer to fill the window. The model is embedded in the chart page at
+build time, so the viewer works wherever the page goes. An unreadable
+sidecar is a warning, never a failure.
+
+This is the bridge between the two pipelines. Generate the model once with
+the annotate command, then point the chart at it:
+
+```bash
+uranometria annotate Images/M51/stack.fit -o Images/M51/finished/M51.jpg.annotations.json
+```
+
+```yaml
+objects:
+  - id: M51
+    image: Images/M51/finished/M51.jpg
+    annotations: Images/M51/finished/M51.jpg.annotations.json  # or omit: the
+                                                # sidecar name above is found
+                                                # automatically
+```
+
+The model must be built from the same pixels as the photo it annotates (same
+image or an unscaled export of it); a size mismatch quietly disables the
+overlay instead of drawing circles in the wrong place.
+
+`annotation_label_scale:` (chart-level, default 1.0) multiplies the size of
+overlay labels drawn in the lightbox.
+
+`annotated:` links the object to its interactive annotated page (built with
+`render --html`). When the object has an embedded annotation model, the
+legend card's ANNOTATED tag opens the lightbox in annotation mode instead
+and the external link is not emitted; the link is used only for objects
+without a model. Without the key, a sibling file named
+`<image stem>_annotated.html` is picked up automatically. This pairs well
+with keeping the pretty hero as `image:` while the interactive page carries
+the labeled version.
+
 ## Colors
 
 `color:` accepts any CSS color and tints that object's marker, chart label,

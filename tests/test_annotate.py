@@ -1,4 +1,5 @@
 import json
+import pathlib
 
 import pytest
 
@@ -70,7 +71,7 @@ def test_model_offline_and_links(monkeypatch, tmp_path):
     assert "sim-id" in m51["links"]["simbad"]
     assert any("offline" in w for w in m["warnings"])
     out = model.write_model(m, tmp_path / "m.json")
-    assert json.load(open(out))["image"] == "fake.fit"
+    assert json.loads(pathlib.Path(out).read_text())["image"] == "fake.fit"
 
 
 def test_solver_missing_binary(monkeypatch):
@@ -592,6 +593,69 @@ def test_cli_annotate_png_success(monkeypatch, tmp_path):
     assert (tmp_path / "tiny_annotated.png").is_file()
 
 
+def test_cli_annotate_html_success(monkeypatch, tmp_path):
+    from click.testing import CliRunner
+    from PIL import Image
+
+    import uranometria.annotate as annotate_pkg
+    from uranometria.cli import main
+
+    img = tmp_path / "tiny.jpg"
+    Image.new("RGB", (80, 60), (5, 5, 20)).save(img)
+    m = _tiny_model()
+    m["solved"]["pixel_frame"] = "raster0"
+    monkeypatch.setattr(annotate_pkg, "build_model", lambda image, **kw: m)
+    result = CliRunner().invoke(
+        main, ["annotate", str(img), "--offline", "--html", "--label-scale", "2.0"]
+    )
+    assert result.exit_code == 0, result.output
+    page = (tmp_path / "tiny_annotated.html").read_text()
+    assert "buildAnnotationUI" in page
+    assert "labelScale: 2.0" in page  # --label-scale reaches the page
+
+
+def test_dso_distances_median(monkeypatch):
+    from astropy.table import Table
+
+    import uranometria.annotate.field as field
+
+    tables = {
+        # three usable pc rows -> median is the middle value (2 pc)
+        "ODD": Table(
+            {
+                "mesdistance.dist": [3.0, 1.0, 2.0],
+                "mesdistance.unit": ["pc", "pc", "pc"],
+            }
+        ),
+        # four rows: one masked, one junk unit; two usable -> len//2 picks
+        # the upper of the two (4 kpc)
+        "EVEN": Table(
+            {
+                "mesdistance.dist": [2.0, 4.0, 9.0, 1.0],
+                "mesdistance.unit": ["kpc", "kpc", "furlongs", "kpc"],
+            },
+            masked=True,
+        ),
+        "EMPTY": Table({"mesdistance.dist": [], "mesdistance.unit": []}),
+    }
+    tables["EVEN"]["mesdistance.dist"].mask = [False, False, False, True]
+
+    class FakeSimbad:
+        def add_votable_fields(self, *a, **k):
+            pass
+
+        def query_object(self, desig):
+            return tables.get(desig)
+
+    import astroquery.simbad
+
+    monkeypatch.setattr(astroquery.simbad, "Simbad", FakeSimbad)
+    out = field.dso_distances(["ODD", "EVEN", "EMPTY", "UNKNOWN"])
+    assert out["ODD"] == 2.0 * 3.26156
+    assert out["EVEN"] == 4.0 * 3261.56  # masked row and junk unit dropped
+    assert "EMPTY" not in out and "UNKNOWN" not in out
+
+
 def test_dso_aliases_collected():
     from uranometria.annotate.field import dsos_in_field
 
@@ -738,3 +802,296 @@ def test_place_label_never_flips_anchor():
         lx, ly, ha = _place_label(x, y, W, H, W / 2, H / 2, [], no_crossings)
         assert (lx >= x) == (ha == "left"), (x, y, lx, ha)
         assert 0.02 * W <= lx <= 0.98 * W
+
+
+# ---- standalone HTML page (uranometria-3) -----------------------------------
+
+
+def test_render_html_standalone(tmp_path):
+    from PIL import Image
+
+    from uranometria.annotate.render_html import render_html
+
+    img = tmp_path / "tiny.jpg"
+    Image.new("RGB", (80, 60), (5, 5, 20)).save(img)
+    m = _tiny_model()
+    m["solved"]["pixel_frame"] = "raster0"
+    m["objects"][0]["aliases"] = ["NGC 5194"]
+    m["objects"][0]["dist_ly"] = 22_000_000
+    m["objects"][0]["links"] = {"simbad": "https://simbad/x", "wikipedia": "https://wiki/x"}
+    out = tmp_path / "page.html"
+    render_html(m, img, out)
+    page = out.read_text()
+    assert "data:image/jpeg;base64," in page  # image embedded, self-contained
+    assert "attachPanZoom" in page
+    assert 'id="annotations"' in page  # ANNOTATIONS toggle (overlay + panel)
+    assert "buildAnnotationUI" in page  # shared viewer builds cards client-side
+    assert 'id="ann-model"' in page  # model embedded as JSON
+    assert "NGC 5194" in page  # aliases carried in the model
+    assert "22000000" in page  # distance carried in the model
+    assert "https://simbad/x" in page and "wikipedia" in page
+    assert 'id="search"' in page
+
+
+def test_render_html_tiff_reencoded_for_browser(tmp_path):
+    from PIL import Image
+
+    from uranometria.annotate.render_html import render_html
+
+    img = tmp_path / "stack.tif"
+    Image.new("RGB", (80, 60), (200, 10, 10)).save(img)
+    m = _tiny_model()
+    m["solved"]["pixel_frame"] = "raster0"
+    out = tmp_path / "page.html"
+    render_html(m, img, out)
+    page = out.read_text()
+    assert "data:image/jpeg;base64," in page  # re-encoded, browsers can't do TIFF
+    assert "data:image/tiff" not in page
+
+
+def test_render_html_rejects_nonfinite_label_scale(tmp_path):
+    import pytest
+    from PIL import Image
+
+    from uranometria.annotate.render_html import render_html
+
+    img = tmp_path / "tiny.jpg"
+    Image.new("RGB", (80, 60)).save(img)
+    m = _tiny_model()
+    m["solved"]["pixel_frame"] = "raster0"
+    with pytest.raises(ValueError, match="finite"):
+        render_html(m, img, tmp_path / "p.html", label_scale=float("nan"))
+
+
+def test_render_html_rejects_nonfinite_model_values(tmp_path):
+    import pytest
+    from PIL import Image
+
+    from uranometria.annotate.render_html import render_html
+
+    img = tmp_path / "tiny.jpg"
+    Image.new("RGB", (80, 60)).save(img)
+    m = _tiny_model()
+    m["solved"]["pixel_frame"] = "raster0"
+    m["objects"][0]["x"] = float("nan")
+    with pytest.raises(ValueError):  # allow_nan=False refuses the embed
+        render_html(m, img, tmp_path / "p.html")
+
+
+def test_render_html_rejects_mismatched_image(tmp_path):
+    import pytest
+    from PIL import Image
+
+    from uranometria.annotate.render_html import render_html
+
+    img = tmp_path / "wrong.jpg"
+    Image.new("RGB", (100, 60)).save(img)  # model says 80x60
+    m = _tiny_model()
+    m["solved"]["pixel_frame"] = "raster0"
+    with pytest.raises(ValueError, match="model was built for"):
+        render_html(m, img, tmp_path / "page.html")
+
+
+def test_render_html_cross_frame_flip(tmp_path):
+    from PIL import Image
+
+    from uranometria.annotate.render_html import render_html
+
+    img = tmp_path / "tiny.jpg"
+    Image.new("RGB", (80, 60)).save(img)
+    m = _tiny_model()  # pixel_frame stays fits0: jpg display must flip y
+    out = tmp_path / "page.html"
+    render_html(m, img, out)
+    page = out.read_text()
+    assert '"y": 34.0' in page  # (60-1) - 25
+    assert '"y": 25.0' not in page
+
+
+def test_render_html_escapes_all_angle_brackets(tmp_path):
+    from PIL import Image
+
+    from uranometria.annotate.render_html import render_html
+
+    img = tmp_path / "tiny.jpg"
+    Image.new("RGB", (80, 60)).save(img)
+    m = _tiny_model()
+    m["solved"]["pixel_frame"] = "raster0"
+    m["objects"][0]["name"] = "<!--<script>evil"
+    out = tmp_path / "page.html"
+    render_html(m, img, out)
+    page = out.read_text()
+    start = page.index('id="ann-model">') + len('id="ann-model">')
+    payload = page[start : page.index("</script>", start)]
+    assert "<" not in payload  # every < is backslash-u003c escaped
+    assert r"\u003c!--\u003cscript" in payload
+
+
+def test_render_html_coerces_model_strings(tmp_path):
+    from PIL import Image
+
+    from uranometria.annotate.render_html import render_html
+
+    img = tmp_path / "tiny.jpg"
+    Image.new("RGB", (80, 60)).save(img)
+    m = _tiny_model()
+    m["solved"]["pixel_frame"] = "raster0"
+    m["image_size"] = ["80", "60"]  # hand-edited model: strings, not ints
+    out = tmp_path / "page.html"
+    render_html(m, img, out, label_scale="2")
+    page = out.read_text()
+    assert 'viewBox="0 0 80 60"' in page
+    assert "labelScale: 2.0" in page
+
+
+def test_cli_render_html_size_mismatch_clean_error(tmp_path):
+    import json
+
+    from click.testing import CliRunner
+    from PIL import Image
+
+    from uranometria.cli import main
+
+    img = tmp_path / "wrong.jpg"
+    Image.new("RGB", (100, 60)).save(img)
+    m = _tiny_model()
+    m["solved"]["pixel_frame"] = "raster0"
+    mp = tmp_path / "m.json"
+    mp.write_text(json.dumps(m))
+    result = CliRunner().invoke(main, ["render", str(mp), str(img), "--html"])
+    assert result.exit_code != 0
+    assert "model was built for" in result.output  # ClickException, not traceback
+
+
+def test_render_html_fits_source_flips_nothing(tmp_path):
+    import numpy as np
+    from astropy.io import fits
+
+    from uranometria.annotate.render_html import render_html
+
+    data = (np.ones((3, 60, 80)) * 500).astype("float32")
+    f = tmp_path / "t.fit"
+    fits.PrimaryHDU(data).writeto(f)
+    m = _tiny_model()
+    m["image"] = "t.fit"  # fits0 model + fits render: direct coordinates
+    out = tmp_path / "page.html"
+    render_html(m, f, out)
+    page = out.read_text()
+    assert '"y": 25.0' in page  # M51 y unchanged in the embedded model
+    assert "data:image/jpeg;base64," in page  # stretched render embedded
+
+
+def test_cli_render_html(tmp_path):
+    import json
+
+    from click.testing import CliRunner
+    from PIL import Image
+
+    from uranometria.cli import main
+
+    img = tmp_path / "tiny.jpg"
+    Image.new("RGB", (80, 60)).save(img)
+    m = _tiny_model()
+    m["solved"]["pixel_frame"] = "raster0"
+    mp = tmp_path / "m.json"
+    mp.write_text(json.dumps(m))
+    result = CliRunner().invoke(main, ["render", str(mp), str(img), "--html"])
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "tiny_annotated.html").is_file()
+
+
+def test_cluster_nebula_distance_harmonized(monkeypatch, tmp_path):
+    """Sh2-142 and NGC 7380 are one complex: the nebula inherits the
+    cluster's (better-measured) distance instead of a contradictory one."""
+    import uranometria.annotate.model as model
+
+    monkeypatch.setattr(model, "solve", lambda image, **kw: dict(M51_SOLUTION))
+    monkeypatch.setattr(model, "_image_size", lambda image: (3872, 2192))
+    monkeypatch.setattr(model, "named_bright_stars", lambda *a, **k: [])
+    monkeypatch.setattr(model, "stars_in_field", lambda *a, **k: [])
+
+    def fake_dsos(*a, **k):
+        return [
+            {
+                "disp": "NGC 7380",
+                "common": "",
+                "type": "Cluster + nebula",
+                "constellation": "Cepheus",
+                "ra": 202.5,
+                "dec": 47.2,
+                "z": None,
+                "aliases": [],
+                "sep_deg": 0.0,
+            },
+            {
+                "disp": "Sh2-142",
+                "common": "",
+                "type": "Emission nebula (H II)",
+                "constellation": "",
+                "ra": 202.55,
+                "dec": 47.25,
+                "z": None,
+                "aliases": [],
+                "sep_deg": 0.05,
+            },
+        ]
+
+    monkeypatch.setattr(model, "dsos_in_field", fake_dsos)
+    monkeypatch.setattr(model, "dso_distances", lambda d: {"NGC 7380": 7247, "Sh2-142": 11350})
+    m = model.build_model(tmp_path / "f.fit", allow_online=True)
+    dso = {o["designation"]: o for o in m["objects"] if o["kind"] == "dso"}
+    assert dso["NGC 7380"]["dist_ly"] == 7247
+    assert dso["Sh2-142"]["dist_ly"] == 7247  # inherited from the cluster
+
+
+def test_fmt_dist_ly_approx():
+    from uranometria.annotate.render_png import fmt_dist_ly
+
+    assert fmt_dist_ly(7247, approx=True) == "~7,200 ly"
+    assert fmt_dist_ly(7247) == "7,247 ly"
+    assert fmt_dist_ly(365) == "365 ly"
+    assert fmt_dist_ly(22_000_000, approx=True) == "~22 Mly"
+
+
+def test_render_html_viewport_filter(tmp_path):
+    from PIL import Image
+
+    from uranometria.annotate.render_html import render_html
+
+    img = tmp_path / "tiny.jpg"
+    Image.new("RGB", (80, 60)).save(img)
+    m = _tiny_model()
+    m["solved"]["pixel_frame"] = "raster0"
+    out = tmp_path / "page.html"
+    render_html(m, img, out)
+    page = out.read_text()
+    assert "function inView(" in page  # zoom filters the sidebar
+    assert "IN VIEW" in page
+    assert "attachPanZoom(svg, 80, 60, applyFilter)" in page
+
+
+def test_html_label_scale(tmp_path):
+    from PIL import Image
+
+    from uranometria.annotate.render_html import render_html
+
+    img = tmp_path / "big.jpg"
+    Image.new("RGB", (2000, 1000)).save(img)
+    m = _tiny_model(2000, 1000)
+    m["solved"]["pixel_frame"] = "raster0"
+    for o in m["objects"]:
+        o["x"], o["y"] = 100.0, 100.0
+    out = tmp_path / "p.html"
+    render_html(m, img, out)
+    assert "labelScale: 1.0" in out.read_text()  # builder sizes labels from this
+    render_html(m, img, out, label_scale=2.0)
+    assert "labelScale: 2.0" in out.read_text()
+
+
+def test_chart_annotation_label_scale(tmp_path):
+    import uranometria
+
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg"}], "annotation_label_scale": 1.5}
+    out = tmp_path / "map.html"
+    uranometria.generate(cfg, out, allow_online=False)
+    assert "const ANN_LABEL_SCALE = 1.5;" in out.read_text()

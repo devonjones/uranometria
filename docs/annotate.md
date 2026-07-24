@@ -69,15 +69,60 @@ the model exactly; the renderer refuses mismatched pairs.
 | `--ra HOURS --dec DEG` | pointing hint; makes the solve near-instant |
 | `--radius DEG` | search radius around the hint (default 30) |
 | `--png [PATH]` | also render the annotated PNG (default `<image>_annotated.png`) |
+| `--html [PATH]` | also render the interactive HTML page (default `<image>_annotated.html`) |
 | `--title TEXT` | title bar text (default: the DSO nearest the frame center) |
+| `--label-scale X` | multiplier for overlay label size in the HTML page (default 1.0) |
 
 ### `uranometria render MODEL IMAGE`
 
-Renders an annotated PNG from an existing model, with no solving and no
-network. `-o/--output` names the PNG (default `<image>_annotated.png`),
-`--title` overrides the title bar. This is the second half of the
+Renders an annotated PNG from an existing model, or the interactive HTML
+page with `--html`, with no solving and no network. `-o/--output` names the
+output (default `<image>_annotated.png` or `_annotated.html`), `--title`
+overrides the title bar, and `--label-scale` sizes the HTML overlay labels.
+This is the second half of the
 generate / edit / re-render workflow described in
 [annotation-model.md](annotation-model.md).
+
+## The interactive HTML page
+
+`--html` (on `annotate`) or `render --html` produces one self-contained HTML
+file: the photograph embedded as a data URI, the overlay drawn in SVG with
+counter-scaled markers, wheel zoom and drag pan, an ANNOTATIONS toggle
+(hides the overlay and the object panel together), and a
+searchable sidebar where every object links to SIMBAD (and Wikipedia when an
+article is likely). FITS sources are rendered through the same display
+stretch as the PNG before embedding.
+
+## The sky-map lightbox overlay
+
+If a chart object's photo has an annotation model sitting next to it as
+`<image>.annotations.json` (or named explicitly with an `annotations:` key in
+the chart config), the sky map's lightbox draws the overlay on the photo with
+an ANNOTATIONS toggle (on by default, remembered per session; hides the
+overlay and the panel together) and shows a side panel listing every
+identified object: designations with aliases, common name, type, magnitude,
+distance, and SIMBAD/Wikipedia links, with a search box. Zooming the photo
+filters the panel to the objects in view, hovering a card spotlights that
+object on the image, and an EXPAND button grows the viewer to fill the
+window. The lightbox and the standalone page are built by the same shared
+code, so they behave identically. The model is embedded in the chart page
+when the chart is built, so the annotation viewer travels with the page and
+does not depend on the standalone annotated HTML existing or staying put.
+The overlay only engages when the model's `image_size` matches
+the displayed photo, so a model built from a different crop is ignored rather
+than misdrawn. The lightbox itself zooms and pans like the chart discs;
+clicking the photo never closes it, only the backdrop or Esc does.
+
+To wire the pipelines together by hand: solve once, save the model with the
+sidecar name, and rebuild the chart.
+
+```bash
+uranometria annotate stack.fit -o heroes/M51.jpg.annotations.json
+uranometria chart skymap.yaml -o skymap.html
+```
+
+See [chart configuration](chart-config.md#annotations) for the `annotations:`
+key when the model lives elsewhere.
 
 ## What gets identified
 

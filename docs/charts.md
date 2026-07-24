@@ -52,8 +52,21 @@ The generated page is interactive:
 - **Zoom filtering**: when you zoom in, the sidebar narrows to the objects in
   the visible region (the count shows "N OF M OBJECTS · IN VIEW").
 - **Photos**: objects with an `image:` in the config get a "PHOTO" tag; click
-  the marker or the card to open the photo in a lightbox. Esc or clicking
-  outside closes it.
+  the marker or the card to open the photo in a lightbox. The photo zooms and
+  pans like the chart (wheel, drag, double-click to reset); clicking the
+  photo never dismisses it, only the backdrop or Esc does. If the photo has
+  an annotation model (an `annotations:` key in the config, or a sidecar
+  named `<image>.annotations.json` beside the photo), the lightbox becomes a
+  full annotation viewer, the same one the standalone annotated page uses:
+  the identified objects drawn over the image, and a searchable side panel
+  listing every object with its aliases, type, magnitude, distance, and
+  SIMBAD/Wikipedia links. The panel filters to the objects in view as you
+  zoom, hovering a card spotlights that object on the image, an ANNOTATIONS
+  button toggles the overlay and panel together, and EXPAND grows the viewer
+  to fill the window. All of it is embedded in the chart page itself, so it
+  keeps working if the standalone annotated HTML moves or was never
+  generated. The legend card's ANNOTATED tag opens the lightbox with
+  annotations switched on, whatever the toggle's remembered state.
 
 ## Self-contained output
 
