@@ -144,7 +144,12 @@ def _custom_links(entry, disp, warnings):
     if isinstance(raw, dict):
         pairs = list(raw.items())
     elif isinstance(raw, list):
-        pairs = [(d.get("label"), d.get("url")) for d in raw if isinstance(d, dict)]
+        pairs = []
+        for item in raw:
+            if isinstance(item, dict):
+                pairs.append((item.get("label"), item.get("url")))
+            else:
+                warnings.append(f"{disp}: link entry {item!r} is not a label/url mapping — skipped")
     else:
         warnings.append(f"{disp}: links must be a mapping or a list — ignored")
         return []

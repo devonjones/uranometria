@@ -13,7 +13,9 @@ One release for the whole develop cycle: the interactive chart grew up.
   outside synthetic tests. Capture now waits until a drag moves 4px.
 - Dragging to pan no longer selects the chart text, and wheeling past
   the zoom limit no longer drifts the view toward the cursor; at either
-  clamp the wheel is a clean no-op and the page never scrolls.
+  clamp the wheel is a clean no-op and the page never scrolls. A press
+  released outside the chart can no longer strand a pan that follows
+  the cursor on the next hover.
 - Photo thumbnails on the chart, opt-in with `thumbnails: true`:
   hovering a marker floats a preview by the cursor (clickable, opens
   the lightbox), hovering a legend card shows the same full-size

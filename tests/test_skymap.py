@@ -675,6 +675,13 @@ def test_object_links_scalar_config_warns(tmp_path):
     assert any("must be a mapping or a list" in w for w in warnings)
 
 
+def test_object_links_non_dict_list_item_warns(tmp_path):
+    cfg = {"objects": [{"id": "M31", "links": ["https://example.org"]}]}
+    out = tmp_path / "map.html"
+    warnings = uranometria.generate(cfg, out, allow_online=False)
+    assert any("is not a label/url mapping" in w for w in warnings)
+
+
 def test_object_link_href_quote_escaped(tmp_path):
     cfg = {"objects": [{"id": "M31", "links": {"x": 'https://example.org/"onmouseover="a'}}]}
     out = tmp_path / "map.html"

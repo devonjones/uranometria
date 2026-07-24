@@ -72,6 +72,7 @@ function attachPanZoom(svg, w, h, onChange) {
   });
   svg.addEventListener('pointermove', e => {
     if (!pan) return;
+    if (!e.buttons) { pan = null; return; }  // release landed off-svg pre-capture
     const r = svg.getBoundingClientRect();
     const s = Math.min(r.width / vb[2], r.height / vb[3]);
     const dx = e.clientX - pan[0], dy = e.clientY - pan[1];
@@ -84,6 +85,7 @@ function attachPanZoom(svg, w, h, onChange) {
     clamp(); apply();
   });
   svg.addEventListener('pointerup', () => { pan = null; });
+  svg.addEventListener('pointercancel', () => { pan = null; });
   svg.addEventListener('click', e => {
     if (moved > 5) { e.stopPropagation(); }
     moved = 0;

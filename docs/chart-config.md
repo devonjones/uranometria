@@ -146,7 +146,6 @@ overlay instead of drawing circles in the wrong place.
 `annotation_label_scale:` (chart-level, default 1.0) multiplies the size of
 overlay labels drawn in the lightbox.
 
-
 `annotated:` links the object to its interactive annotated page (built with
 `render --html`). When the object has an embedded annotation model, the
 legend card's ANNOTATED tag opens the lightbox in annotation mode instead
