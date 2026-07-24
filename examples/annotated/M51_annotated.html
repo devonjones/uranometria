@@ -105,6 +105,9 @@ footer { margin-top:10px; text-align:center; color:var(--dim); font-size:9.5px;
 function attachPanZoom(svg, w, h, onChange) {
   let vb = [0, 0, w, h], pan = null, moved = 0;
   const maxZ = 8;
+  // dragging to pan must never read as text selection (uranometria-8)
+  svg.style.userSelect = 'none';
+  svg.style.webkitUserSelect = 'none';
   const apply = () => {
     svg.setAttribute('viewBox', vb.join(' '));
     svg.style.setProperty('--z', w / vb[2]);
@@ -130,13 +133,21 @@ function attachPanZoom(svg, w, h, onChange) {
     e.preventDefault();
     const [px, py] = toLocal(e.clientX, e.clientY);
     const f = e.deltaY < 0 ? 1 / 1.25 : 1.25;
-    vb[0] = px - (px - vb[0]) * f;
-    vb[1] = py - (py - vb[1]) * f;
-    vb[2] *= f;
+    // clamp the scale FIRST and apply only the factor that survives:
+    // at the zoom limits the leftover origin shift used to become a pan
+    // toward the cursor (uranometria-9)
+    const nz = Math.min(w, Math.max(w / maxZ, vb[2] * f));
+    const g = nz / vb[2];
+    if (g === 1) return;
+    vb[0] = px - (px - vb[0]) * g;
+    vb[1] = py - (py - vb[1]) * g;
+    vb[2] = nz;
     clamp(); apply();
   }, { passive: false });
   svg.addEventListener('pointerdown', e => {
     pan = [e.clientX, e.clientY, vb[0], vb[1]]; moved = 0;
+    const sel = window.getSelection ? window.getSelection() : null;
+    if (sel && !sel.isCollapsed) sel.removeAllRanges();
     svg.setPointerCapture(e.pointerId);
   });
   svg.addEventListener('pointermove', e => {
