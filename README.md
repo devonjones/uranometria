@@ -84,6 +84,11 @@ objects:
     color: "#E06C75"           # marker/legend accent, any CSS color
 ```
 
+A nice convention for `color:` is typing objects with the same palette the
+annotated images use, so both legends speak one color language: galaxies
+`#82B4F5`, emission nebulae `#F48FB1`, planetary nebulae `#80DEEA`, clusters
+`#FFCC80`, anything else `#C5CAE9`. The example config does exactly that.
+
 These designations resolve offline from bundled catalogs: Messier (including
 the M40/M45/M102 oddballs), NGC and IC (OpenNGC), Sharpless (Sh2-1 through
 313), Caldwell, Barnard 33, Melotte, and any common name OpenNGC knows, like
