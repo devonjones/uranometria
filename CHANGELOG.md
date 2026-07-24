@@ -10,7 +10,9 @@ changes, so they move fast.
   J1991.25, so fast movers (Groombridge 1830 travels about 171 arcseconds
   in that gap) always missed the 2 arcsecond match and fell back to the
   raw Gaia id. Gaia proper motions now propagate the match position to
-  the Tycho epoch.
+  each Tycho row's own observation epochs (they vary star by star, which
+  is why even a fixed catalog-mean epoch left fast movers several
+  arcseconds out).
 
 ## 0.10.0 (July 24)
 

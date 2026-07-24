@@ -112,20 +112,25 @@ def _merge_sharpless_duplicates(hits):
     return sorted(merged, key=lambda r: r["sep_deg"])
 
 
-# Gaia DR3 positions are epoch J2016.0; Tycho-2 observed positions sit near
-# the catalog's mean observation epoch J1991.25. High-proper-motion stars
-# move arcminutes between the two (Groombridge 1830: ~171 arcsec), so match
-# in the Tycho epoch, not Gaia's.
+# Gaia DR3 positions are epoch J2016.0; Tycho-2 observed positions carry
+# PER-STAR epochs (EpRA-1990/EpDE-1990, roughly 1990.8 to 1992.1). High-
+# proper-motion stars move arcminutes across the gap (Groombridge 1830:
+# ~171 arcsec), so the match must run at each Tycho row's own epochs; even
+# a fixed catalog-mean epoch leaves fast movers several arcsec out.
 GAIA_EPOCH = 2016.0
-TYCHO_EPOCH = 1991.25
+TYCHO_FALLBACK_EPOCH = 1991.5  # catalog mean, for rows with masked epochs
 
 
 def _propagate(ra, dec, pmra_masyr, pmde_masyr, dt_years):
     """Move an ICRS position by proper motion. pmra is the projected
-    mu_alpha* (mas/yr, already times cos dec), Gaia's convention."""
+    mu_alpha* (mas/yr, already times cos dec), Gaia's convention. Within
+    an arcminute of the pole the linear RA shift is meaningless, so RA is
+    left untouched there (dec still moves; a 2 arcsec match at the exact
+    pole is not a real case)."""
     dec2 = dec + pmde_masyr * dt_years / 3.6e6
-    cosd = math.cos(math.radians(dec)) or 1e-9
-    ra2 = ra + pmra_masyr * dt_years / 3.6e6 / cosd
+    if abs(dec) > 90 - 1 / 60:
+        return ra, dec2
+    ra2 = ra + pmra_masyr * dt_years / 3.6e6 / math.cos(math.radians(dec))
     return ra2, dec2
 
 
@@ -158,7 +163,7 @@ def stars_in_field(center_ra, center_dec, radius_deg, *, mag_limit=12.5, max_sta
             stars.append(
                 {
                     "designation": f"Gaia DR3 {row['Source']}",
-                    "_epoch_pos": _propagate(ra, dec, pmra, pmde, TYCHO_EPOCH - GAIA_EPOCH),
+                    "_pm": (pmra, pmde),
                     "ra": ra,
                     "dec": dec,
                     "mag": round(float(row["Gmag"]), 1),
@@ -171,20 +176,26 @@ def stars_in_field(center_ra, center_dec, radius_deg, *, mag_limit=12.5, max_sta
 
     tycho = Vizier(
         catalog="I/259/tyc2",
-        columns=["TYC1", "TYC2", "TYC3", "RA(ICRS)", "DE(ICRS)", "VTmag"],
+        columns=["TYC1", "TYC2", "TYC3", "RA(ICRS)", "DE(ICRS)", "VTmag", "EpRA-1990", "EpDE-1990"],
         row_limit=200,
     ).query_region(center, radius=radius)
     if tycho:
+        fallback = TYCHO_FALLBACK_EPOCH - 1990.0
         for row in tycho[0]:
             tyc = f"TYC {row['TYC1']}-{row['TYC2']}-{row['TYC3']}"
             tra, tdec = float(row["RA(ICRS)"]), float(row["DE(ICRS)"])
+            ep_ra = 1990.0 + (float(row["EpRA-1990"]) if row["EpRA-1990"] else fallback)
+            ep_de = 1990.0 + (float(row["EpDE-1990"]) if row["EpDE-1990"] else fallback)
             for s in stars:
-                era, edec = s["_epoch_pos"]
+                pmra, pmde = s["_pm"]
+                # RA and DE are observed at different epochs in Tycho-2
+                era, _ = _propagate(s["ra"], s["dec"], pmra, pmde, ep_ra - GAIA_EPOCH)
+                _, edec = _propagate(s["ra"], s["dec"], pmra, pmde, ep_de - GAIA_EPOCH)
                 if sep_deg(era, edec, tra, tdec) < 2 * ARCSEC:
                     s["designation"] = tyc
                     break
     for s in stars:
-        s.pop("_epoch_pos", None)
+        s.pop("_pm", None)
     return stars
 
 
