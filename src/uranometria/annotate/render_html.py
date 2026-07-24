@@ -41,11 +41,17 @@ def _image_data_uri(image_path):
         im.save(buf, format="JPEG", quality=90)
         return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
     ext = os.path.splitext(p)[1].lower().lstrip(".")
-    mime = {"jpg": "jpeg", "jpeg": "jpeg", "png": "png", "tif": "tiff", "tiff": "tiff"}.get(
-        ext, "jpeg"
-    )
-    with open(p, "rb") as f:
-        return f"data:image/{mime};base64," + base64.b64encode(f.read()).decode()
+    browser_safe = {"jpg": "jpeg", "jpeg": "jpeg", "png": "png", "gif": "gif", "webp": "webp"}
+    if ext in browser_safe:
+        with open(p, "rb") as f:
+            return f"data:image/{browser_safe[ext]};base64," + base64.b64encode(f.read()).decode()
+    # TIFF and friends: browsers won't decode them, so re-encode via PIL
+    from PIL import Image
+
+    im = Image.open(p).convert("RGB")
+    buf = io.BytesIO()
+    im.save(buf, format="JPEG", quality=90)
+    return "data:image/jpeg;base64," + base64.b64encode(buf.getvalue()).decode()
 
 
 def render_html(model, image_path, output, *, title=None, label_scale=1.0):
@@ -53,7 +59,18 @@ def render_html(model, image_path, output, *, title=None, label_scale=1.0):
     if not isinstance(model, dict):
         with open(model) as f:
             model = json.load(f)
-    w, h = model["image_size"]
+    # models can come from hand-edited or third-party files: coerce the
+    # values that land outside the JSON-escaped payload
+    w, h = int(model["image_size"][0]), int(model["image_size"][1])
+
+    from .model import _image_size
+
+    iw, ih = _image_size(image_path)
+    if (iw, ih) != (w, h):
+        raise ValueError(
+            f"image is {iw}x{ih} but the model was built for {w}x{h} — "
+            "annotate and render must use the same image"
+        )
 
     # normalize object coordinates into the displayed raster's frame:
     # rasters display as-is; FITS renders via _load_image in array order,
@@ -189,7 +206,7 @@ const applyFilter = buildAnnotationUI({{
   searchEl: document.getElementById('search'),
   model,
   colors: {js_color_map()},
-  labelScale: {label_scale},
+  labelScale: {float(label_scale)},
 }});
 
 const annBtn = document.getElementById('annotations');

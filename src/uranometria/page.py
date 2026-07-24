@@ -395,8 +395,10 @@ const lbCount = document.getElementById('lb-count');
 const lbSearch = document.getElementById('lb-search');
 const SVGNS = 'http://www.w3.org/2000/svg';
 let annOn = sessionStorage.getItem('uranometria-annotations') !== 'off';
+let annShown = annOn;
 
 function setAnn(on, persist) {{
+  annShown = on;
   if (persist) {{
     annOn = on;
     sessionStorage.setItem('uranometria-annotations', on ? 'on' : 'off');
@@ -405,7 +407,7 @@ function setAnn(on, persist) {{
   lbAnnBtn.textContent = on ? 'ANNOTATIONS ON' : 'ANNOTATIONS OFF';
   lbAnnBtn.classList.toggle('on', on);
 }}
-lbAnnBtn.addEventListener('click', () => setAnn(!annOn, true));
+lbAnnBtn.addEventListener('click', () => setAnn(!annShown, true));
 let lbMax = false;
 function setMax(on) {{
   lbMax = on;
@@ -419,12 +421,14 @@ lbStage.addEventListener('click', e => e.stopPropagation());
 const ANN_LABEL_SCALE = {ann_label_scale};
 {ann_ui_js}
 
+let openSeq = 0;
 function openLightbox(src, cap, ann, forceAnn) {{
   lbName.textContent = cap[0] || '';
   lbSub.textContent = cap[1] || '';
+  const seq = ++openSeq;
   const probe = new Image();
-  probe.onload = () => {{
-    const w = probe.naturalWidth, h = probe.naturalHeight;
+  const show = (w, h) => {{
+    if (seq !== openSeq) return;  // a newer click already superseded this load
     const old = document.getElementById('lb-svg');
     const svg = document.createElementNS(SVGNS, 'svg');
     svg.setAttribute('id', 'lb-svg');
@@ -461,6 +465,8 @@ function openLightbox(src, cap, ann, forceAnn) {{
     attachPanZoom(svg, w, h, onChange);
     lb.hidden = false;
   }};
+  probe.onload = () => show(probe.naturalWidth, probe.naturalHeight);
+  probe.onerror = () => show(800, 600);  // open anyway: caption + empty stage
   probe.src = src;
 }}
 
@@ -481,6 +487,14 @@ document.querySelectorAll('[data-img]').forEach(el => {{
 }});
 function closeLightbox() {{ lb.hidden = true; }}
 lb.addEventListener('click', closeLightbox);
-document.addEventListener('keydown', e => {{ if (e.key === 'Escape') closeLightbox(); }});
+document.addEventListener('keydown', e => {{
+  if (e.key !== 'Escape' || lb.hidden) return;
+  if (e.target === lbSearch && lbSearch.value) {{
+    lbSearch.value = '';
+    lbSearch.dispatchEvent(new Event('input'));
+  }} else {{
+    closeLightbox();
+  }}
+}});
 </script>
 """

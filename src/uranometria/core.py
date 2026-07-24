@@ -135,19 +135,24 @@ def _annotation_sidecar(o, base_dir):
     explicit `annotations:` path, or `<image>.annotations.json` beside the
     image. Returns a compact display-frame dict, or None."""
     img = str(o.get("image") or "")
-    if not img or re.match(r"https?://", img):
-        return None
-    img_path = img[7:] if img.startswith("file://") else img
-    if not os.path.isabs(img_path):
-        img_path = os.path.join(base_dir, img_path)
     if o.get("annotations"):
+        # explicit key: honored even for remote images (the lightbox size
+        # guard validates at view time), and a missing file is a warning,
+        # not a silent drop
         ann_path = str(o["annotations"])
         if not os.path.isabs(ann_path):
             ann_path = os.path.join(base_dir, ann_path)
+        if not os.path.isfile(ann_path):
+            raise FileNotFoundError(f"annotations file not found: {ann_path}")
     else:
+        if not img or re.match(r"https?://", img):
+            return None
+        img_path = img[7:] if img.startswith("file://") else img
+        if not os.path.isabs(img_path):
+            img_path = os.path.join(base_dir, img_path)
         ann_path = img_path + ".annotations.json"
-    if not os.path.isfile(ann_path):
-        return None
+        if not os.path.isfile(ann_path):
+            return None
     with open(ann_path) as f:
         model = json.load(f)
     width, height = model["image_size"]

@@ -360,10 +360,14 @@ function attachPanZoom(svg, w, h, onChange) {
     vb[0] = Math.max(0, Math.min(w - vb[2], vb[0]));
     vb[1] = Math.max(0, Math.min(h - vb[3], vb[1]));
   };
+  // the element box may be letterboxed (CSS-forced size vs viewBox aspect):
+  // map through the true rendered scale, not the raw box dimensions
   const toLocal = (cx, cy) => {
     const r = svg.getBoundingClientRect();
-    return [vb[0] + (cx - r.left) / r.width * vb[2],
-            vb[1] + (cy - r.top) / r.height * vb[3]];
+    const s = Math.min(r.width / vb[2], r.height / vb[3]);
+    const ox = (r.width - vb[2] * s) / 2, oy = (r.height - vb[3] * s) / 2;
+    return [vb[0] + (cx - r.left - ox) / s,
+            vb[1] + (cy - r.top - oy) / s];
   };
   svg.addEventListener('wheel', e => {
     e.preventDefault();
@@ -381,10 +385,11 @@ function attachPanZoom(svg, w, h, onChange) {
   svg.addEventListener('pointermove', e => {
     if (!pan) return;
     const r = svg.getBoundingClientRect();
+    const s = Math.min(r.width / vb[2], r.height / vb[3]);
     const dx = e.clientX - pan[0], dy = e.clientY - pan[1];
     moved = Math.max(moved, Math.abs(dx) + Math.abs(dy));
-    vb[0] = pan[2] - dx / r.width * vb[2];
-    vb[1] = pan[3] - dy / r.height * vb[3];
+    vb[0] = pan[2] - dx / s;
+    vb[1] = pan[3] - dy / s;
     clamp(); apply();
   });
   svg.addEventListener('pointerup', () => { pan = null; });
@@ -427,8 +432,10 @@ const lbCount = document.getElementById('lb-count');
 const lbSearch = document.getElementById('lb-search');
 const SVGNS = 'http://www.w3.org/2000/svg';
 let annOn = sessionStorage.getItem('uranometria-annotations') !== 'off';
+let annShown = annOn;
 
 function setAnn(on, persist) {
+  annShown = on;
   if (persist) {
     annOn = on;
     sessionStorage.setItem('uranometria-annotations', on ? 'on' : 'off');
@@ -437,7 +444,7 @@ function setAnn(on, persist) {
   lbAnnBtn.textContent = on ? 'ANNOTATIONS ON' : 'ANNOTATIONS OFF';
   lbAnnBtn.classList.toggle('on', on);
 }
-lbAnnBtn.addEventListener('click', () => setAnn(!annOn, true));
+lbAnnBtn.addEventListener('click', () => setAnn(!annShown, true));
 let lbMax = false;
 function setMax(on) {
   lbMax = on;
@@ -530,7 +537,7 @@ function buildAnnotationUI(opts) {
     linkRow.className = 'linkrow';
     for (const [label, key] of [['SIMBAD', 'simbad'], ['Wikipedia', 'wikipedia']]) {
       const url = (o.links || {})[key];
-      if (!url) continue;
+      if (!url || !/^https?:\/\//i.test(url)) continue;
       const a = document.createElement('a');
       a.href = url;
       a.target = '_blank';
@@ -572,18 +579,25 @@ function buildAnnotationUI(opts) {
       ? shown + ' OF ' + cards.length + ' OBJECTS' + (zoomed ? ' · IN VIEW' : '')
       : cards.length + ' OBJECTS';
   }
-  if (opts.searchEl) opts.searchEl.addEventListener('input', applyFilter);
+  if (opts.searchEl) {
+    if (opts.searchEl._annFilter)
+      opts.searchEl.removeEventListener('input', opts.searchEl._annFilter);
+    opts.searchEl._annFilter = applyFilter;
+    opts.searchEl.addEventListener('input', applyFilter);
+  }
   applyFilter();
   return applyFilter;
 }
 
 
+let openSeq = 0;
 function openLightbox(src, cap, ann, forceAnn) {
   lbName.textContent = cap[0] || '';
   lbSub.textContent = cap[1] || '';
+  const seq = ++openSeq;
   const probe = new Image();
-  probe.onload = () => {
-    const w = probe.naturalWidth, h = probe.naturalHeight;
+  const show = (w, h) => {
+    if (seq !== openSeq) return;  // a newer click already superseded this load
     const old = document.getElementById('lb-svg');
     const svg = document.createElementNS(SVGNS, 'svg');
     svg.setAttribute('id', 'lb-svg');
@@ -620,6 +634,8 @@ function openLightbox(src, cap, ann, forceAnn) {
     attachPanZoom(svg, w, h, onChange);
     lb.hidden = false;
   };
+  probe.onload = () => show(probe.naturalWidth, probe.naturalHeight);
+  probe.onerror = () => show(800, 600);  // open anyway: caption + empty stage
   probe.src = src;
 }
 
@@ -640,5 +656,13 @@ document.querySelectorAll('[data-img]').forEach(el => {
 });
 function closeLightbox() { lb.hidden = true; }
 lb.addEventListener('click', closeLightbox);
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape' || lb.hidden) return;
+  if (e.target === lbSearch && lbSearch.value) {
+    lbSearch.value = '';
+    lbSearch.dispatchEvent(new Event('input'));
+  } else {
+    closeLightbox();
+  }
+});
 </script>

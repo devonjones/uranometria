@@ -69,14 +69,17 @@ the model exactly; the renderer refuses mismatched pairs.
 | `--ra HOURS --dec DEG` | pointing hint; makes the solve near-instant |
 | `--radius DEG` | search radius around the hint (default 30) |
 | `--png [PATH]` | also render the annotated PNG (default `<image>_annotated.png`) |
+| `--html [PATH]` | also render the interactive HTML page (default `<image>_annotated.html`) |
 | `--title TEXT` | title bar text (default: the DSO nearest the frame center) |
 | `--label-scale X` | multiplier for overlay label size in the HTML page (default 1.0) |
 
 ### `uranometria render MODEL IMAGE`
 
-Renders an annotated PNG from an existing model, with no solving and no
-network. `-o/--output` names the PNG (default `<image>_annotated.png`),
-`--title` overrides the title bar. This is the second half of the
+Renders an annotated PNG from an existing model, or the interactive HTML
+page with `--html`, with no solving and no network. `-o/--output` names the
+output (default `<image>_annotated.png` or `_annotated.html`), `--title`
+overrides the title bar, and `--label-scale` sizes the HTML overlay labels.
+This is the second half of the
 generate / edit / re-render workflow described in
 [annotation-model.md](annotation-model.md).
 

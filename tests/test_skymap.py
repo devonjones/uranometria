@@ -505,6 +505,27 @@ def test_annotation_explicit_path_and_bad_json(tmp_path):
     assert any("sidecar unreadable" in w for w in warnings)
 
 
+def test_explicit_annotations_missing_warns(tmp_path):
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg", "annotations": "nope.json"}]}
+    out = tmp_path / "map.html"
+    warnings = uranometria.generate(cfg, out, allow_online=False)
+    assert any("annotations file not found" in w for w in warnings)
+    assert 'id="lb-annotations">{}</script>' in out.read_text()  # chart still builds
+
+
+def test_explicit_annotations_with_remote_image(tmp_path):
+    import json
+
+    (tmp_path / "m.json").write_text(json.dumps(_sidecar_model()))
+    cfg = {
+        "objects": [{"id": "M31", "image": "https://example.org/pic.jpg", "annotations": "m.json"}]
+    }
+    out = tmp_path / "map.html"
+    assert uranometria.generate(cfg, out, allow_online=False) == []
+    assert '"mk-0"' in out.read_text()  # model embedded despite remote hero
+
+
 def test_no_sidecar_means_empty_map(tmp_path):
     (tmp_path / "pic.jpg").write_bytes(b"x")
     cfg = {"objects": [{"id": "M31", "image": "pic.jpg"}]}

@@ -1,4 +1,5 @@
 import json
+import pathlib
 
 import pytest
 
@@ -70,7 +71,7 @@ def test_model_offline_and_links(monkeypatch, tmp_path):
     assert "sim-id" in m51["links"]["simbad"]
     assert any("offline" in w for w in m["warnings"])
     out = model.write_model(m, tmp_path / "m.json")
-    assert json.load(open(out))["image"] == "fake.fit"
+    assert json.loads(pathlib.Path(out).read_text())["image"] == "fake.fit"
 
 
 def test_solver_missing_binary(monkeypatch):
@@ -592,6 +593,69 @@ def test_cli_annotate_png_success(monkeypatch, tmp_path):
     assert (tmp_path / "tiny_annotated.png").is_file()
 
 
+def test_cli_annotate_html_success(monkeypatch, tmp_path):
+    from click.testing import CliRunner
+    from PIL import Image
+
+    import uranometria.annotate as annotate_pkg
+    from uranometria.cli import main
+
+    img = tmp_path / "tiny.jpg"
+    Image.new("RGB", (80, 60), (5, 5, 20)).save(img)
+    m = _tiny_model()
+    m["solved"]["pixel_frame"] = "raster0"
+    monkeypatch.setattr(annotate_pkg, "build_model", lambda image, **kw: m)
+    result = CliRunner().invoke(
+        main, ["annotate", str(img), "--offline", "--html", "--label-scale", "2.0"]
+    )
+    assert result.exit_code == 0, result.output
+    page = (tmp_path / "tiny_annotated.html").read_text()
+    assert "buildAnnotationUI" in page
+    assert "labelScale: 2.0" in page  # --label-scale reaches the page
+
+
+def test_dso_distances_median(monkeypatch):
+    from astropy.table import Table
+
+    import uranometria.annotate.field as field
+
+    tables = {
+        # three usable pc rows -> median is the middle value (2 pc)
+        "ODD": Table(
+            {
+                "mesdistance.dist": [3.0, 1.0, 2.0],
+                "mesdistance.unit": ["pc", "pc", "pc"],
+            }
+        ),
+        # four rows: one masked, one junk unit; two usable -> len//2 picks
+        # the upper of the two (4 kpc)
+        "EVEN": Table(
+            {
+                "mesdistance.dist": [2.0, 4.0, 9.0, 1.0],
+                "mesdistance.unit": ["kpc", "kpc", "furlongs", "kpc"],
+            },
+            masked=True,
+        ),
+        "EMPTY": Table({"mesdistance.dist": [], "mesdistance.unit": []}),
+    }
+    tables["EVEN"]["mesdistance.dist"].mask = [False, False, False, True]
+
+    class FakeSimbad:
+        def add_votable_fields(self, *a, **k):
+            pass
+
+        def query_object(self, desig):
+            return tables.get(desig)
+
+    import astroquery.simbad
+
+    monkeypatch.setattr(astroquery.simbad, "Simbad", FakeSimbad)
+    out = field.dso_distances(["ODD", "EVEN", "EMPTY", "UNKNOWN"])
+    assert out["ODD"] == 2.0 * 3.26156
+    assert out["EVEN"] == 4.0 * 3261.56  # masked row and junk unit dropped
+    assert "EMPTY" not in out and "UNKNOWN" not in out
+
+
 def test_dso_aliases_collected():
     from uranometria.annotate.field import dsos_in_field
 
@@ -767,6 +831,36 @@ def test_render_html_standalone(tmp_path):
     assert "22000000" in page  # distance carried in the model
     assert "https://simbad/x" in page and "wikipedia" in page
     assert 'id="search"' in page
+
+
+def test_render_html_tiff_reencoded_for_browser(tmp_path):
+    from PIL import Image
+
+    from uranometria.annotate.render_html import render_html
+
+    img = tmp_path / "stack.tif"
+    Image.new("RGB", (80, 60), (200, 10, 10)).save(img)
+    m = _tiny_model()
+    m["solved"]["pixel_frame"] = "raster0"
+    out = tmp_path / "page.html"
+    render_html(m, img, out)
+    page = out.read_text()
+    assert "data:image/jpeg;base64," in page  # re-encoded, browsers can't do TIFF
+    assert "data:image/tiff" not in page
+
+
+def test_render_html_rejects_mismatched_image(tmp_path):
+    import pytest
+    from PIL import Image
+
+    from uranometria.annotate.render_html import render_html
+
+    img = tmp_path / "wrong.jpg"
+    Image.new("RGB", (100, 60)).save(img)  # model says 80x60
+    m = _tiny_model()
+    m["solved"]["pixel_frame"] = "raster0"
+    with pytest.raises(ValueError, match="model was built for"):
+        render_html(m, img, tmp_path / "page.html")
 
 
 def test_render_html_fits_source_flips_nothing(tmp_path):

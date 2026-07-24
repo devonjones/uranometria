@@ -117,10 +117,14 @@ function attachPanZoom(svg, w, h, onChange) {
     vb[0] = Math.max(0, Math.min(w - vb[2], vb[0]));
     vb[1] = Math.max(0, Math.min(h - vb[3], vb[1]));
   };
+  // the element box may be letterboxed (CSS-forced size vs viewBox aspect):
+  // map through the true rendered scale, not the raw box dimensions
   const toLocal = (cx, cy) => {
     const r = svg.getBoundingClientRect();
-    return [vb[0] + (cx - r.left) / r.width * vb[2],
-            vb[1] + (cy - r.top) / r.height * vb[3]];
+    const s = Math.min(r.width / vb[2], r.height / vb[3]);
+    const ox = (r.width - vb[2] * s) / 2, oy = (r.height - vb[3] * s) / 2;
+    return [vb[0] + (cx - r.left - ox) / s,
+            vb[1] + (cy - r.top - oy) / s];
   };
   svg.addEventListener('wheel', e => {
     e.preventDefault();
@@ -138,10 +142,11 @@ function attachPanZoom(svg, w, h, onChange) {
   svg.addEventListener('pointermove', e => {
     if (!pan) return;
     const r = svg.getBoundingClientRect();
+    const s = Math.min(r.width / vb[2], r.height / vb[3]);
     const dx = e.clientX - pan[0], dy = e.clientY - pan[1];
     moved = Math.max(moved, Math.abs(dx) + Math.abs(dy));
-    vb[0] = pan[2] - dx / r.width * vb[2];
-    vb[1] = pan[3] - dy / r.height * vb[3];
+    vb[0] = pan[2] - dx / s;
+    vb[1] = pan[3] - dy / s;
     clamp(); apply();
   });
   svg.addEventListener('pointerup', () => { pan = null; });
@@ -246,7 +251,7 @@ function buildAnnotationUI(opts) {
     linkRow.className = 'linkrow';
     for (const [label, key] of [['SIMBAD', 'simbad'], ['Wikipedia', 'wikipedia']]) {
       const url = (o.links || {})[key];
-      if (!url) continue;
+      if (!url || !/^https?:\/\//i.test(url)) continue;
       const a = document.createElement('a');
       a.href = url;
       a.target = '_blank';
@@ -288,7 +293,12 @@ function buildAnnotationUI(opts) {
       ? shown + ' OF ' + cards.length + ' OBJECTS' + (zoomed ? ' · IN VIEW' : '')
       : cards.length + ' OBJECTS';
   }
-  if (opts.searchEl) opts.searchEl.addEventListener('input', applyFilter);
+  if (opts.searchEl) {
+    if (opts.searchEl._annFilter)
+      opts.searchEl.removeEventListener('input', opts.searchEl._annFilter);
+    opts.searchEl._annFilter = applyFilter;
+    opts.searchEl.addEventListener('input', applyFilter);
+  }
   applyFilter();
   return applyFilter;
 }
