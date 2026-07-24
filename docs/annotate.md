@@ -70,6 +70,7 @@ the model exactly; the renderer refuses mismatched pairs.
 | `--radius DEG` | search radius around the hint (default 30) |
 | `--png [PATH]` | also render the annotated PNG (default `<image>_annotated.png`) |
 | `--title TEXT` | title bar text (default: the DSO nearest the frame center) |
+| `--label-scale X` | multiplier for overlay label size in the HTML page (default 1.0) |
 
 ### `uranometria render MODEL IMAGE`
 

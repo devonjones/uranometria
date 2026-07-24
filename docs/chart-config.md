@@ -114,6 +114,9 @@ object's photo (path resolved like `image:`). Without it, a sidecar named
 present and matching the photo's dimensions, the lightbox draws the overlay
 with a LABELS toggle. An unreadable sidecar is a warning, never a failure.
 
+`annotation_label_scale:` (chart-level, default 1.0) multiplies the size of
+overlay labels drawn in the lightbox.
+
 `annotated:` links the object to its interactive annotated page (built with
 `render --html`), shown as an ANNOTATED link on the legend card and an OPEN
 INTERACTIVE button in the lightbox. Without the key, a sibling file named

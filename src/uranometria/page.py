@@ -86,6 +86,7 @@ def build_page(cfg, objects):
     annotations = {f"mk-{i}": o["annotation"] for i, o in enumerate(objects) if o.get("annotation")}
     # </script> can never appear inside the JSON payload
     annotations_json = _json.dumps(annotations).replace("</", "<\\/")
+    ann_label_scale = float(cfg.get("annotation_label_scale", 1.0))
 
     panzoom_js = PANZOOM_JS
     dso_color_js = DSO_COLOR_JS
@@ -221,8 +222,8 @@ svg.focus .marker.lit .halo {{ opacity:0.35; }}
 .lb-hint {{ color:var(--dim); font-size:9px; letter-spacing:0.1em; }}
 .ann {{ transform:translate(var(--tx),var(--ty)) scale(calc(1 / var(--z,1))); }}
 .ann circle {{ fill:none; stroke:currentColor; stroke-width:1.6; }}
-.ann text {{ fill:currentColor; font-family:'Plex Mono',monospace; font-size:13px;
-  font-weight:500; paint-order:stroke; stroke:rgba(0,0,0,0.8); stroke-width:3px; }}
+.ann text {{ fill:currentColor; font-family:'Plex Mono',monospace;
+  font-weight:500; paint-order:stroke; stroke:rgba(0,0,0,0.8); }}
 .lb-hide-labels #lb-overlay {{ display:none; }}
 .lightbox figcaption {{ text-align:center; }}
 .lightbox .cap-name {{ font-family:'Marcellus',serif; color:var(--star); font-size:18px;
@@ -367,8 +368,10 @@ function annColor(o) {{
   return o.named ? ANN_COLORS.named_star : ANN_COLORS.field_star;
 }}
 
+const ANN_LABEL_SCALE = {ann_label_scale};
 function buildOverlay(gEl, ann, w, h) {{
   const r = 0.02 * Math.min(w, h);
+  const fs = Math.max(12, 0.016 * Math.min(w, h)) * ANN_LABEL_SCALE;
   ann.objects.forEach(o => {{
     const g = document.createElementNS(SVGNS, 'g');
     g.setAttribute('class', 'ann');
@@ -381,6 +384,8 @@ function buildOverlay(gEl, ann, w, h) {{
     const t = document.createElementNS(SVGNS, 'text');
     t.setAttribute('x', r * 1.6);
     t.setAttribute('y', -r * 0.8);
+    t.style.fontSize = fs + 'px';
+    t.style.strokeWidth = (fs / 4) + 'px';
     t.textContent = o.kind === 'star' && !o.named ? String(o.key) : o.designation;
     g.appendChild(t);
     gEl.appendChild(g);

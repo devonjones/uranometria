@@ -100,7 +100,7 @@ def _sidebar_cards(objects):
     return "".join(cards)
 
 
-def render_html(model, image_path, output, *, title=None):
+def render_html(model, image_path, output, *, title=None, label_scale=1.0):
     """Write the standalone annotated-image page. Returns the output path."""
     if not isinstance(model, dict):
         with open(model) as f:
@@ -125,6 +125,9 @@ def render_html(model, image_path, output, *, title=None):
     )
     data_uri = _image_data_uri(image_path)
     n_obj = len(objects)
+    # labels are SVG user units: size them relative to the image so they are
+    # readable at fit-to-screen, times the configurable multiplier
+    label_px = max(12.0, 0.016 * min(w, h)) * label_scale
 
     def b64(fn):
         return asset_text(fn + ".b64")
@@ -165,8 +168,9 @@ header .sub {{ color:var(--dim); font-size:11.5px; letter-spacing:0.08em; margin
 .hint {{ color:var(--dim); font-size:9px; letter-spacing:0.1em; }}
 .ann {{ transform:translate(var(--tx),var(--ty)) scale(calc(1 / var(--z,1))); }}
 .ann circle {{ fill:none; stroke:currentColor; stroke-width:1.6; }}
-.ann text {{ fill:currentColor; font-family:'Plex Mono',monospace; font-size:13px;
-  font-weight:500; paint-order:stroke; stroke:rgba(0,0,0,0.8); stroke-width:3px; }}
+.ann text {{ fill:currentColor; font-family:'Plex Mono',monospace;
+  font-size:{label_px:.0f}px; font-weight:500; paint-order:stroke;
+  stroke:rgba(0,0,0,0.8); stroke-width:{label_px / 4:.1f}px; }}
 .hide-labels #overlay {{ display:none; }}
 svg.focus .ann {{ opacity:0.25; }}
 svg.focus .ann.lit {{ opacity:1; }}

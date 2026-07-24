@@ -84,6 +84,12 @@ def chart(config, output, offline, mirror):
     default=None,
     help="also render the interactive HTML page (optionally to PATH; default <image>_annotated.html)",
 )
+@click.option(
+    "--label-scale",
+    default=1.0,
+    show_default=True,
+    help="multiplier for overlay label size in the HTML page",
+)
 @click.option("--title", help="title for rendered outputs (default: nearest DSO to center)")
 def annotate(
     image,
@@ -98,6 +104,7 @@ def annotate(
     radius,
     png_out,
     html_out,
+    label_scale,
     title,
 ):
     """Plate-solve IMAGE and write its annotation model (JSON).
@@ -155,7 +162,7 @@ def annotate(
 
         html_path = html_out or os.path.splitext(os.fspath(image))[0] + "_annotated.html"
         try:
-            render_html(model, image, html_path, title=title)
+            render_html(model, image, html_path, title=title, label_scale=label_scale)
         except (ValueError, OSError) as e:
             raise click.ClickException(str(e)) from None
         except ImportError as err:
@@ -176,7 +183,13 @@ def annotate(
 @click.option(
     "--html", "as_html", is_flag=True, help="render the interactive HTML page instead of a PNG"
 )
-def render(model, image, output, title, as_html):
+@click.option(
+    "--label-scale",
+    default=1.0,
+    show_default=True,
+    help="multiplier for overlay label size (HTML page only)",
+)
+def render(model, image, output, title, as_html, label_scale):
     """Render an annotated PNG (or, with --html, the interactive page) from an
     existing annotation MODEL and its IMAGE."""
     ext = ".html" if as_html else ".png"
@@ -185,7 +198,7 @@ def render(model, image, output, title, as_html):
         if as_html:
             from .annotate.render_html import render_html
 
-            render_html(model, image, out, title=title)
+            render_html(model, image, out, title=title, label_scale=label_scale)
         else:
             from .annotate.render_png import render_png
 

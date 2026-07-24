@@ -872,3 +872,31 @@ def test_render_html_viewport_filter(tmp_path):
     assert "function inView(" in page  # zoom filters the sidebar
     assert "IN VIEW" in page
     assert "attachPanZoom(svg, 80, 60, applyFilter)" in page
+
+
+def test_html_label_scale(tmp_path):
+    from PIL import Image
+
+    from uranometria.annotate.render_html import render_html
+
+    img = tmp_path / "big.jpg"
+    Image.new("RGB", (2000, 1000)).save(img)
+    m = _tiny_model(2000, 1000)
+    m["solved"]["pixel_frame"] = "raster0"
+    for o in m["objects"]:
+        o["x"], o["y"] = 100.0, 100.0
+    out = tmp_path / "p.html"
+    render_html(m, img, out)
+    assert "font-size:16px" in out.read_text()  # 0.016 * 1000
+    render_html(m, img, out, label_scale=2.0)
+    assert "font-size:32px" in out.read_text()
+
+
+def test_chart_annotation_label_scale(tmp_path):
+    import uranometria
+
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg"}], "annotation_label_scale": 1.5}
+    out = tmp_path / "map.html"
+    uranometria.generate(cfg, out, allow_online=False)
+    assert "const ANN_LABEL_SCALE = 1.5;" in out.read_text()
