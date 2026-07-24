@@ -32,8 +32,9 @@ objects:
   - id: M42
     image: images/M42.jpg
   - id: M51
-    image: images/M51.jpg      # has images/M51.jpg.annotations.json beside it:
-                               # the lightbox draws the labeled overlay (LABELS toggle)
+    image: images/M51.jpg
+    annotated: annotated/M51_annotated.html   # OPEN INTERACTIVE link in the
+                                              # lightbox and on the legend card
   - id: M27
     image: images/M27.jpg
   - id: Sh2-142

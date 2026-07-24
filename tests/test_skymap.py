@@ -488,3 +488,28 @@ def test_no_sidecar_means_empty_map(tmp_path):
     assert 'id="lb-annotations">{}</script>' in html
     assert "attachPanZoom" in html  # shared pan/zoom present
     assert 'id="lb-labels"' in html  # toggle exists (hidden until usable)
+
+
+def test_annotated_page_link(tmp_path):
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    (tmp_path / "m51_page.html").write_text("<title>x</title>")
+    cfg = {"objects": [{"id": "M51", "image": "pic.jpg", "annotated": "m51_page.html"}]}
+    out = tmp_path / "map.html"
+    assert uranometria.generate(cfg, out, allow_online=False) == []
+    html = out.read_text()
+    assert 'data-annpage="m51_page.html"' in html
+    assert "ANNOTATED" in html and 'id="lb-annpage"' in html
+
+
+def test_annotated_page_auto_discovery_and_missing(tmp_path):
+    (tmp_path / "pic.jpg").write_bytes(b"x")
+    (tmp_path / "pic_annotated.html").write_text("<title>x</title>")
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg"}]}
+    out = tmp_path / "map.html"
+    uranometria.generate(cfg, out, allow_online=False)
+    assert 'data-annpage="pic_annotated.html"' in out.read_text()
+
+    cfg = {"objects": [{"id": "M31", "image": "pic.jpg", "annotated": "missing.html"}]}
+    warnings = uranometria.generate(cfg, out, allow_online=False)
+    assert any("annotated page not found" in w for w in warnings)
+    assert "data-annpage" not in out.read_text()

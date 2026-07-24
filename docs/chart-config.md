@@ -114,6 +114,13 @@ object's photo (path resolved like `image:`). Without it, a sidecar named
 present and matching the photo's dimensions, the lightbox draws the overlay
 with a LABELS toggle. An unreadable sidecar is a warning, never a failure.
 
+`annotated:` links the object to its interactive annotated page (built with
+`render --html`), shown as an ANNOTATED link on the legend card and an OPEN
+INTERACTIVE button in the lightbox. Without the key, a sibling file named
+`<image stem>_annotated.html` is picked up automatically. This pairs well
+with keeping the pretty hero as `image:` while the interactive page carries
+the labeled version.
+
 ## Colors
 
 `color:` accepts any CSS color and tints that object's marker, chart label,

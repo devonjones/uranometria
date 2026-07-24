@@ -107,6 +107,7 @@ def resolve_objects(entries, *, allow_online=True):
             continue
         o["image"] = e.get("image")
         o["annotations"] = e.get("annotations")
+        o["annotated"] = e.get("annotated")
         o["color"] = e.get("color")
         o["coord"] = fmt_coord(o["ra"], o["dec"])
         objects.append(o)
@@ -165,6 +166,28 @@ def _annotation_sidecar(o, base_dir):
             }
         )
     return {"image_size": [width, height], "objects": objects}
+
+
+def _annotated_page(o, base_dir):
+    """Href for the object's interactive annotated page: the explicit
+    `annotated:` path, or `<image stem>_annotated.html` beside the image."""
+    if o.get("annotated"):
+        page = str(o["annotated"])
+        if re.match(r"https?://", page):
+            return page, None
+        full = page if os.path.isabs(page) else os.path.join(base_dir, page)
+        if not os.path.isfile(full):
+            return None, f"annotated page not found at {full}"
+        return urllib.parse.quote(page), None
+    img = str(o.get("image") or "")
+    if not img or re.match(r"https?://", img):
+        return None, None
+    img_path = img[7:] if img.startswith("file://") else img
+    candidate = os.path.splitext(img_path)[0] + "_annotated.html"
+    full = candidate if os.path.isabs(candidate) else os.path.join(base_dir, candidate)
+    if os.path.isfile(full):
+        return urllib.parse.quote(candidate), None
+    return None, None
 
 
 def _load_config(config):
@@ -226,6 +249,11 @@ def render(config, *, image_base=None, allow_online=True):
                 warnings.append(
                     f"{o['disp']}: annotation sidecar unreadable ({err}) — photo shown without overlay"
                 )
+            page_href, err = _annotated_page(o, image_base or "")
+            if err:
+                warnings.append(f"{o['disp']}: {err} — link omitted")
+            elif page_href:
+                o["annotated_href"] = page_href
 
     return build_page(cfg, objects), warnings
 

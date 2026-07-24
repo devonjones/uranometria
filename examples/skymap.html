@@ -103,6 +103,10 @@ svg.focus .marker.lit .halo { opacity:0.35; }
 .legend .obj { display:flex; flex-direction:column; gap:3px; min-width:0; }
 .legend .desig { color:var(--accent); font-weight:500; font-size:13px; letter-spacing:0.05em; }
 .legend .photo { color:var(--dim); font-size:9px; letter-spacing:0.14em; margin-left:8px; }
+.legend .annlink { color:var(--dim); font-size:9px; letter-spacing:0.14em; margin-left:8px;
+  text-decoration:none; border-bottom:1px dotted var(--dim); }
+.legend .annlink:hover { color:var(--gold); border-color:var(--gold); }
+.lb-btn-link { text-decoration:none; display:inline-block; }
 .legend li:hover .photo { color:var(--accent); }
 .legend .common { font-family:'Marcellus',serif; color:var(--star); font-size:15px; }
 .legend .meta { color:var(--ink); font-size:11px; }
@@ -196,11 +200,11 @@ footer { margin-top:14px; text-align:center; color:var(--dim); font-size:10px;
   <div class="obj"><span class="desig">M42 <span class="photo">PHOTO ↗</span></span><span class="common">Great Orion Nebula</span>
     <span class="meta">Cluster + nebula — Orion</span>
     <span class="coord">05h 35m  −05° 23′</span></div>
-</li><li data-target="mk-4" data-img="images/M51.jpg" data-cap="M51 — Whirlpool Galaxy|Galaxy   ·   13h 30m  +47° 12′">
+</li><li data-target="mk-4" data-img="images/M51.jpg" data-cap="M51 — Whirlpool Galaxy|Galaxy   ·   13h 30m  +47° 12′" data-annpage="annotated/M51_annotated.html">
   <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
     <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
     <line x1="4.9" y1="-4.9" x2="9.2" y2="-9.2"/><line x1="-4.9" y1="-4.9" x2="-9.2" y2="-9.2"/></svg></span>
-  <div class="obj"><span class="desig">M51 <span class="photo">PHOTO ↗</span></span><span class="common">Whirlpool Galaxy</span>
+  <div class="obj"><span class="desig">M51 <span class="photo">PHOTO ↗</span> <a class="annlink" href="annotated/M51_annotated.html" target="_blank" rel="noopener">ANNOTATED ↗</a></span><span class="common">Whirlpool Galaxy</span>
     <span class="meta">Galaxy — Canes Venatici</span>
     <span class="coord">13h 30m  +47° 12′</span></div>
 </li><li data-target="mk-5" data-img="images/M27.jpg" data-cap="M27 — Dumbbell Nebula|Planetary nebula   ·   20h 00m  +22° 43′">
@@ -224,13 +228,14 @@ footer { margin-top:14px; text-align:center; color:var(--dim); font-size:10px;
   <div class="lb-stage">
     <div class="lb-tools">
       <button id="lb-labels" class="lb-btn" hidden>LABELS OFF</button>
+      <a id="lb-annpage" class="lb-btn lb-btn-link" hidden target="_blank" rel="noopener">OPEN INTERACTIVE ↗</a>
       <span class="lb-hint">SCROLL TO ZOOM · DRAG TO PAN · CLICK OUTSIDE OR ESC TO CLOSE</span>
     </div>
     <svg id="lb-svg" viewBox="0 0 1 1" role="img" aria-label="photograph"></svg>
     <figcaption><div class="cap-name" id="lb-name"></div><div class="cap-sub" id="lb-sub"></div></figcaption>
   </div>
 </div>
-<script type="application/json" id="lb-annotations">{"mk-4": {"image_size": [2160, 2160], "objects": [{"kind": "dso", "designation": "M51", "type": "Galaxy", "named": null, "key": null, "x": 1177.3, "y": 1110.6}, {"kind": "dso", "designation": "NGC 5195", "type": "Galaxy", "named": null, "key": null, "x": 1111.7, "y": 897.5}, {"kind": "dso", "designation": "IC 4278", "type": "Galaxy", "named": null, "key": null, "x": 874.0, "y": 963.1}, {"kind": "dso", "designation": "IC 4277", "type": "Galaxy", "named": null, "key": null, "x": 960.6, "y": 756.5}, {"kind": "dso", "designation": "IC 4282", "type": "Galaxy", "named": null, "key": null, "x": 431.8, "y": 1166.6}, {"kind": "dso", "designation": "IC 4263", "type": "Galaxy", "named": null, "key": null, "x": 1887.9, "y": 1899.2}, {"kind": "star", "designation": "HD 117815", "type": "Star (A5)", "named": true, "key": null, "x": 116.4, "y": 1021.6}, {"kind": "star", "designation": "TYC 3463-582-1", "type": null, "named": false, "key": 1, "x": 824.1, "y": 1721.2}, {"kind": "star", "designation": "TYC 3463-58-1", "type": null, "named": false, "key": 2, "x": 537.3, "y": 1164.3}, {"kind": "star", "designation": "TYC 3460-285-1", "type": null, "named": false, "key": 3, "x": 1961.0, "y": 392.8}, {"kind": "star", "designation": "Gaia DR3 1551933213472189952", "type": null, "named": false, "key": 4, "x": 177.8, "y": 1907.7}, {"kind": "star", "designation": "TYC 3463-587-1", "type": null, "named": false, "key": 5, "x": 423.3, "y": 1312.3}, {"kind": "star", "designation": "TYC 3463-348-1", "type": null, "named": false, "key": 6, "x": 508.6, "y": 1137.9}, {"kind": "star", "designation": "TYC 3460-642-1", "type": null, "named": false, "key": 7, "x": 2102.0, "y": 1024.0}, {"kind": "star", "designation": "TYC 3463-464-1", "type": null, "named": false, "key": 8, "x": 362.1, "y": 226.3}, {"kind": "star", "designation": "Gaia DR3 1551935751795702912", "type": null, "named": false, "key": 9, "x": 711.7, "y": 1790.7}, {"kind": "star", "designation": "Gaia DR3 1551890126360075264", "type": null, "named": false, "key": 10, "x": 1051.4, "y": 1596.1}, {"kind": "star", "designation": "Gaia DR3 1552001417552726400", "type": null, "named": false, "key": 11, "x": 1512.8, "y": 970.2}, {"kind": "star", "designation": "Gaia DR3 1552003754014939520", "type": null, "named": false, "key": 12, "x": 1390.5, "y": 623.4}, {"kind": "star", "designation": "Gaia DR3 1551912112296179072", "type": null, "named": false, "key": 13, "x": 1915.7, "y": 721.8}]}}</script>
+<script type="application/json" id="lb-annotations">{}</script>
 </div>
 <script>
 // ---- filtering: search text AND current zoom viewport ----------------
@@ -413,9 +418,12 @@ function buildOverlay(gEl, ann, w, h) {
   });
 }
 
-function openLightbox(src, cap, ann) {
+const lbAnnPage = document.getElementById('lb-annpage');
+function openLightbox(src, cap, ann, annPage) {
   lbName.textContent = cap[0] || '';
   lbSub.textContent = cap[1] || '';
+  if (annPage) { lbAnnPage.href = annPage; lbAnnPage.hidden = false; }
+  else { lbAnnPage.hidden = true; }
   const probe = new Image();
   probe.onload = () => {
     const w = probe.naturalWidth, h = probe.naturalHeight;
@@ -448,7 +456,7 @@ document.querySelectorAll('[data-img]').forEach(el => {
   el.addEventListener('click', () => {
     const cap = (el.dataset.cap || '').split('|');
     const key = el.id || el.dataset.target;
-    openLightbox(el.dataset.img, cap, ANNOTATIONS[key]);
+    openLightbox(el.dataset.img, cap, ANNOTATIONS[key], el.dataset.annpage);
   });
 });
 function closeLightbox() { lb.hidden = true; }

@@ -18,6 +18,12 @@ def _legend_html(objects):
         attrs = f' style="--accent:{accent}"' if accent else ""
         attrs += photo_attrs(o)
         photo = ' <span class="photo">PHOTO ↗</span>' if o.get("href") else ""
+        if o.get("annotated_href"):
+            attrs += f' data-annpage="{html.escape(o["annotated_href"], quote=True)}"'
+            photo += (
+                f' <a class="annlink" href="{html.escape(o["annotated_href"], quote=True)}"'
+                f' target="_blank" rel="noopener">ANNOTATED \u2197</a>'
+            )
         items.append(f"""<li data-target="mk-{i}"{attrs}>
   <span class="glyph" aria-hidden="true"><svg viewBox="-14 -14 28 28"><circle r="7" class="ring"/>
     <line x1="4.9" y1="4.9" x2="9.2" y2="9.2"/><line x1="-4.9" y1="4.9" x2="-9.2" y2="9.2"/>
@@ -190,6 +196,10 @@ svg.focus .marker.lit .halo {{ opacity:0.35; }}
 .legend .obj {{ display:flex; flex-direction:column; gap:3px; min-width:0; }}
 .legend .desig {{ color:var(--accent); font-weight:500; font-size:13px; letter-spacing:0.05em; }}
 .legend .photo {{ color:var(--dim); font-size:9px; letter-spacing:0.14em; margin-left:8px; }}
+.legend .annlink {{ color:var(--dim); font-size:9px; letter-spacing:0.14em; margin-left:8px;
+  text-decoration:none; border-bottom:1px dotted var(--dim); }}
+.legend .annlink:hover {{ color:var(--gold); border-color:var(--gold); }}
+.lb-btn-link {{ text-decoration:none; display:inline-block; }}
 .legend li:hover .photo {{ color:var(--accent); }}
 .legend .common {{ font-family:'Marcellus',serif; color:var(--star); font-size:15px; }}
 .legend .meta {{ color:var(--ink); font-size:11px; }}
@@ -249,6 +259,7 @@ footer {{ margin-top:14px; text-align:center; color:var(--dim); font-size:10px;
   <div class="lb-stage">
     <div class="lb-tools">
       <button id="lb-labels" class="lb-btn" hidden>LABELS OFF</button>
+      <a id="lb-annpage" class="lb-btn lb-btn-link" hidden target="_blank" rel="noopener">OPEN INTERACTIVE \u2197</a>
       <span class="lb-hint">SCROLL TO ZOOM \u00b7 DRAG TO PAN \u00b7 CLICK OUTSIDE OR ESC TO CLOSE</span>
     </div>
     <svg id="lb-svg" viewBox="0 0 1 1" role="img" aria-label="photograph"></svg>
@@ -376,9 +387,12 @@ function buildOverlay(gEl, ann, w, h) {{
   }});
 }}
 
-function openLightbox(src, cap, ann) {{
+const lbAnnPage = document.getElementById('lb-annpage');
+function openLightbox(src, cap, ann, annPage) {{
   lbName.textContent = cap[0] || '';
   lbSub.textContent = cap[1] || '';
+  if (annPage) {{ lbAnnPage.href = annPage; lbAnnPage.hidden = false; }}
+  else {{ lbAnnPage.hidden = true; }}
   const probe = new Image();
   probe.onload = () => {{
     const w = probe.naturalWidth, h = probe.naturalHeight;
@@ -411,7 +425,7 @@ document.querySelectorAll('[data-img]').forEach(el => {{
   el.addEventListener('click', () => {{
     const cap = (el.dataset.cap || '').split('|');
     const key = el.id || el.dataset.target;
-    openLightbox(el.dataset.img, cap, ANNOTATIONS[key]);
+    openLightbox(el.dataset.img, cap, ANNOTATIONS[key], el.dataset.annpage);
   }});
 }});
 function closeLightbox() {{ lb.hidden = true; }}
