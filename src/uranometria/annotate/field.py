@@ -64,7 +64,40 @@ def dsos_in_field(center_ra, center_dec, radius_deg, catalog=None):
         elif rec["disp"] != cur["disp"] and rec["disp"] not in cur["aliases"]:
             cur["aliases"].append(rec["disp"])
     hits = sorted(best.values(), key=lambda r: r["sep_deg"])
-    return hits
+    return _merge_sharpless_duplicates(hits)
+
+
+# Large nebulae appear in both OpenNGC and the Sharpless catalog with centers
+# that disagree by arcminutes (IC 405 vs Sh2-229: 6.8'), so the identical-
+# position collapse above cannot see they are one object.
+_SH_MERGE_MAX_SEP_DEG = 12.0 / 60.0
+
+
+def _merge_sharpless_duplicates(hits):
+    """Fold a Sharpless entry into a nearby pure-nebula NGC/IC/M entry: same
+    object, two catalogs. Cluster+nebula complexes (NGC 7380 / Sh2-142) keep
+    both entries — those are physically distinct centroids worth labeling."""
+    merged = []
+    for h in hits:
+        if not h["disp"].startswith("Sh2-"):
+            merged.append(h)
+            continue
+        host = None
+        for m in merged:
+            t = (m["type"] or "").lower()
+            if "nebula" not in t or "cluster" in t:
+                continue
+            if sep_deg(h["ra"], h["dec"], m["ra"], m["dec"]) <= _SH_MERGE_MAX_SEP_DEG:
+                host = m
+                break
+        if host is None:
+            merged.append(h)
+            continue
+        host["aliases"] = [a for a in host["aliases"] if a != h["disp"]] + [h["disp"]]
+        # the Sharpless side is the more specific classification
+        host["type"] = h["type"]
+        host["z"] = host["z"] if host["z"] is not None else h["z"]
+    return merged
 
 
 def stars_in_field(center_ra, center_dec, radius_deg, *, mag_limit=12.5, max_stars=100):

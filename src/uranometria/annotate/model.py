@@ -145,6 +145,23 @@ def build_model(image, *, mag_limit=12.5, max_stars=15, allow_online=True, solve
                 for o in objects:
                     if o["kind"] == "dso" and o["designation"] in found:
                         o["dist_ly"] = round(found[o["designation"]])
+                # merged designations (IC 405 = Sh2-229): a distance SIMBAD
+                # files under the alias should still reach the object
+                alias_pool = [
+                    a
+                    for o in objects
+                    if o["kind"] == "dso" and not o["dist_ly"]
+                    for a in o.get("aliases") or []
+                ]
+                if alias_pool:
+                    found = dso_distances(alias_pool)
+                    for o in objects:
+                        if o["kind"] != "dso" or o["dist_ly"]:
+                            continue
+                        for a in o.get("aliases") or []:
+                            if a in found:
+                                o["dist_ly"] = round(found[a])
+                                break
             except Exception as err:
                 warnings.append(f"SIMBAD distance lookup failed: {err}")
         _harmonize_pair_distances(objects)

@@ -656,6 +656,78 @@ def test_dso_distances_median(monkeypatch):
     assert "EMPTY" not in out and "UNKNOWN" not in out
 
 
+def test_sharpless_duplicate_merged_into_ic():
+    from uranometria.annotate.field import dsos_in_field
+
+    # AE Aurigae field: IC 405 and Sh2-229 are the same nebula, 6.8' apart
+    # between the two catalogs
+    hits = dsos_in_field(79.108, 34.32, 0.75)
+    disps = [h["disp"] for h in hits]
+    assert "IC 405" in disps
+    assert "Sh2-229" not in disps
+    ic405 = next(h for h in hits if h["disp"] == "IC 405")
+    assert "Sh2-229" in ic405["aliases"]
+    assert ic405["type"] == "Emission nebula (H II)"  # the more specific class
+
+
+def test_cluster_nebula_pair_stays_separate():
+    from uranometria.annotate.field import dsos_in_field
+
+    # NGC 7380 (cluster+nebula) and Sh2-142: distinct centroids, both kept
+    hits = dsos_in_field(341.75, 58.13, 0.75)
+    disps = [h["disp"] for h in hits]
+    assert "NGC 7380" in disps
+    assert "Sh2-142" in disps
+
+
+def test_mirrored_display_detection():
+    from uranometria.annotate.render_png import mirrored_display
+
+    # screen coords, y down; un-mirrored sky turns CCW from N to E
+    assert not mirrored_display((0, -1), (-1, 0))  # N up, E left: normal
+    assert not mirrored_display((0, 1), (1, 0))  # N down, E right: rotated
+    assert mirrored_display((0, -1), (1, 0))  # N up, E right: mirrored
+    assert mirrored_display((0, 1), (-1, 0))  # N down, E left: mirrored
+
+
+def test_distance_reaches_object_via_alias(monkeypatch, tmp_path):
+    import uranometria.annotate.model as model
+
+    monkeypatch.setattr(model, "solve", lambda image, **kw: dict(M51_SOLUTION))
+    monkeypatch.setattr(model, "_image_size", lambda image: (3872, 2192))
+    monkeypatch.setattr(model, "named_bright_stars", lambda *a, **k: [])
+    monkeypatch.setattr(model, "stars_in_field", lambda *a, **k: [])
+    monkeypatch.setattr(
+        model,
+        "dsos_in_field",
+        lambda *a, **k: [
+            {
+                "disp": "IC 405",
+                "common": "Flaming Star Nebula",
+                "type": "Emission nebula (H II)",
+                "constellation": "Aur",
+                "ra": 202.5,
+                "dec": 47.2,
+                "z": None,
+                "aliases": ["Sh2-229"],
+                "sep_deg": 0.0,
+            }
+        ],
+    )
+    calls = []
+
+    def fake_distances(desigs):
+        calls.append(list(desigs))
+        return {"Sh2-229": 2381} if "Sh2-229" in desigs else {}
+
+    monkeypatch.setattr(model, "dso_distances", fake_distances)
+    m = model.build_model(tmp_path / "f.fit", allow_online=True)
+    dso = next(o for o in m["objects"] if o["kind"] == "dso")
+    assert dso["designation"] == "IC 405"
+    assert dso["dist_ly"] == 2381  # found under the alias
+    assert calls == [["IC 405"], ["Sh2-229"]]
+
+
 def test_dso_aliases_collected():
     from uranometria.annotate.field import dsos_in_field
 

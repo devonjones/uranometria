@@ -128,9 +128,14 @@ key when the model lives elsewhere.
 
 - **Deep-sky objects**: everything from the bundled OpenNGC + Sharpless
   catalogs that lands in the frame, with aliases collapsed (M51 and NGC 5194
-  become one entry listing both) and distances where available: Hubble-flow
-  estimates from catalog redshifts for galaxies, SIMBAD measured distances
-  for nebulae and clusters.
+  become one entry listing both). A Sharpless entry within 12 arcminutes of
+  a pure-nebula NGC/IC entry is folded in as an alias too, since large
+  nebulae carry different centers in the two catalogs (IC 405 and Sh2-229
+  are one object, 6.8 arcminutes apart on paper); cluster-plus-nebula
+  complexes like NGC 7380 / Sh2-142 keep both entries on purpose. Distances
+  where available: Hubble-flow estimates from catalog redshifts for
+  galaxies, SIMBAD measured distances for nebulae and clusters, with alias
+  designations tried when the primary comes up empty.
 - **Named bright stars**: SIMBAD stars brighter than V≈8.5 in the field, with
   HD/proper designations, spectral types, and parallax distances.
 - **Field stars**: Gaia DR3 magnitudes and parallax distances via VizieR,
@@ -151,5 +156,7 @@ here, because the Sharpless nebula appears as its own labeled entry alongside.
 
 Leader lines avoid crossing neighboring objects where the geometry allows,
 labels stay inside the frame, and the compass is computed from the solved CD
-matrix, so it stays honest for mirrored images. Distances display in
-light-years throughout (Mly for galaxies).
+matrix, so it stays honest for mirrored images. When the solve shows the
+image is a mirror of the sky (capture pipelines sometimes flip frames), a
+MIRRORED tag appears under the compass so the reversed E arm reads as fact,
+not bug. Distances display in light-years throughout (Mly for galaxies).
