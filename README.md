@@ -50,6 +50,7 @@ uranometria chart skymap.yaml           # writes skymap.html next to the config
 uranometria chart skymap.yaml -o map.html
 uranometria chart skymap.yaml --offline # never call the online resolver
 uranometria chart skymap.yaml --mirror  # mirrored (celestial-globe) orientation
+uranometria chart skymap.yaml --svg     # standalone SVG instead of the HTML page
 
 uranometria annotate stack.fit          # plate-solve + annotation model JSON
 uranometria annotate stack.fit --ra 13.5 --dec 47.2   # pointing hint speeds the solve
@@ -177,7 +178,28 @@ config = {
 }
 warnings = uranometria.generate(config, "out/map.html")   # writes the file
 html, warnings = uranometria.render(config, image_base="out")  # or just the HTML
+charts, warnings = uranometria.render_svg(config)   # or standalone SVG discs
 ```
+
+`render_svg` is for hosts that draw the chart themselves rather than showing a
+web page. It returns one entry per hemisphere the objects need, north first:
+
+```python
+[{"hemisphere": "north",
+  "svg": "<svg xmlns=…>…</svg>",
+  "objects": [{"uid": 0, "id": "mk-0", "disp": "M31", "image": "heroes/m31.jpg",
+               "x": 612.4, "y": 388.1,
+               "label": {"dx": 16, "dy": 4, "anchor": "start"}}]}]
+```
+
+Each document keeps its paint in presentation attributes and references nothing
+outside itself — no stylesheet, no script, no font files, no image URLs — so a
+renderer that does not implement CSS draws it the way a browser draws the HTML
+page. `palette=` takes any subset of `uranometria.chart.PALETTE` so the chart can
+match the host's own theme, and `font_family=` names a family the host has
+loaded; an unknown palette key, or a value that is not plainly a color, comes
+back as a warning and keeps the default. Photos are never embedded — `image` is
+returned unresolved for the host to draw.
 
 Pass `allow_online=False` to forbid the Sesame fallback if your host has to
 stay offline. A `uranometria.SkymapError` means no chart was produced: either
@@ -209,6 +231,42 @@ def publish_skymap(objects, out_path):
     ]}
     return uranometria.generate(cfg, out_path)
 ```
+
+### Drawing the chart inside a desktop app
+
+A native application can render the SVG directly instead of embedding a browser
+engine. With Qt, `QSvgRenderer` accepts the document as bytes:
+
+```python
+from PySide6.QtSvg import QSvgRenderer
+from PySide6.QtSvgWidgets import QSvgWidget
+
+charts, warnings = uranometria.render_svg(cfg, palette=my_theme_colors,
+                                          font_family="IBM Plex Mono")
+widget = QSvgWidget()
+widget.load(charts[0]["svg"].encode())
+```
+
+To make the disc clickable, map the widget point into the document's coordinate
+system — the viewBox is always `0 0 1000 1000` — and compare against each
+object's `x`/`y`, whose ring has radius `uranometria.chart.MARKER_R`:
+
+```python
+def object_at(point, widget, chart):
+    s = min(widget.width(), widget.height()) / 1000.0
+    ox = (widget.width() - 1000 * s) / 2
+    oy = (widget.height() - 1000 * s) / 2
+    x, y = (point.x() - ox) / s, (point.y() - oy) / s
+    for o in chart["objects"]:
+        if (x - o["x"]) ** 2 + (y - o["y"]) ** 2 <= MARKER_R**2:
+            return o
+    return None
+```
+
+`id="mk-N"` survives into the document, so `QSvgRenderer.boundsOnElement("mk-0")`
+is an exact alternative when you would rather ask the renderer than do the
+arithmetic. `uid` indexes the config's `objects` list and is unique across both
+discs, so it is a safe key for the host's own lookup.
 
 The annotation pipeline integrates the same way. `build_model` solves and
 cross-matches once; the two renderers consume the model, so a host can cache

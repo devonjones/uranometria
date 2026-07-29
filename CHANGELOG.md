@@ -3,6 +3,29 @@
 All dates 2026. Versions bump whenever behavior visible in the output
 changes, so they move fast.
 
+## 0.11.0 (July 29)
+
+- Charts render as standalone SVG, for applications that draw the sky
+  themselves instead of showing a web page. `uranometria.render_svg(config)`
+  hands back one document per hemisphere plus the position of every marker
+  in it, and `uranometria chart sky.yaml --svg` writes them from the
+  command line. The paint moved onto the shapes, so a renderer that does
+  not implement CSS — Qt's SVG engine, and the SVG Tiny profile generally
+  — draws the disc the way a browser draws the HTML page. Nothing outside
+  the file is referenced: no stylesheet, no script, no fonts, no photos.
+  The interactive page is unchanged, since a stylesheet rule still
+  outranks an attribute.
+- The chart palette is yours to override. `render_svg(palette=…)` takes any
+  of the fifteen colors the chart draws with, and `font_family=` names the
+  family its text asks for, so a host can match its own theme. A key that
+  does not exist, or a value that is not plainly a color, comes back as a
+  warning and keeps the default — a mistyped theme costs you the theme,
+  never the chart.
+- Rendering one chart twice no longer moves its labels. Label placement
+  records where each label landed so the next one can avoid it, but that
+  record was never cleared, so a second render scored every label against
+  its own first position and nudged it somewhere worse.
+
 ## 0.10.0 (July 24)
 
 One release for the whole develop cycle: the interactive chart grew up.

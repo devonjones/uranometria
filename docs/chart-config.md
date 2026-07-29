@@ -210,3 +210,41 @@ html, warnings = uranometria.render({"objects": ["M31"]}, image_base="out")
 
 Pass `allow_online=False` to stay offline. `generate` resolves relative image
 paths against the output file's directory; `render` uses `image_base`.
+
+### Standalone SVG
+
+`render_svg` returns the chart as SVG documents for a host that draws the sky
+itself — see [Static SVG](charts.md#static-svg) for what the format is and is
+not:
+
+```python
+charts, warnings = uranometria.render_svg(
+    {"objects": ["M31", "M42"]},
+    palette={"accent": "#7EC8A0"},      # any subset of uranometria.chart.PALETTE
+    font_family="IBM Plex Mono",        # a family name; no font file is referenced
+)
+```
+
+One entry per hemisphere the objects need, north first:
+
+```python
+[{"hemisphere": "north",
+  "svg": "<svg xmlns=…>…</svg>",
+  "objects": [{"uid": 0, "id": "mk-0", "disp": "M31", "image": "heroes/m31.jpg",
+               "x": 612.4, "y": 388.1,
+               "label": {"dx": 16, "dy": 4, "anchor": "start"}}]}]
+```
+
+`x`/`y` are the marker center in the document's own coordinates (the viewBox is
+always `0 0 1000 1000`) and the ring has radius `uranometria.chart.MARKER_R`, so
+a host can hit-test a click. `uid` indexes your `objects` list, is unique across
+both discs, and matches the `<g id="mk-N">` in the markup.
+
+The same chart-level keys apply — `mag_limit`, `show_ecliptic`, `mirror` — and
+the same validation, so a config either renders both ways or neither. Keys that
+only mean something to the interactive page are ignored: `thumbnails`,
+`annotations`, `links`, and `title`. Photos are never embedded in an SVG, so
+`image` comes back unresolved for the host to draw.
+
+An unknown `palette` key, or a value that is not plainly a color, is a warning
+rather than an error and the default color is kept.

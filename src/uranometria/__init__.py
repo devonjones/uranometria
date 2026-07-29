@@ -4,6 +4,7 @@ Library entry points:
 
     uranometria.generate(config, output)  -> list of warning strings
     uranometria.render(config, image_base=None) -> (html, warnings)
+    uranometria.render_svg(config, palette=None, font_family=None) -> (charts, warnings)
     uranometria.resolve_objects(entries)  -> (objects, warnings)
 
 `config` is a dict (or a path to a YAML file) with an `objects` list of
@@ -13,7 +14,7 @@ Module map:
 
 - `uranometria.core`: config resolution, warnings contract, page assembly entry
 - `uranometria.catalog`: bundled OpenNGC + Sharpless catalogs and designation parsing
-- `uranometria.chart`: the polar projection and SVG chart rendering
+- `uranometria.chart`: the polar projection, SVG chart rendering, and the palette
 - `uranometria.page`: the interactive HTML page around the charts
 - `uranometria.webui`: shared pan/zoom and annotation-viewer JavaScript
 - `uranometria.resources`: bundled data and asset loading
@@ -24,7 +25,7 @@ Module map:
   `uranometria.annotate.render_html`)
 """
 
-from .core import SkymapError, generate, render, resolve_objects
+from .core import SkymapError, generate, render, render_svg, resolve_objects
 
-__version__ = "0.10.0"
-__all__ = ["generate", "render", "resolve_objects", "SkymapError", "__version__"]
+__version__ = "0.11.0"
+__all__ = ["generate", "render", "render_svg", "resolve_objects", "SkymapError", "__version__"]

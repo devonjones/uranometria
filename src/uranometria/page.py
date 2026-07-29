@@ -5,7 +5,7 @@ import re
 
 import json as _json
 
-from .chart import Chart, DEC_EDGE, accent_value, photo_attrs
+from .chart import accent_value, assign_charts, DEC_EDGE, photo_attrs
 from .resources import asset_text, sky_data
 from .webui import ANNOTATION_UI_CSS, ANNOTATION_UI_JS, DSO_COLOR_JS, PANZOOM_JS, js_color_map
 
@@ -65,20 +65,9 @@ def build_page(cfg, objects):
     mirror = bool(cfg.get("mirror", False))
     data = sky_data()
 
-    need_south = any(o["dec"] < -DEC_EDGE for o in objects)
-    need_north = any(o["dec"] > DEC_EDGE for o in objects) or not need_south
-    charts = []
-    if need_north:
-        charts.append(Chart(False, data, mag_limit, show_ecl, mirror=mirror))
-    if need_south:
-        charts.append(Chart(True, data, mag_limit, show_ecl, mirror=mirror))
-
-    for i, o in enumerate(objects):
-        if len(charts) == 2:
-            chart = charts[0] if o["dec"] >= 0 else charts[1]
-        else:
-            chart = charts[0]
-        chart.add_object(o, i)
+    charts = assign_charts(
+        objects, data, mag_limit=mag_limit, show_ecliptic=show_ecl, mirror=mirror
+    )
 
     two = len(charts) == 2
     if two:
@@ -190,6 +179,7 @@ svg text {{ font-family:'Plex Mono',monospace; }}
 .grid .declin {{ stroke:var(--grid); stroke-width:0.8; fill:none; }}
 .grid .equator {{ stroke:var(--equator); stroke-width:1.2; fill:none; }}
 .rim {{ stroke:var(--equator); stroke-width:1.6; fill:none; }}
+.disc {{ fill:var(--sky); }}
 .hours text {{ fill:var(--dim); font-size:calc(12px / var(--z,1)); text-anchor:middle; }}
 .declabels text {{ fill:var(--dim); font-size:calc(9.5px / var(--z,1)); text-anchor:middle; opacity:0.9; }}
 .ecliptic {{ stroke:#5E4A7D; stroke-width:1.1; fill:none; stroke-dasharray:5 5; opacity:0.8; }}
