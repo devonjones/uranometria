@@ -1,0 +1,762 @@
+{
+ "schema": 1,
+ "image": "M45.jpg",
+ "image_size": [
+  1080,
+  1920
+ ],
+ "solved": {
+  "pixel_frame": "raster0",
+  "cd": [
+   [
+    -0.0006600557323609001,
+    9.729015017674742e-06
+   ],
+   [
+    -9.868141142655171e-06,
+    -0.0006600900676227797
+   ]
+  ],
+  "center_ra": 56.80825500121865,
+  "center_dec": 24.042288263956163,
+  "scale_arcsec_px": 2.377,
+  "fov_deg": [
+   0.713,
+   1.268
+  ],
+  "rotation_deg": -179.14350972501748,
+  "solver": "ASTAP"
+ },
+ "generated": "2026-07-27T21:26:19+00:00",
+ "objects": [
+  {
+   "kind": "dso",
+   "designation": "M45",
+   "aliases": [
+    "Mel 22"
+   ],
+   "dist_ly": 440,
+   "name": "Pleiades",
+   "type": "Open cluster",
+   "constellation": "Taurus",
+   "ra": 56.869166666666665,
+   "dec": 24.10527777777778,
+   "x": 453.9,
+   "y": 865.3,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=M45",
+    "wikipedia": "https://en.wikipedia.org/wiki/Messier_45"
+   }
+  },
+  {
+   "kind": "dso",
+   "designation": "IC 349",
+   "aliases": [],
+   "dist_ly": 440,
+   "name": "Barnard's Merope Nebula",
+   "type": "Reflection nebula",
+   "constellation": "Taurus",
+   "ra": 56.58379166666666,
+   "dec": 23.939805555555555,
+   "x": 852.5,
+   "y": 1109.8,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=IC+349",
+    "wikipedia": "https://en.wikipedia.org/wiki/Barnard's_Merope_Nebula"
+   }
+  },
+  {
+   "kind": "dso",
+   "designation": "IC 1990",
+   "aliases": [],
+   "dist_ly": 440,
+   "name": null,
+   "type": "Nebula",
+   "constellation": "Taurus",
+   "ra": 56.807625,
+   "dec": 24.333888888888886,
+   "x": 533.9,
+   "y": 517.8,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=IC+1990"
+   }
+  },
+  {
+   "kind": "dso",
+   "designation": "NGC 1435",
+   "aliases": [],
+   "dist_ly": null,
+   "name": "Merope Nebula",
+   "type": "Nebula",
+   "constellation": "Taurus",
+   "ra": 56.54204166666666,
+   "dec": 23.764972222222223,
+   "x": 914.7,
+   "y": 1373.7,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=NGC+1435",
+    "wikipedia": "https://en.wikipedia.org/wiki/Merope_Nebula"
+   }
+  },
+  {
+   "kind": "dso",
+   "designation": "NGC 1432",
+   "aliases": [],
+   "dist_ly": null,
+   "name": "Maia Nebula",
+   "type": "H II region",
+   "constellation": "Taurus",
+   "ra": 56.456624999999995,
+   "dec": 24.36786111111111,
+   "x": 1017.4,
+   "y": 458.5,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=NGC+1432",
+    "wikipedia": "https://en.wikipedia.org/wiki/Maia_Nebula"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "* eta Tau",
+   "type": "Star (B7III)",
+   "ra": 56.871152303749994,
+   "dec": 24.105135651944444,
+   "x": 451.1,
+   "y": 865.6,
+   "mag": 2.87,
+   "band": "V",
+   "dist_ly": 403,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=%2A+eta+Tau"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "*  20 Tau",
+   "type": "Star (B7III)",
+   "ra": 56.45670064515208,
+   "dec": 24.36774376828833,
+   "x": 1017.3,
+   "y": 458.7,
+   "mag": 3.87,
+   "band": "V",
+   "dist_ly": 425,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=%2A++20+Tau"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "*  23 Tau",
+   "type": "Star (B6IV(e))",
+   "ra": 56.58160786306708,
+   "dec": 23.948358938116662,
+   "x": 855.3,
+   "y": 1096.8,
+   "mag": 4.18,
+   "band": "V",
+   "dist_ly": 462,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=%2A++23+Tau"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "HD  23753",
+   "type": "Star (B8V)",
+   "ra": 57.086736594479994,
+   "dec": 23.42124885473,
+   "x": 166.3,
+   "y": 1905.6,
+   "mag": 5.45,
+   "band": "V",
+   "dist_ly": 424,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=HD++23753"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "*  21 Tau",
+   "type": "Star (B8V)",
+   "ra": 56.47698521152,
+   "dec": 24.55450991618,
+   "x": 984.5,
+   "y": 176.3,
+   "mag": 5.76,
+   "band": "V",
+   "dist_ly": 446,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=%2A++21+Tau"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "*  24 Tau",
+   "type": "Star (A0V)",
+   "ra": 56.83766095514,
+   "dec": 24.116267823319998,
+   "x": 497.2,
+   "y": 848.1,
+   "mag": 6.28,
+   "band": "V",
+   "dist_ly": 453,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=%2A++24+Tau"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "*  22 Tau",
+   "type": "Star (A0Vn)",
+   "ra": 56.51208469056,
+   "dec": 24.52789678212,
+   "x": 936.8,
+   "y": 217.4,
+   "mag": 6.42,
+   "band": "V",
+   "dist_ly": 439,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=%2A++22+Tau"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "V* V1229 Tau",
+   "type": "Star (A0VpSi+Am)",
+   "ra": 56.87272350202,
+   "dec": 24.28833878764,
+   "x": 445.0,
+   "y": 588.1,
+   "mag": 6.81,
+   "band": "V",
+   "dist_ly": 451,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=V%2A+V1229+Tau"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "HD  23568",
+   "type": "Star (B9.5V)",
+   "ra": 56.74747647168,
+   "dec": 24.52012454599,
+   "x": 612.6,
+   "y": 234.5,
+   "mag": 6.82,
+   "band": "V",
+   "dist_ly": 449,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=HD++23568"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "HD  23763",
+   "type": "Star (A2V)",
+   "ra": 57.12540375667,
+   "dec": 24.345526206240002,
+   "x": 95.0,
+   "y": 506.3,
+   "mag": 6.96,
+   "band": "V",
+   "dist_ly": 473,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=HD++23763"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "HD  23609",
+   "type": "Star (F5)",
+   "ra": 56.82142642811,
+   "dec": 23.726748470729998,
+   "x": 528.3,
+   "y": 1437.7,
+   "mag": 6.97,
+   "band": "V",
+   "dist_ly": 217,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=HD++23609"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "HD  23632",
+   "type": "Star (A1V)",
+   "ra": 56.83737012621,
+   "dec": 23.80334341041999,
+   "x": 504.5,
+   "y": 1322.0,
+   "mag": 7.02,
+   "band": "V",
+   "dist_ly": 446,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=HD++23632"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "HD  23387",
+   "type": "Star (A1V)",
+   "ra": 56.40745136767,
+   "dec": 24.33563974829,
+   "x": 1086.1,
+   "y": 506.1,
+   "mag": 7.18,
+   "band": "V",
+   "dist_ly": 371,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=HD++23387"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "HD  23631",
+   "type": "Star (A0V)",
+   "ra": 56.85172395574,
+   "dec": 23.91467403658,
+   "x": 482.2,
+   "y": 1153.7,
+   "mag": 7.3,
+   "band": "V",
+   "dist_ly": 452,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=HD++23631"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "HD  23489",
+   "type": "Star (A2V)",
+   "ra": 56.61366054916,
+   "dec": 24.254998758980005,
+   "x": 803.5,
+   "y": 633.1,
+   "mag": 7.34,
+   "band": "V",
+   "dist_ly": 444,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=HD++23489"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "HD  23463",
+   "type": "Star (K2)",
+   "ra": 56.55727600104,
+   "dec": 24.196609166820004,
+   "x": 882.8,
+   "y": 720.3,
+   "mag": 7.57,
+   "band": "V",
+   "dist_ly": 431,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=HD++23463"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "V* V1228 Tau",
+   "type": "Star (A4V)",
+   "ra": 56.85032485915,
+   "dec": 24.58847500811,
+   "x": 469.4,
+   "y": 133.1,
+   "mag": 7.71,
+   "band": "V",
+   "dist_ly": 417,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=V%2A+V1228+Tau"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "HD  23654",
+   "type": "Star (K0)",
+   "ra": 56.9040089829,
+   "dec": 23.6091159309,
+   "x": 416.3,
+   "y": 1617.5,
+   "mag": 7.78,
+   "band": "V",
+   "dist_ly": 627,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=HD++23654"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "V* V650 Tau",
+   "type": "Star (A3Van)",
+   "ra": 56.86178477189001,
+   "dec": 23.67833000658,
+   "x": 473.4,
+   "y": 1511.9,
+   "mag": 7.79,
+   "band": "V",
+   "dist_ly": 436,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=V%2A+V650+Tau"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "HD  23409",
+   "type": "Star (A2V)",
+   "ra": 56.46514887402,
+   "dec": 24.038876390890003,
+   "x": 1014.2,
+   "y": 957.0,
+   "mag": 7.92,
+   "band": "V",
+   "dist_ly": 447,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=HD++23409"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "HD  23479A",
+   "type": "Star",
+   "ra": 56.56668157815667,
+   "dec": 24.18992296110694,
+   "x": 870.0,
+   "y": 730.6,
+   "mag": 8.09,
+   "band": "V",
+   "dist_ly": 441,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=HD++23479A"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "HD  23512",
+   "type": "Star (A2V)",
+   "ra": 56.64246746868,
+   "dec": 23.624026385439997,
+   "x": 778.9,
+   "y": 1589.4,
+   "mag": 8.09,
+   "band": "V",
+   "dist_ly": 445,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=HD++23512"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "V* V647 Tau",
+   "type": "Star (A7Vs)",
+   "ra": 56.83060774949,
+   "dec": 24.13911536624,
+   "x": 506.4,
+   "y": 813.3,
+   "mag": 8.26,
+   "band": "V",
+   "dist_ly": 449,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=V%2A+V647+Tau"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "V* V1210 Tau",
+   "type": "Star (F0V)",
+   "ra": 56.76755467499999,
+   "dec": 23.995214856510003,
+   "x": 596.9,
+   "y": 1029.9,
+   "mag": 8.38,
+   "band": "V",
+   "dist_ly": 441,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=V%2A+V1210+Tau"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "HD  23733",
+   "type": "Star (A9V)",
+   "ra": 57.05648937387001,
+   "dec": 24.3183951658,
+   "x": 190.7,
+   "y": 546.1,
+   "mag": 8.41,
+   "band": "V",
+   "dist_ly": 440,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=HD++23733"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 1,
+   "designation": "Gaia DR3 64947984351499776",
+   "ra": 57.19100190679,
+   "dec": 23.52549269555,
+   "x": 19.4,
+   "y": 1749.5,
+   "mag": 8.1,
+   "band": "G",
+   "dist_ly": 4659,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=Gaia+DR3+64947984351499776"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 2,
+   "designation": "TYC 1800-1729-1",
+   "ra": 56.9253059339,
+   "dec": 23.54373489994,
+   "x": 388.1,
+   "y": 1717.0,
+   "mag": 8.4,
+   "band": "G",
+   "dist_ly": 1132,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+1800-1729-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 3,
+   "designation": "TYC 1800-2222-1",
+   "ra": 56.81909229562,
+   "dec": 24.12815593702,
+   "x": 522.6,
+   "y": 829.7,
+   "mag": 8.6,
+   "band": "G",
+   "dist_ly": null,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+1800-2222-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 4,
+   "designation": "TYC 1804-2051-1",
+   "ra": 56.86058219836,
+   "dec": 24.65842092068,
+   "x": 453.7,
+   "y": 27.3,
+   "mag": 8.8,
+   "band": "G",
+   "dist_ly": 1314,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+1804-2051-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 5,
+   "designation": "TYC 1800-1846-1",
+   "ra": 57.14507762985,
+   "dec": 24.18098260492,
+   "x": 71.0,
+   "y": 755.8,
+   "mag": 9.0,
+   "band": "G",
+   "dist_ly": null,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+1800-1846-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 6,
+   "designation": "Gaia DR3 65225611037551360",
+   "ra": 56.66398954459,
+   "dec": 24.10299456629,
+   "x": 737.6,
+   "y": 864.5,
+   "mag": 9.2,
+   "band": "G",
+   "dist_ly": 443,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=Gaia+DR3+65225611037551360"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 7,
+   "designation": "Gaia DR3 65011824745303808",
+   "ra": 56.79109574419,
+   "dec": 23.782553995,
+   "x": 569.1,
+   "y": 1352.5,
+   "mag": 9.3,
+   "band": "G",
+   "dist_ly": 511,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=Gaia+DR3+65011824745303808"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 8,
+   "designation": "Gaia DR3 65277975278721152",
+   "ra": 56.42257638295,
+   "dec": 24.28839132907,
+   "x": 1066.5,
+   "y": 578.0,
+   "mag": 9.3,
+   "band": "G",
+   "dist_ly": 374,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=Gaia+DR3+65277975278721152"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 9,
+   "designation": "Gaia DR3 66713044112564864",
+   "ra": 57.02995559056,
+   "dec": 24.14185767971,
+   "x": 230.8,
+   "y": 813.0,
+   "mag": 9.4,
+   "band": "G",
+   "dist_ly": 442,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=Gaia+DR3+66713044112564864"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 10,
+   "designation": "TYC 1800-1935-1",
+   "ra": 56.79198814384,
+   "dec": 24.27645362281,
+   "x": 556.7,
+   "y": 604.5,
+   "mag": 9.4,
+   "band": "G",
+   "dist_ly": 443,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+1800-1935-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 11,
+   "designation": "Gaia DR3 66790937639417728",
+   "ra": 56.87015501069,
+   "dec": 24.55690941091,
+   "x": 442.7,
+   "y": 181.3,
+   "mag": 9.5,
+   "band": "G",
+   "dist_ly": 5779,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=Gaia+DR3+66790937639417728"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 12,
+   "designation": "Gaia DR3 64987356314664192",
+   "ra": 56.9790839443,
+   "dec": 23.43715570023,
+   "x": 315.6,
+   "y": 1879.5,
+   "mag": 9.6,
+   "band": "G",
+   "dist_ly": 1641,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=Gaia+DR3+64987356314664192"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 13,
+   "designation": "Gaia DR3 66802654309459712",
+   "ra": 56.4174964453,
+   "dec": 24.62703265921,
+   "x": 1064.5,
+   "y": 65.0,
+   "mag": 9.6,
+   "band": "G",
+   "dist_ly": 420,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=Gaia+DR3+66802654309459712"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 14,
+   "designation": "Gaia DR3 65207709613871744",
+   "ra": 56.84992842917,
+   "dec": 23.914271006,
+   "x": 484.7,
+   "y": 1154.3,
+   "mag": 9.7,
+   "band": "G",
+   "dist_ly": 454,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=Gaia+DR3+65207709613871744"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 15,
+   "designation": "Gaia DR3 65020414679879296",
+   "ra": 56.96895425475,
+   "dec": 23.94102406851,
+   "x": 319.3,
+   "y": 1116.1,
+   "mag": 9.8,
+   "band": "G",
+   "dist_ly": 442,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=Gaia+DR3+65020414679879296"
+   }
+  }
+ ],
+ "warnings": [
+  "hero JPG would not plate-solve; solved M_45_33x10sec_T23degC_2025-12-26.fit (same pixel grid) instead \u2014 star landings verified against the hero JPG, coordinates are hero-frame top-down"
+ ]
+}
