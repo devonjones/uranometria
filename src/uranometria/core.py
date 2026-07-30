@@ -28,7 +28,9 @@ import re
 import urllib.parse
 
 from .catalog import Catalog, fmt_coord, parse_angle, sesame, object_links
+from .chart import assign_charts, resolve_font, resolve_palette
 from .page import build_page
+from .resources import sky_data
 
 
 class SkymapError(Exception):
@@ -276,13 +278,12 @@ def _load_config(config):
         return yaml.safe_load(f)
 
 
-def render(config, *, image_base=None, allow_online=True):
-    """Render the chart and return (html, warnings).
+def _resolve_chart(config, *, allow_online=True):
+    """Load and validate the chart-level config and resolve its objects, as
+    (cfg, objects, warnings).
 
-    config: a dict (see module docstring) or a path to a YAML file.
-    image_base: directory that relative `image` paths resolve against — pass
-        the directory you intend to write the HTML into. If None, entries with
-        relative image paths are rendered without their photo (with a warning).
+    The shared prologue of every renderer, so they all accept and reject exactly
+    the same configs. A `SkymapError` from here means no chart is possible at all.
     """
     cfg = _load_config(config)
     entries = cfg.get("objects") or []
@@ -305,7 +306,13 @@ def render(config, *, image_base=None, allow_online=True):
     objects, warnings = resolve_objects(entries, allow_online=allow_online)
     if not objects:
         raise SkymapError("no objects could be resolved")
-    thumbs_on = bool(cfg.get("thumbnails", False))
+    return cfg, objects, warnings
+
+
+def _attach_photos(objects, image_base, warnings, *, thumbs=False):
+    """Resolve each object's photo, thumbnail, annotation sidecar and annotated
+    page, appending to `warnings` in place. Only the HTML page draws photos."""
+    thumbs_on = thumbs
 
     for o in objects:
         if not o.get("image"):
@@ -351,7 +358,89 @@ def render(config, *, image_base=None, allow_online=True):
             elif page_href:
                 o["annotated_href"] = page_href
 
+
+def render(config, *, image_base=None, allow_online=True):
+    """Render the chart and return (html, warnings).
+
+    config: a dict (see module docstring) or a path to a YAML file.
+    image_base: directory that relative `image` paths resolve against — pass
+        the directory you intend to write the HTML into. If None, entries with
+        relative image paths are rendered without their photo (with a warning).
+    """
+    cfg, objects, warnings = _resolve_chart(config, allow_online=allow_online)
+    _attach_photos(objects, image_base, warnings, thumbs=bool(cfg.get("thumbnails", False)))
     return build_page(cfg, objects), warnings
+
+
+def render_svg(config, *, palette=None, font_family=None, allow_online=True):
+    """Render the chart as standalone SVG documents and return (charts, warnings).
+
+    One entry per hemisphere the object list needs, north first:
+
+        {"hemisphere": "north", "svg": "<svg …>…</svg>", "objects": [...]}
+
+    Each document carries its paint in presentation attributes and references
+    nothing outside itself — no stylesheet, no script, no fonts, no image URLs —
+    so a renderer without CSS draws it the way a browser draws the HTML page.
+    That is what lets a native application (Qt's QtSvg, or any SVG Tiny renderer)
+    show the chart without embedding a browser engine.
+
+    Every `objects` entry carries what a host needs to make the disc clickable:
+
+        {"uid": 0, "id": "mk-0", "disp": "M31", "image": "heroes/m31.jpg",
+         "x": 612.4, "y": 388.1,
+         "label": {"dx": 16, "dy": 4, "anchor": "start"}}
+
+    `x`/`y` are the marker center in the document's own coordinate system (the
+    viewBox is 0 0 1000 1000) and the ring has radius `chart.MARKER_R`; `label`
+    is the offset and anchor the label placer settled on, relative to that
+    center. `uid` indexes the config's `objects` list — unique across both discs,
+    and the same number as the `<g id="mk-N">` in the markup. `image` is the
+    config's own reference, unresolved: photos are never embedded in an SVG, so a
+    host draws them itself.
+
+    palette: overrides for `uranometria.chart.PALETTE`, any subset. An unknown
+        key, or a value that is not plainly a color, comes back as a warning and
+        keeps the default.
+    font_family: family name for chart text, e.g. "IBM Plex Mono". A name only —
+        the document never references a font file, so the host is responsible for
+        having the family available.
+    """
+    cfg, objects, warnings = _resolve_chart(config, allow_online=allow_online)
+    pal, pal_warnings = resolve_palette(palette)
+    font, font_warnings = resolve_font(font_family)
+    warnings += pal_warnings + font_warnings
+    charts = assign_charts(
+        objects,
+        sky_data(),
+        mag_limit=float(cfg.get("mag_limit", 5.0)),
+        show_ecliptic=bool(cfg.get("show_ecliptic", True)),
+        mirror=bool(cfg.get("mirror", False)),
+        palette=pal,
+        font_family=font,
+        static=True,
+    )
+    out = []
+    for c in charts:
+        out.append(
+            {
+                "hemisphere": "south" if c.south else "north",
+                "svg": c.standalone_svg(),
+                "objects": [
+                    {
+                        "uid": m["uid"],
+                        "id": f"mk-{m['uid']}",
+                        "disp": m["o"]["disp"],
+                        "image": m["o"].get("image"),
+                        "x": round(m["x"], 1),
+                        "y": round(m["y"], 1),
+                        "label": {"dx": m["dx"], "dy": m["dy"], "anchor": m["anchor"]},
+                    }
+                    for m in c.placements()
+                ],
+            }
+        )
+    return out, warnings
 
 
 def generate(config, output, *, allow_online=True):

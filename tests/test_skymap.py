@@ -905,3 +905,257 @@ def test_annotated_page_auto_discovery_and_missing(tmp_path):
     warnings = uranometria.generate(cfg, out, allow_online=False)
     assert any("annotated page not found" in w for w in warnings)
     assert 'class="annlink"' not in out.read_text()  # no link rendered
+
+
+# ---- static SVG render mode (uranometria-14) --------------------------------
+
+
+def test_render_svg_returns_standalone_document():
+    charts, warnings = uranometria.render_svg({"objects": ["M31", "M42"]}, allow_online=False)
+    assert warnings == []
+    assert [c["hemisphere"] for c in charts] == ["north"]
+    svg = charts[0]["svg"]
+    assert svg.startswith('<svg xmlns="http://www.w3.org/2000/svg" class="sky"')
+    assert 'viewBox="0 0 1000 1000"' in svg and 'width="1000" height="1000"' in svg
+    assert svg.endswith("</svg>")
+    # Nothing a renderer without CSS (or without a network) could trip over.
+    for absent in ("<style", "var(--", "<div", "<h2", "<script", "@import"):
+        assert absent not in svg, absent
+    # No external reference of any kind. The xmlns URI is a name, not a fetch,
+    # so look past the root tag for the attributes that would actually load.
+    body = svg[svg.index(">") + 1 :]
+    for absent in ("http", "src=", "href=", "url("):
+        assert absent not in body, absent
+
+
+def test_render_svg_paints_every_layer():
+    # Every shape that takes its paint from the stylesheet in the HTML page must
+    # carry it as an attribute here. Miss a fill="none" and the shape becomes a
+    # black disc over the chart, which is why these are pinned exactly.
+    svg = uranometria.render_svg({"objects": ["M31"]}, allow_online=False)[0][0]["svg"]
+    assert '<rect x="0" y="0" width="1000" height="1000" fill="#070B1B"/>' in svg
+    assert '<circle class="disc" cx="500" cy="500" r="470" fill="#0A0F24"/>' in svg
+    assert '<g class="grid" fill="none" stroke="#232D55" stroke-width="0.8">' in svg
+    assert 'class="equator" stroke="#39466F" stroke-width="1.2"/>' in svg
+    assert '<g class="constellations" fill="none" stroke="#3E4F86" stroke-width="1"' in svg
+    assert '<path opacity="0.75" d="M' in svg
+    assert 'class="ecliptic" fill="none" stroke="#5E4A7D" stroke-width="1.1"' in svg
+    assert 'stroke-dasharray="5 5" opacity="0.8"' in svg
+    assert '<circle class="rim" cx="500" cy="500" r="470" fill="none"' in svg
+    assert '<g class="connames" fill="#8492C0" text-anchor="middle">' in svg
+    assert '<g class="hours" fill="#7C86AC" font-size="12" text-anchor="middle">' in svg
+    assert '<g class="declabels" fill="#7C86AC" font-size="9.5"' in svg
+    assert 'class="cn1" font-size="13.5"' in svg
+
+
+def test_render_svg_folds_em_offsets_into_y(tmp_path):
+    from uranometria.chart import CY, R_MAX
+
+    svg = uranometria.render_svg({"objects": ["M31"]}, allow_online=False)[0][0]["svg"]
+    assert "dy=" not in svg  # SVG Tiny renderers ignore dy on <text>
+    # 0h sits at the top, so its baseline is the tick y plus 0.35 of 12px.
+    assert f'<text x="500.0" y="{CY - (R_MAX + 16) + 0.35 * 12:.1f}">0h</text>' in svg
+    # The HTML page keeps dy, so the nudge tracks the font size as you zoom.
+    out = tmp_path / "map.html"
+    uranometria.generate({"objects": ["M31"]}, out, allow_online=False)
+    html = out.read_text()
+    assert 'dy="0.35em"' in html and 'dy="-0.4em"' in html
+
+
+def test_render_svg_marker_label_gets_halo_underneath(tmp_path):
+    svg = uranometria.render_svg({"objects": ["M31"]}, allow_online=False)[0][0]["svg"]
+    # Two copies: the sky-colored halo first, then the glyph over it. Stroking
+    # the glyph directly needs paint-order, which SVG Tiny does not have.
+    assert svg.count(">M31</text>") == 2
+    assert 'fill="none" stroke="#0A0F24" stroke-width="3" stroke-linejoin="round"' in svg
+    assert svg.index('stroke-width="3" stroke-linejoin="round"') < svg.index(
+        'fill="#E5B958" stroke="none"'
+    )
+    # The page has paint-order, so it keeps a single label.
+    out = tmp_path / "map.html"
+    uranometria.generate({"objects": ["M31"]}, out, allow_online=False)
+    assert out.read_text().count(">M31</text>") == 1
+
+
+def test_render_svg_marker_carries_transform_and_text_metrics():
+    svg = uranometria.render_svg({"objects": ["M31"]}, allow_online=False)[0][0]["svg"]
+    assert 'transform="translate(534.0,319.9)"' in svg  # not stacked at the origin
+    assert 'style="--tx:534.0px;--ty:319.9px"' in svg  # the page's hook survives
+    assert 'font-size="12" font-weight="500"' in svg
+    assert 'font-family="sans-serif"' in svg
+    assert 'stroke="#E5B958" stroke-width="1.4"' in svg
+
+
+def test_render_svg_objects_carry_placement():
+    from uranometria.chart import project
+
+    charts, _ = uranometria.render_svg({"objects": ["M31"]}, allow_online=False)
+    o = charts[0]["objects"][0]
+    objects, _ = uranometria.resolve_objects(["M31"], allow_online=False)
+    px, py = project(objects[0]["ra"], objects[0]["dec"])
+    assert (o["x"], o["y"]) == (round(px, 1), round(py, 1))
+    assert o["uid"] == 0 and o["id"] == "mk-0"
+    assert f'id="{o["id"]}"' in charts[0]["svg"]
+    assert o["disp"] == "M31" and o["image"] is None
+    assert o["label"]["anchor"] in ("start", "end", "middle")
+
+
+def test_render_svg_orientation_follows_config():
+    from uranometria.chart import CX
+
+    entry = {"label": "X", "ra": 90.0, "dec": 10.0}
+    sky = uranometria.render_svg({"objects": [entry]}, allow_online=False)[0]
+    assert sky[0]["objects"][0]["x"] > CX  # RA 6h right of center on a northern disc
+    mirrored = uranometria.render_svg({"objects": [entry], "mirror": True}, allow_online=False)[0]
+    assert mirrored[0]["objects"][0]["x"] < CX
+
+
+def test_render_svg_two_hemispheres_split():
+    charts, _ = uranometria.render_svg({"objects": ["M31", "M42", "NGC 104"]}, allow_online=False)
+    assert [c["hemisphere"] for c in charts] == ["north", "south"]
+    north, south = charts
+    assert 'id="mk-1"' in south["svg"] and 'id="mk-1"' not in north["svg"]  # M42, dec ~ -5
+    assert 'id="mk-0"' in north["svg"]  # M31 stays north
+    uids = [o["uid"] for c in charts for o in c["objects"]]
+    assert sorted(uids) == [0, 1, 2]  # one key space across both discs
+
+
+def test_assign_charts_hemisphere_split():
+    from uranometria.chart import assign_charts
+    from uranometria.resources import sky_data
+
+    def charts_for(names):
+        objects, _ = uranometria.resolve_objects(names, allow_online=False)
+        return objects, assign_charts(objects, sky_data(), mag_limit=5.0, show_ecliptic=True)
+
+    objects, charts = charts_for(["M31", "M42"])
+    assert [c.south for c in charts] == [False]  # single disc takes everything
+    assert len(charts[0].markers) == 2
+    objects, charts = charts_for(["M31", "M42", "NGC 104"])
+    assert [c.south for c in charts] == [False, True]  # north first
+    assert [m["o"]["disp"] for m in charts[0].markers] == ["M31"]
+    assert [m["o"]["disp"] for m in charts[1].markers] == ["M42", "NGC 104"]
+
+
+def test_render_svg_honors_chart_config():
+    plain = uranometria.render_svg({"objects": ["M31"]}, allow_online=False)[0][0]["svg"]
+    no_ecl = uranometria.render_svg(
+        {"objects": ["M31"], "show_ecliptic": False}, allow_online=False
+    )[0][0]["svg"]
+    assert 'class="ecliptic"' in plain and 'class="ecliptic"' not in no_ecl
+    dim = uranometria.render_svg({"objects": ["M31"], "mag_limit": 2.0}, allow_online=False)[0][0][
+        "svg"
+    ]
+    assert dim.count("<circle cx=") < plain.count("<circle cx=")
+
+
+def test_render_svg_palette_overrides_and_unknown_key_warns():
+    charts, warnings = uranometria.render_svg(
+        {"objects": ["M31"]},
+        palette={"aster": "#123456", "bogus": "#ffffff"},
+        allow_online=False,
+    )
+    svg = charts[0]["svg"]
+    assert 'stroke="#123456"' in svg and "#3E4F86" not in svg
+    assert any("bogus" in w and "unknown" in w for w in warnings)
+
+
+def test_render_svg_palette_rejects_css_injection():
+    charts, warnings = uranometria.render_svg(
+        {"objects": ["M31"]},
+        palette={"sky": '#000" onload="alert(1)', "grid": "url(http://evil/x.png)"},
+        allow_online=False,
+    )
+    svg = charts[0]["svg"]
+    assert len(warnings) == 2 and all("not a plain color" in w for w in warnings)
+    assert "onload=" not in svg and "http" not in svg[svg.index(">") + 1 :]
+    assert 'fill="#0A0F24"' in svg and 'stroke="#232D55"' in svg  # defaults kept
+
+
+def test_render_svg_font_family_validated():
+    charts, warnings = uranometria.render_svg(
+        {"objects": ["M31"]}, font_family="IBM Plex Mono", allow_online=False
+    )
+    assert 'font-family="IBM Plex Mono"' in charts[0]["svg"] and warnings == []
+    charts, warnings = uranometria.render_svg(
+        {"objects": ["M31"]},
+        font_family='x"; @import url(http://evil/f.css)',
+        allow_online=False,
+    )
+    assert any("not a plain family name" in w for w in warnings)
+    assert "@import" not in charts[0]["svg"]
+    assert 'font-family="sans-serif"' in charts[0]["svg"]
+
+
+def test_render_svg_hostile_label_is_inert():
+    entry = {"label": "<img src=x onerror=alert(1)>", "ra": 10.0, "dec": 41.0}
+    svg = uranometria.render_svg({"objects": [entry]}, allow_online=False)[0][0]["svg"]
+    assert "<img" not in svg
+    assert svg.count("&lt;img src=x onerror=alert(1)&gt;") == 2  # halo + glyph
+
+
+def test_render_svg_object_color_wins_over_palette():
+    entry = {"id": "M31", "color": "#7EC8A0"}
+    svg = uranometria.render_svg({"objects": [entry]}, allow_online=False)[0][0]["svg"]
+    assert 'stroke="#7EC8A0"' in svg and 'fill="#7EC8A0"' in svg
+    assert "--accent:#7EC8A0" in svg
+
+
+def test_chart_layers_are_idempotent():
+    from uranometria.chart import assign_charts
+    from uranometria.resources import sky_data
+
+    objects, _ = uranometria.resolve_objects(["M31", "M81", "M101"], allow_online=False)
+    chart = assign_charts(objects, sky_data(), mag_limit=5.0, show_ecliptic=True)[0]
+    first = chart.standalone_svg()
+    assert chart.standalone_svg() == first  # a second emit must not re-place labels
+    assert len(chart.label_boxes) == len(chart.markers)
+
+
+def test_html_chart_keeps_css_classes_and_gains_attributes(tmp_path):
+    # The page's stylesheet outranks a presentation attribute, so the attributes
+    # added for the SVG mode are inert here: the classes and hooks stay put.
+    out = tmp_path / "map.html"
+    uranometria.generate({"objects": ["M31", "NGC 104"]}, out, allow_online=False)
+    html = out.read_text()
+    assert 'class="ecliptic"' in html and 'stroke-dasharray="5 5"' in html
+    assert 'class="disc"' in html and ".disc {" in html
+    assert "--tx:" in html and 'id="mk-0"' in html
+    assert html.count('<svg class="sky"') == 2
+    assert 'class="chart hidden" data-hemi="south"' in html
+
+
+def test_cli_svg_writes_one_file_per_hemisphere(tmp_path):
+    from click.testing import CliRunner
+
+    from uranometria.cli import main
+
+    cfg = tmp_path / "sky.yaml"
+    cfg.write_text("objects: [M31, M42]\n")
+    runner = CliRunner()
+    result = runner.invoke(main, ["chart", str(cfg), "--offline", "--svg"])
+    assert result.exit_code == 0, result.output
+    single = tmp_path / "sky.svg"
+    assert single.exists() and single.read_text().startswith("<svg xmlns=")
+    assert not (tmp_path / "sky.html").exists()  # --svg replaces the HTML
+
+    cfg.write_text('objects: [M31, "NGC 104"]\n')
+    result = runner.invoke(main, ["chart", str(cfg), "--offline", "--svg"])
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "sky.north.svg").exists() and (tmp_path / "sky.south.svg").exists()
+    assert "sky.north.svg" in result.output and "sky.south.svg" in result.output
+
+
+def test_cli_svg_explicit_path(tmp_path):
+    from click.testing import CliRunner
+
+    from uranometria.cli import main
+
+    cfg = tmp_path / "sky.yaml"
+    cfg.write_text("objects: [M31]\n")
+    runner = CliRunner()
+    for arg in (str(tmp_path / "out.svg"), str(tmp_path / "out")):
+        (tmp_path / "out.svg").unlink(missing_ok=True)
+        result = runner.invoke(main, ["chart", str(cfg), "--offline", "--svg", arg])
+        assert result.exit_code == 0, result.output
+        assert (tmp_path / "out.svg").exists()

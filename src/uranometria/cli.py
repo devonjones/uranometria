@@ -7,13 +7,29 @@ import click
 import yaml
 
 from . import __version__
-from .core import SkymapError, generate
+from .core import SkymapError, generate, render_svg
 
 
 @click.group()
 @click.version_option(__version__, prog_name="uranometria")
 def main():
     """Star charts and annotated astrophotos for the objects you've imaged."""
+
+
+def _svg_base(path):
+    """Output stem for --svg. A trailing .svg/.html/.yaml is dropped, so
+    `--svg map.svg`, `--svg map`, `-o map.html` and the config's own name all
+    land on map.svg."""
+    stem, ext = os.path.splitext(os.fspath(path))
+    return stem if ext.lower() in (".svg", ".html", ".yaml", ".yml") else os.fspath(path)
+
+
+def _svg_paths(base, charts):
+    """One path per hemisphere: a single disc writes <base>.svg, two write
+    <base>.north.svg and <base>.south.svg so neither overwrites the other."""
+    if len(charts) == 1:
+        return [f"{base}.svg"]
+    return [f"{base}.{c['hemisphere']}.svg" for c in charts]
 
 
 @main.command()
@@ -30,9 +46,21 @@ def main():
     is_flag=True,
     help="mirrored (celestial-globe) orientation; same as 'mirror: true' in the config",
 )
-def chart(config, output, offline, mirror):
-    """Generate an HTML sky chart from a YAML object list."""
+@click.option(
+    "--svg",
+    "svg_out",
+    is_flag=False,
+    flag_value="",
+    default=None,
+    help="write standalone SVG instead of HTML (optionally to PATH). No photos and "
+    "no stylesheet, for renderers without CSS; two hemispheres write "
+    "<base>.north.svg and <base>.south.svg",
+)
+def chart(config, output, offline, mirror, svg_out):
+    """Generate an HTML sky chart — or, with --svg, standalone SVG discs — from a
+    YAML object list."""
     out = output or os.path.splitext(config)[0] + ".html"
+    paths = [out]
     try:
         with open(config) as f:
             cfg = yaml.safe_load(f)
@@ -40,12 +68,20 @@ def chart(config, output, offline, mirror):
             raise SkymapError(f"{config} is not a mapping")
         if mirror:
             cfg["mirror"] = True
-        warnings = generate(cfg, out, allow_online=not offline)
+        if svg_out is not None:
+            charts, warnings = render_svg(cfg, allow_online=not offline)
+            paths = _svg_paths(_svg_base(svg_out or output or config), charts)
+            for path, c in zip(paths, charts):
+                with open(path, "w") as f:
+                    f.write(c["svg"])
+        else:
+            warnings = generate(cfg, out, allow_online=not offline)
     except (SkymapError, FileNotFoundError, ValueError) as e:
         raise click.ClickException(str(e)) from None
     for w in warnings:
         click.echo(f"note: {w}", err=True)
-    click.echo(f"wrote {out} ({os.path.getsize(out) // 1024} KB)")
+    for path in paths:
+        click.echo(f"wrote {path} ({os.path.getsize(path) // 1024} KB)")
 
 
 @main.command()

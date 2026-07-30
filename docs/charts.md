@@ -9,6 +9,7 @@ uranometria chart skymap.yaml                 # writes skymap.html next to the c
 uranometria chart skymap.yaml -o map.html
 uranometria chart skymap.yaml --offline       # never call the online resolver
 uranometria chart skymap.yaml --mirror        # mirrored (celestial-globe) view
+uranometria chart skymap.yaml --svg           # standalone SVG instead of HTML
 ```
 
 The config format is documented in [chart-config.md](chart-config.md).
@@ -88,6 +89,27 @@ is plain inline code. It renders identically from a local file, a USB stick,
 or a static host, with no network access. The one exception is object photos,
 which are referenced by path or URL, not embedded; keep them alongside the
 page (paths resolve relative to the output file).
+
+## Static SVG
+
+`--svg` writes the chart as a plain SVG document instead of the interactive
+page — one file per hemisphere, so two discs become `<base>.north.svg` and
+`<base>.south.svg`. This is for showing the chart somewhere a browser is not
+doing the drawing: a desktop application, a print workflow, a document.
+
+It is self-contained in a stronger sense than the HTML page. The colors and
+text sizes sit on the shapes themselves rather than in a stylesheet, and there
+are no fonts, no script, and no photo references at all — so a renderer that
+implements only SVG Tiny (Qt's SVG engine, for instance) draws the disc the way
+a browser draws the page. What you give up is everything interactive: no
+pan/zoom, no sidebar, no photo lightbox, and no hemisphere toggle, since each
+disc is simply its own file.
+
+A host application driving this from Python gets more than the markup back —
+see the library API in [chart-config.md](chart-config.md#library-use), which
+also returns each marker's position so the disc can be made clickable, and
+accepts a palette and font family so the chart can match the application's
+own theme.
 
 ## Regenerating as your library grows
 
