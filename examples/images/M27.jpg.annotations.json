@@ -1,0 +1,373 @@
+{
+ "schema": 1,
+ "image": "M27.jpg",
+ "image_size": [
+  1948,
+  2436
+ ],
+ "solved": {
+  "pixel_frame": "raster0",
+  "cd": [
+   [
+    -0.00032992009514652167,
+    1.589564728077724e-06
+   ],
+   [
+    -1.6225139556280947e-06,
+    -0.0003300591089561432
+   ]
+  ],
+  "center_ra": 299.9219149366028,
+  "center_dec": 22.79416303780131,
+  "scale_arcsec_px": 1.188,
+  "fov_deg": [
+   0.643,
+   0.804
+  ],
+  "rotation_deg": 0.28165395384298253,
+  "solver": "ASTAP"
+ },
+ "generated": "2026-07-27T22:52:00+00:00",
+ "objects": [
+  {
+   "kind": "dso",
+   "designation": "M27",
+   "aliases": [
+    "NGC 6853"
+   ],
+   "dist_ly": 861,
+   "name": "Dumbbell Nebula",
+   "type": "Planetary nebula",
+   "constellation": "Vulpecula",
+   "ra": 299.90158333333335,
+   "dec": 22.721027777777778,
+   "x": 1031.4,
+   "y": 1438.8,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=M27",
+    "wikipedia": "https://en.wikipedia.org/wiki/Messier_27"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "*  14 Vul",
+   "type": "Star (F0)",
+   "ra": 299.79390294448,
+   "dec": 23.101278930999996,
+   "x": 1325.9,
+   "y": 285.1,
+   "mag": 5.66,
+   "band": "V",
+   "dist_ly": 174,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=%2A++14+Vul"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "HD 189733",
+   "type": "Star (K2V)",
+   "ra": 300.18213726402,
+   "dec": 22.71085365096,
+   "x": 247.1,
+   "y": 1472.8,
+   "mag": 7.65,
+   "band": "V",
+   "dist_ly": 65,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=HD+189733"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "HD 345459",
+   "type": "Star (K0)",
+   "ra": 300.23729988149,
+   "dec": 22.84698109626,
+   "x": 91.8,
+   "y": 1060.9,
+   "mag": 8.09,
+   "band": "V",
+   "dist_ly": 981,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=HD+345459"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "HD 189657",
+   "type": "Star (A0)",
+   "ra": 300.08714683055996,
+   "dec": 22.4400393728,
+   "x": 515.8,
+   "y": 2292.4,
+   "mag": 8.09,
+   "band": "V",
+   "dist_ly": 720,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=HD+189657"
+   }
+  },
+  {
+   "kind": "star",
+   "named": true,
+   "designation": "HD 345442",
+   "type": "Star (F2)",
+   "ra": 299.81481586933,
+   "dec": 22.99671151888,
+   "x": 1269.4,
+   "y": 602.3,
+   "mag": 8.37,
+   "band": "V",
+   "dist_ly": 418,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=HD+345442"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 1,
+   "designation": "TYC 2141-972-1",
+   "ra": 300.18212180624,
+   "dec": 22.70974110517,
+   "x": 247.2,
+   "y": 1476.2,
+   "mag": 7.4,
+   "band": "G",
+   "dist_ly": 65,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2141-972-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 2,
+   "designation": "TYC 2141-566-1",
+   "ra": 299.76704055019,
+   "dec": 22.62846909462,
+   "x": 1409.2,
+   "y": 1717.1,
+   "mag": 7.9,
+   "band": "G",
+   "dist_ly": 3444,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2141-566-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 3,
+   "designation": "TYC 2141-688-1",
+   "ra": 300.02588543876,
+   "dec": 22.70469340748,
+   "x": 684.1,
+   "y": 1489.9,
+   "mag": 8.8,
+   "band": "G",
+   "dist_ly": 363,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2141-688-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 4,
+   "designation": "TYC 2141-1146-1",
+   "ra": 300.04887079885,
+   "dec": 22.71300198858,
+   "x": 619.7,
+   "y": 1465.0,
+   "mag": 9.5,
+   "band": "G",
+   "dist_ly": 3258,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2141-1146-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 5,
+   "designation": "TYC 2141-1260-1",
+   "ra": 300.17772402675,
+   "dec": 22.57480038349,
+   "x": 260.7,
+   "y": 1885.0,
+   "mag": 9.6,
+   "band": "G",
+   "dist_ly": 2476,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2141-1260-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 6,
+   "designation": "TYC 2141-749-1",
+   "ra": 299.95058786851,
+   "dec": 23.18456735691,
+   "x": 887.9,
+   "y": 35.1,
+   "mag": 9.6,
+   "band": "G",
+   "dist_ly": 1110,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2141-749-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 7,
+   "designation": "TYC 2141-2209-1",
+   "ra": 300.1374108894,
+   "dec": 23.02577957911,
+   "x": 369.0,
+   "y": 518.3,
+   "mag": 9.8,
+   "band": "G",
+   "dist_ly": 2064,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2141-2209-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 8,
+   "designation": "TYC 2141-2215-1",
+   "ra": 299.85422417889,
+   "dec": 23.02544697505,
+   "x": 1158.9,
+   "y": 515.8,
+   "mag": 9.8,
+   "band": "G",
+   "dist_ly": 5184,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2141-2215-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 9,
+   "designation": "TYC 2141-922-1",
+   "ra": 299.83657766547,
+   "dec": 22.61437959293,
+   "x": 1214.9,
+   "y": 1760.9,
+   "mag": 9.9,
+   "band": "G",
+   "dist_ly": 787,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2141-922-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 10,
+   "designation": "TYC 2141-1110-1",
+   "ra": 300.01237445734,
+   "dec": 22.59742880371,
+   "x": 723.2,
+   "y": 1814.7,
+   "mag": 9.9,
+   "band": "G",
+   "dist_ly": 5135,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2141-1110-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 11,
+   "designation": "TYC 2141-650-1",
+   "ra": 299.73458595312,
+   "dec": 22.74410263325,
+   "x": 1497.9,
+   "y": 1366.3,
+   "mag": 9.9,
+   "band": "G",
+   "dist_ly": 2267,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2141-650-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 12,
+   "designation": "Gaia DR3 1827310951566974976",
+   "ra": 299.72504207649,
+   "dec": 22.94181991777,
+   "x": 1520.9,
+   "y": 767.1,
+   "mag": 9.9,
+   "band": "G",
+   "dist_ly": null,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=Gaia+DR3+1827310951566974976"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 13,
+   "designation": "TYC 2141-1488-1",
+   "ra": 299.71205238945,
+   "dec": 22.74855899694,
+   "x": 1560.8,
+   "y": 1352.4,
+   "mag": 10.0,
+   "band": "G",
+   "dist_ly": 2756,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2141-1488-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 14,
+   "designation": "TYC 2141-1070-1",
+   "ra": 299.6445128386,
+   "dec": 22.56020959595,
+   "x": 1753.4,
+   "y": 1921.8,
+   "mag": 10.1,
+   "band": "G",
+   "dist_ly": 1172,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2141-1070-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 15,
+   "designation": "TYC 2141-1508-1",
+   "ra": 300.2452654519,
+   "dec": 22.68519230571,
+   "x": 70.8,
+   "y": 1551.1,
+   "mag": 10.1,
+   "band": "G",
+   "dist_ly": 3006,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2141-1508-1"
+   }
+  }
+ ],
+ "warnings": []
+}
