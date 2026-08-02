@@ -1,0 +1,309 @@
+{
+ "schema": 1,
+ "image": "M57.jpg",
+ "image_size": [
+  1726,
+  2157
+ ],
+ "solved": {
+  "pixel_frame": "raster0",
+  "cd": [
+   [
+    -0.00032983457884511316,
+    -2.910845671709945e-06
+   ],
+   [
+    -3.002915644176577e-06,
+    0.0003299083500589419
+   ]
+  ],
+  "center_ra": 283.3994146689079,
+  "center_dec": 33.02592760836257,
+  "scale_arcsec_px": 1.188,
+  "fov_deg": [
+   0.569,
+   0.712
+  ],
+  "rotation_deg": -179.47849261407393,
+  "solver": "ASTAP"
+ },
+ "generated": "2026-08-02T17:50:33+00:00",
+ "objects": [
+  {
+   "kind": "dso",
+   "designation": "M57",
+   "aliases": [
+    "NGC 6720"
+   ],
+   "dist_ly": 2746,
+   "name": "Ring Nebula",
+   "type": "Planetary nebula",
+   "constellation": "Lyra",
+   "ra": 283.395875,
+   "dec": 33.02858333333333,
+   "x": 871.4,
+   "y": 1086.1,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=M57",
+    "wikipedia": "https://en.wikipedia.org/wiki/Messier_57"
+   }
+  },
+  {
+   "kind": "dso",
+   "designation": "IC 1296",
+   "aliases": [],
+   "dist_ly": 238371499,
+   "name": null,
+   "type": "Galaxy",
+   "constellation": "Lyra",
+   "ra": 283.32845833333334,
+   "dec": 33.066583333333334,
+   "x": 1041.7,
+   "y": 1202.9,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=IC+1296"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 1,
+   "designation": "TYC 2643-823-1",
+   "ra": 283.6539136102,
+   "dec": 33.09489471804,
+   "x": 214.3,
+   "y": 1281.9,
+   "mag": 7.6,
+   "band": "G",
+   "dist_ly": 3239,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2643-823-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 2,
+   "designation": "TYC 2642-654-1",
+   "ra": 283.07203729064,
+   "dec": 33.3578815357,
+   "x": 1682.6,
+   "y": 2093.0,
+   "mag": 8.6,
+   "band": "G",
+   "dist_ly": 931,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2642-654-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 3,
+   "designation": "TYC 2642-521-1",
+   "ra": 283.28625397869,
+   "dec": 33.20999542037,
+   "x": 1144.6,
+   "y": 1638.7,
+   "mag": 8.8,
+   "band": "G",
+   "dist_ly": 1297,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2642-521-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 4,
+   "designation": "TYC 2642-1896-1",
+   "ra": 283.27458221877,
+   "dec": 32.81189538494,
+   "x": 1186.3,
+   "y": 432.4,
+   "mag": 9.2,
+   "band": "G",
+   "dist_ly": 5114,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2642-1896-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 5,
+   "designation": "TYC 2642-33-1",
+   "ra": 283.15168685835,
+   "dec": 33.34246636327,
+   "x": 1481.4,
+   "y": 2043.9,
+   "mag": 9.3,
+   "band": "G",
+   "dist_ly": 2611,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2642-33-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 6,
+   "designation": "TYC 2642-1808-1",
+   "ra": 283.27961163006,
+   "dec": 32.75106055052,
+   "x": 1175.3,
+   "y": 247.9,
+   "mag": 9.6,
+   "band": "G",
+   "dist_ly": 1128,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2642-1808-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 7,
+   "designation": "TYC 2642-2502-1",
+   "ra": 283.30319218177,
+   "dec": 32.74691733781,
+   "x": 1115.3,
+   "y": 234.7,
+   "mag": 9.7,
+   "band": "G",
+   "dist_ly": 3279,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2642-2502-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 8,
+   "designation": "TYC 2642-385-1",
+   "ra": 283.43602703162,
+   "dec": 33.18809240505,
+   "x": 765.3,
+   "y": 1568.7,
+   "mag": 9.7,
+   "band": "G",
+   "dist_ly": null,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2642-385-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 9,
+   "designation": "TYC 2643-1621-1",
+   "ra": 283.66744708517,
+   "dec": 32.92837459556,
+   "x": 183.1,
+   "y": 777.0,
+   "mag": 9.8,
+   "band": "G",
+   "dist_ly": 751,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2643-1621-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 10,
+   "designation": "TYC 2643-1494-1",
+   "ra": 283.7103368169,
+   "dec": 32.90255246586,
+   "x": 74.4,
+   "y": 698.0,
+   "mag": 9.8,
+   "band": "G",
+   "dist_ly": 1939,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2643-1494-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 11,
+   "designation": "TYC 2643-782-1",
+   "ra": 283.71246497885,
+   "dec": 33.00304015913,
+   "x": 67.2,
+   "y": 1002.6,
+   "mag": 9.8,
+   "band": "G",
+   "dist_ly": 1180,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2643-782-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 12,
+   "designation": "TYC 2643-878-1",
+   "ra": 283.69203101206,
+   "dec": 33.10679710556,
+   "x": 117.2,
+   "y": 1317.4,
+   "mag": 10.0,
+   "band": "G",
+   "dist_ly": 2051,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2643-878-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 13,
+   "designation": "TYC 2642-84-1",
+   "ra": 283.2654634127,
+   "dec": 33.12727116179,
+   "x": 1199.9,
+   "y": 1388.5,
+   "mag": 10.1,
+   "band": "G",
+   "dist_ly": 2618,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2642-84-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 14,
+   "designation": "TYC 2642-1690-1",
+   "ra": 283.26673730756,
+   "dec": 32.92575950491,
+   "x": 1202.8,
+   "y": 777.7,
+   "mag": 10.2,
+   "band": "G",
+   "dist_ly": 2845,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2642-1690-1"
+   }
+  },
+  {
+   "kind": "star",
+   "named": false,
+   "key": 15,
+   "designation": "TYC 2642-194-1",
+   "ra": 283.31370638049,
+   "dec": 33.29472691175,
+   "x": 1072.5,
+   "y": 1894.8,
+   "mag": 10.6,
+   "band": "G",
+   "dist_ly": 3270,
+   "links": {
+    "simbad": "https://simbad.cds.unistra.fr/simbad/sim-id?Ident=TYC+2642-194-1"
+   }
+  }
+ ],
+ "warnings": []
+}

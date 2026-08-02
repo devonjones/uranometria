@@ -57,6 +57,9 @@ objects:
   - id: M27
     image: images/M27.jpg
     color: "#80DEEA"     # planetary nebula
+  - id: M57
+    image: images/M57.jpg
+    color: "#80DEEA"     # planetary nebula
   - id: Sh2-142
     label: NGC 7380
     name: Wizard Nebula · Sh2-142
