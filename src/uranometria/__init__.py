@@ -27,5 +27,5 @@ Module map:
 
 from .core import SkymapError, generate, render, render_svg, resolve_objects
 
-__version__ = "0.11.0"
+__version__ = "0.12.0"
 __all__ = ["generate", "render", "render_svg", "resolve_objects", "SkymapError", "__version__"]

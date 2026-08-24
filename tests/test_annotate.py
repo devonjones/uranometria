@@ -1546,3 +1546,156 @@ def test_chart_annotation_label_scale(tmp_path):
     out = tmp_path / "map.html"
     uranometria.generate(cfg, out, allow_online=False)
     assert "const ANN_LABEL_SCALE = 1.5;" in out.read_text()
+
+
+def _fake_simbad_module(rows, ids_by_designation=None, captured=None):
+    """A stand-in astroquery.simbad module: enough surface for
+    named_bright_stars without network or astroquery installed."""
+    import sys
+    import types
+
+    class FakeTable:
+        def __init__(self, colnames, data):
+            self.colnames = colnames
+            self._data = data
+
+        def __iter__(self):
+            return iter(self._data)
+
+        def __len__(self):
+            return len(self._data)
+
+    class FakeSimbad:
+        def add_votable_fields(self, *fields):
+            if captured is not None:
+                captured["fields"] = fields
+
+        def query_region(self, center, radius, criteria):
+            if captured is not None:
+                captured["criteria"] = criteria
+            cols = ["main_id", "ra", "dec", "V", "sp_type", "plx_value", "otype", "nbref"]
+            return FakeTable(cols, rows)
+
+        def query_objectids(self, designation):
+            ids = (ids_by_designation or {}).get(designation)
+            if ids is None:
+                raise RuntimeError("no ids")
+            return FakeTable(["ID"], [{"ID": i} for i in ids])
+
+    mod = types.ModuleType("astroquery.simbad")
+    mod.Simbad = FakeSimbad
+    pkg = types.ModuleType("astroquery")
+    pkg.simbad = mod
+    return pkg, mod
+
+
+def test_named_bright_stars_notable_gate(monkeypatch):
+    from uranometria.annotate.field import named_bright_stars
+
+    rows = [
+        # famous but below the brightness bar: must be labeled, by its NAME alias
+        {
+            "main_id": "HD 226868",
+            "ra": 299.59,
+            "dec": 35.2,
+            "V": 8.91,
+            "sp_type": "O9.7Iabpvar",
+            "plx_value": 0.55,
+            "otype": "HXB",
+            "nbref": 4634,
+        },
+        # ordinary star just below the bar: stays anonymous
+        {
+            "main_id": "HD 999999",
+            "ra": 299.6,
+            "dec": 35.3,
+            "V": 9.0,
+            "sp_type": "G2",
+            "plx_value": None,
+            "otype": "*",
+            "nbref": 20,
+        },
+        # bright star: passes on magnitude alone, not notable
+        {
+            "main_id": "HD 227018",
+            "ra": 299.98,
+            "dec": 35.3,
+            "V": 7.5,
+            "sp_type": "O6.5",
+            "plx_value": None,
+            "otype": "*",
+            "nbref": 150,
+        },
+        # famous with no optical magnitude: never labeled onto blank sky
+        {
+            "main_id": "PSR J0000+0000",
+            "ra": 299.7,
+            "dec": 35.1,
+            "V": None,
+            "sp_type": None,
+            "plx_value": None,
+            "otype": "Psr",
+            "nbref": 3000,
+        },
+    ]
+    captured = {}
+    pkg, mod = _fake_simbad_module(
+        rows,
+        ids_by_designation={"HD 226868": ["HD 226868", "X Cyg X-1", "TYC 2678-791-1"]},
+        captured=captured,
+    )
+    monkeypatch.setitem(__import__("sys").modules, "astroquery", pkg)
+    monkeypatch.setitem(__import__("sys").modules, "astroquery.simbad", mod)
+
+    out = named_bright_stars(299.8, 35.2, 1.0)
+    assert "nbref" in captured["fields"]
+    assert "nbref >= 300" in captured["criteria"]
+    got = {s["designation"]: s for s in out}
+    assert set(got) == {"Cyg X-1", "HD 227018"}
+    assert got["Cyg X-1"]["notable"] is True and got["Cyg X-1"]["mag"] == 8.91
+    assert got["HD 227018"]["notable"] is False
+
+    # notable_refs=0 restores the pure brightness gate
+    out = named_bright_stars(299.8, 35.2, 1.0, notable_refs=0)
+    assert "nbref" not in captured["criteria"]
+    assert [s["designation"] for s in out] == ["HD 227018"]
+
+
+def test_famous_alias_fallbacks(monkeypatch):
+    from uranometria.annotate.field import _famous_alias
+
+    pkg, mod = _fake_simbad_module(
+        [], ids_by_designation={"A": ["HD 1", "Cyg X-3"], "B": ["HD 2", "TYC 1-2-3"]}
+    )
+    sim = mod.Simbad()
+    # X-source style beats main_id when there is no NAME alias
+    assert _famous_alias(sim, "A") == "Cyg X-3"
+    # nothing famous in the list: keep what we had
+    assert _famous_alias(sim, "B") == "B"
+    # ids lookup failing keeps what we had
+    assert _famous_alias(sim, "unknown") == "unknown"
+
+
+def test_model_passes_notable_flag(monkeypatch, tmp_path):
+    import uranometria.annotate.model as model
+
+    named = [
+        {
+            "designation": "Cyg X-1",
+            "notable": True,
+            "ra": 202.86,
+            "dec": 47.27,
+            "mag": 8.91,
+            "band": "V",
+            "sp_type": "O9.7Iabpvar",
+            "dist_ly": 7100,
+        }
+    ]
+    monkeypatch.setattr(model, "solve", lambda image, **kw: dict(M51_SOLUTION))
+    monkeypatch.setattr(model, "_image_size", lambda image: (3872, 2192))
+    monkeypatch.setattr(model, "named_bright_stars", lambda *a, **k: named)
+    monkeypatch.setattr(model, "stars_in_field", lambda *a, **k: [])
+    m = model.build_model(tmp_path / "f.fit", allow_online=True)
+    star = [o for o in m["objects"] if o["kind"] == "star"][0]
+    assert star["named"] is True and star["notable"] is True
+    assert star["designation"] == "Cyg X-1"

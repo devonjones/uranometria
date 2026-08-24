@@ -96,6 +96,12 @@ def chart(config, output, offline, mirror, svg_out):
     "--mag-limit", default=12.5, show_default=True, help="faintest field stars to include"
 )
 @click.option("--max-stars", default=15, show_default=True, help="most field stars to include")
+@click.option(
+    "--notable-refs",
+    default=300,
+    show_default=True,
+    help="label stars this famous (SIMBAD citation count) even when faint; 0 disables",
+)
 @click.option("--offline", is_flag=True, help="skip SIMBAD/VizieR star queries (DSOs only)")
 @click.option("--astap", help="path to the astap_cli binary (or set ASTAP_CLI)")
 @click.option("--astap-db", help="path to the ASTAP star database directory (or set ASTAP_DB)")
@@ -132,6 +138,7 @@ def annotate(
     output,
     mag_limit,
     max_stars,
+    notable_refs,
     offline,
     astap,
     astap_db,
@@ -159,6 +166,7 @@ def annotate(
             image,
             mag_limit=mag_limit,
             max_stars=max_stars,
+            notable_refs=notable_refs,
             allow_online=not offline,
             solve_kwargs=solve_kwargs,
         )

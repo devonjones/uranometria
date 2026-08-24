@@ -199,15 +199,57 @@ def stars_in_field(center_ra, center_dec, radius_deg, *, mag_limit=12.5, max_sta
     return stars
 
 
-def named_bright_stars(center_ra, center_dec, radius_deg, *, mag_limit=8.5):
-    """SIMBAD-named bright stars in the field (HD/proper names, spectral type).
-    Online only; returns [] when SIMBAD has nothing bright here."""
+def _famous_alias(sim, designation):
+    """The name a person would recognize, from SIMBAD's identifier list.
+    main_id is often the least famous handle an object has (Cyg X-1 files
+    under HD 226868), so prefer a proper 'NAME …' alias, then an X-ray
+    source style one. Any failure keeps the designation we already had."""
+    import re
+
+    try:
+        t = sim.query_objectids(designation)
+    except Exception:
+        return designation
+    if t is None or len(t) == 0:
+        return designation
+    cols = {c.lower(): c for c in t.colnames}
+    idc = cols.get("id")
+    if idc is None:
+        return designation
+    ids = [str(row[idc]).strip() for row in t]
+    for i in ids:
+        if i.upper().startswith("NAME "):
+            return i[5:]
+    # SIMBAD's X-ray source identifiers carry an 'X ' prefix: 'X Cyg X-1'.
+    # The part after the prefix is the household name.
+    for i in ids:
+        if i.startswith("X ") and re.fullmatch(r"[A-Za-z]+ X-\d+[A-Za-z]?", i[2:]):
+            return i[2:]
+    for i in ids:
+        if re.fullmatch(r"[A-Za-z]+ X-\d+[A-Za-z]?", i):
+            return i
+    return designation
+
+
+def named_bright_stars(
+    center_ra, center_dec, radius_deg, *, mag_limit=8.5, notable_refs=300, notable_faint_limit=12.5
+):
+    """SIMBAD-named stars in the field: bright ones (HD/proper names, spectral
+    type), plus famous ones regardless of brightness. Fame is SIMBAD's nbref
+    citation count — Cyg X-1 (V 8.91, ~4600 refs) must not fall through to an
+    anonymous Tycho label just because it misses the brightness bar, while an
+    ordinary field star (a few dozen refs) stays anonymous. notable_refs=0
+    disables the fame clause. Notable entries still need an optical magnitude
+    inside notable_faint_limit, so a counterpart-less X-ray source never gets
+    a label on blank sky. Online only; returns [] when SIMBAD has nothing."""
     from astropy import units as u
     from astropy.coordinates import SkyCoord
     from astroquery.simbad import Simbad
 
     sim = Simbad()
-    sim.add_votable_fields("V", "sp_type", "plx_value", "otype")
+    sim.add_votable_fields("V", "sp_type", "plx_value", "otype", "nbref")
+    bright = f"allfluxes.V < {mag_limit}"
+    famous = f"nbref >= {notable_refs}"
     table = sim.query_region(
         SkyCoord(center_ra * u.deg, center_dec * u.deg),
         radius=radius_deg * u.deg,
@@ -215,7 +257,8 @@ def named_bright_stars(center_ra, center_dec, radius_deg, *, mag_limit=8.5):
         # galaxy otype hierarchy so bright Seyferts don't masquerade as stars.
         # criteria needs astroquery >= 0.4.8 (the TAP-based Simbad), which the
         # [annotate] extra pins.
-        criteria=f"allfluxes.V < {mag_limit} AND otype != 'G..'",
+        criteria=(f"({bright} OR {famous})" if notable_refs else f"{bright}")
+        + " AND otype != 'G..'",
     )
     out = []
     if table is None:
@@ -240,7 +283,16 @@ def named_bright_stars(center_ra, center_dec, radius_deg, *, mag_limit=8.5):
             v = float(v) if v is not None else None
         except (TypeError, ValueError):
             v = None
-        if v is None or v >= mag_limit:
+        nbref = col(row, "nbref")
+        try:
+            nbref = int(nbref) if nbref is not None else 0
+        except (TypeError, ValueError):
+            nbref = 0
+        notable = bool(notable_refs) and nbref >= notable_refs
+        # bright stars pass on magnitude; famous ones get the field-star
+        # limit instead — but a row with no optical magnitude at all is
+        # unlabelable regardless of citation count
+        if v is None or v >= (notable_faint_limit if notable else mag_limit):
             continue
         ra = float(col(row, "ra"))
         dec = float(col(row, "dec"))
@@ -249,9 +301,13 @@ def named_bright_stars(center_ra, center_dec, radius_deg, *, mag_limit=8.5):
             plx = float(plx) if plx is not None else None
         except (TypeError, ValueError):
             plx = None
+        designation = str(col(row, "main_id"))
+        if notable:
+            designation = _famous_alias(sim, designation)
         out.append(
             {
-                "designation": str(col(row, "main_id")),
+                "designation": designation,
+                "notable": notable,
                 "ra": ra,
                 "dec": dec,
                 "mag": round(v, 2),
