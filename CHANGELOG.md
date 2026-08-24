@@ -3,6 +3,18 @@
 All dates 2026. Versions bump whenever behavior visible in the output
 changes, so they move fast.
 
+## 0.12.0 (August 23)
+
+- Famous objects are no longer anonymous. `annotate` labeled Cygnus X-1 —
+  the first black hole ever identified — as "TYC 2678-791-1", because the
+  named-star pass admitted stars on brightness alone (V < 8.5) and Cyg X-1
+  is V 8.91. Fame now counts too: any star SIMBAD cites heavily (nbref,
+  default ≥ 300, `--notable-refs`, 0 disables) gets named regardless of
+  brightness, carries `notable: true` in the model, and is introduced by
+  the name a person would recognize — a proper `NAME` alias or an X-ray
+  source designation ahead of its HD number. A famous object with no
+  optical magnitude is still never labeled onto blank sky.
+
 ## 0.11.0 (July 29)
 
 - Charts render as standalone SVG, for applications that draw the sky

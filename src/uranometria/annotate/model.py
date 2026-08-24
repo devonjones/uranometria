@@ -77,7 +77,9 @@ def _harmonize_pair_distances(objects):
                 break
 
 
-def build_model(image, *, mag_limit=12.5, max_stars=15, allow_online=True, solve_kwargs=None):
+def build_model(
+    image, *, mag_limit=12.5, max_stars=15, notable_refs=300, allow_online=True, solve_kwargs=None
+):
     """Solve `image`, cross-match the field, and return the annotation model."""
     width, height = _image_size(image)
     solution = solve(image, **(solve_kwargs or {}))
@@ -160,7 +162,13 @@ def build_model(image, *, mag_limit=12.5, max_stars=15, allow_online=True, solve
                 warnings.append(f"SIMBAD distance lookup failed: {err}")
         _harmonize_pair_distances(objects)
         try:
-            named = named_bright_stars(center_ra, center_dec, radius)
+            named = named_bright_stars(
+                center_ra,
+                center_dec,
+                radius,
+                notable_refs=notable_refs,
+                notable_faint_limit=mag_limit,
+            )
         except Exception as err:  # network/service failure degrades, never crashes
             named = []
             warnings.append(f"SIMBAD bright-star query failed: {err}")
@@ -185,6 +193,7 @@ def build_model(image, *, mag_limit=12.5, max_stars=15, allow_online=True, solve
             {
                 "kind": "star",
                 "named": True,
+                "notable": bool(s.get("notable")),
                 "designation": s["designation"],
                 "type": "Star" + (f" ({s['sp_type']})" if s.get("sp_type") else ""),
                 "ra": s["ra"],

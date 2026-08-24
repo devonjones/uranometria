@@ -111,12 +111,15 @@ Deep-sky object:
 (approximate, shown with a tilde), a SIMBAD measured distance otherwise, or
 null. `wikipedia` appears for Messier objects and objects with a common name.
 
-Named bright star:
+Named bright star (`notable` is true when the star was included for its
+SIMBAD citation count rather than its brightness — a famous object like
+Cyg X-1 that would otherwise fall below the bright-star bar):
 
 ```json
 {
   "kind": "star",
   "named": true,
+  "notable": false,
   "designation": "HD 117815",
   "type": "Star (A5)",
   "ra": 202.859, "dec": 47.269,
