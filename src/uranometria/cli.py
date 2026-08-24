@@ -100,6 +100,7 @@ def chart(config, output, offline, mirror, svg_out):
     "--notable-refs",
     default=300,
     show_default=True,
+    type=click.IntRange(min=0),
     help="label stars this famous (SIMBAD citation count) even when faint; 0 disables",
 )
 @click.option("--offline", is_flag=True, help="skip SIMBAD/VizieR star queries (DSOs only)")

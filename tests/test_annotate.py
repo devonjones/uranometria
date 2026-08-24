@@ -1577,6 +1577,8 @@ def _fake_simbad_module(rows, ids_by_designation=None, captured=None):
             return FakeTable(cols, rows)
 
         def query_objectids(self, designation):
+            if captured is not None:
+                captured.setdefault("objectid_calls", []).append(designation)
             ids = (ids_by_designation or {}).get(designation)
             if ids is None:
                 raise RuntimeError("no ids")
@@ -1654,6 +1656,16 @@ def test_named_bright_stars_notable_gate(monkeypatch):
     assert set(got) == {"Cyg X-1", "HD 227018"}
     assert got["Cyg X-1"]["notable"] is True and got["Cyg X-1"]["mag"] == 8.91
     assert got["HD 227018"]["notable"] is False
+    assert "_nbref" not in got["Cyg X-1"]
+    # only notables cost an alias lookup
+    assert captured["objectid_calls"] == ["HD 226868"]
+
+    # fame must never gate STRICTER than brightness: with the field-star
+    # limit tightened below the bright bar, notables face max(8.5, 6.0)=8.5,
+    # the same bar an ordinary star faces — so V 8.91 drops on equal terms
+    # instead of being singled out by the tighter faint limit.
+    out = named_bright_stars(299.8, 35.2, 1.0, notable_faint_limit=6.0)
+    assert [s["designation"] for s in out] == ["HD 227018"]
 
     # notable_refs=0 restores the pure brightness gate
     out = named_bright_stars(299.8, 35.2, 1.0, notable_refs=0)
@@ -1665,11 +1677,18 @@ def test_famous_alias_fallbacks(monkeypatch):
     from uranometria.annotate.field import _famous_alias
 
     pkg, mod = _fake_simbad_module(
-        [], ids_by_designation={"A": ["HD 1", "Cyg X-3"], "B": ["HD 2", "TYC 1-2-3"]}
+        [],
+        ids_by_designation={
+            "A": ["HD 1", "Cyg X-3"],
+            "B": ["HD 2", "TYC 1-2-3"],
+            "C": ["HD 3", "X Sco X-1", "NAME  Antares B"],
+        },
     )
     sim = mod.Simbad()
     # X-source style beats main_id when there is no NAME alias
     assert _famous_alias(sim, "A") == "Cyg X-3"
+    # a NAME alias beats everything, stripped of prefix and padding
+    assert _famous_alias(sim, "C") == "Antares B"
     # nothing famous in the list: keep what we had
     assert _famous_alias(sim, "B") == "B"
     # ids lookup failing keeps what we had
@@ -1693,9 +1712,13 @@ def test_model_passes_notable_flag(monkeypatch, tmp_path):
     ]
     monkeypatch.setattr(model, "solve", lambda image, **kw: dict(M51_SOLUTION))
     monkeypatch.setattr(model, "_image_size", lambda image: (3872, 2192))
-    monkeypatch.setattr(model, "named_bright_stars", lambda *a, **k: named)
+    seen = {}
+    monkeypatch.setattr(model, "named_bright_stars", lambda *a, **k: (seen.update(k), named)[1])
     monkeypatch.setattr(model, "stars_in_field", lambda *a, **k: [])
-    m = model.build_model(tmp_path / "f.fit", allow_online=True)
+    m = model.build_model(tmp_path / "f.fit", allow_online=True, notable_refs=500)
     star = [o for o in m["objects"] if o["kind"] == "star"][0]
     assert star["named"] is True and star["notable"] is True
     assert star["designation"] == "Cyg X-1"
+    # build_model forwards the fame knob and ties the notable faint limit
+    # to the field-star mag limit
+    assert seen == {"notable_refs": 500, "notable_faint_limit": 12.5}

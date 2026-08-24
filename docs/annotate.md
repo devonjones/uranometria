@@ -63,6 +63,7 @@ the model exactly; the renderer refuses mismatched pairs.
 | `-o, --output FILE` | model JSON path (default `<image>.annotations.json`) |
 | `--mag-limit FLOAT` | faintest field stars to include (default 12.5, Gaia G) |
 | `--max-stars N` | most field stars to label (default 15, brightest in frame) |
+| `--notable-refs N` | label stars this famous (SIMBAD citation count) even when faint (default 300, 0 disables) |
 | `--offline` | skip SIMBAD/VizieR: deep-sky objects only, no field stars or distances |
 | `--astap PATH` | astap_cli binary (or env `ASTAP_CLI`) |
 | `--astap-db PATH` | star database directory (or env `ASTAP_DB`) |
@@ -141,7 +142,12 @@ key when the model lives elsewhere.
   galaxies, SIMBAD measured distances for nebulae and clusters, with alias
   designations tried when the primary comes up empty.
 - **Named bright stars**: SIMBAD stars brighter than V≈8.5 in the field, with
-  HD/proper designations, spectral types, and parallax distances.
+  HD/proper designations, spectral types, and parallax distances. Famous
+  objects join them regardless of brightness: any star SIMBAD cites at least
+  `--notable-refs` times (default 300) is named — by its recognizable alias,
+  not its HD number — as long as it has an optical magnitude within
+  `--mag-limit`, and carries `notable: true` in the model. Cyg X-1 (V 8.91,
+  thousands of citations) is the motivating case.
 - **Field stars**: Gaia DR3 magnitudes and parallax distances via VizieR,
   with Tycho-2 designations where a match exists, brightest first up to
   `--max-stars`.

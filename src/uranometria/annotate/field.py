@@ -219,16 +219,23 @@ def _famous_alias(sim, designation):
     ids = [str(row[idc]).strip() for row in t]
     for i in ids:
         if i.upper().startswith("NAME "):
-            return i[5:]
+            return i[5:].strip()
     # SIMBAD's X-ray source identifiers carry an 'X ' prefix: 'X Cyg X-1'.
     # The part after the prefix is the household name.
     for i in ids:
-        if i.startswith("X ") and re.fullmatch(r"[A-Za-z]+ X-\d+[A-Za-z]?", i[2:]):
-            return i[2:]
+        if i.startswith("X ") and re.fullmatch(r"[A-Za-z]+ X-\d+[A-Za-z]?", i[2:].strip()):
+            return i[2:].strip()
     for i in ids:
         if re.fullmatch(r"[A-Za-z]+ X-\d+[A-Za-z]?", i):
             return i
     return designation
+
+
+# each alias upgrade is one extra SIMBAD round trip; a field can legitimately
+# hold a handful of famous objects, but a low --notable-refs in a crowded
+# field must not turn into dozens of serial queries. The most-cited objects
+# get the lookups; the rest keep their main_id.
+MAX_ALIAS_LOOKUPS = 8
 
 
 def named_bright_stars(
@@ -289,10 +296,12 @@ def named_bright_stars(
         except (TypeError, ValueError):
             nbref = 0
         notable = bool(notable_refs) and nbref >= notable_refs
-        # bright stars pass on magnitude; famous ones get the field-star
-        # limit instead — but a row with no optical magnitude at all is
-        # unlabelable regardless of citation count
-        if v is None or v >= (notable_faint_limit if notable else mag_limit):
+        # bright stars pass on magnitude; famous ones additionally get the
+        # field-star limit, whichever is looser — fame must never make the
+        # gate stricter than an ordinary star faces. A row with no optical
+        # magnitude at all is unlabelable regardless of citation count.
+        limit = max(mag_limit, notable_faint_limit) if notable else mag_limit
+        if v is None or v >= limit:
             continue
         ra = float(col(row, "ra"))
         dec = float(col(row, "dec"))
@@ -301,13 +310,11 @@ def named_bright_stars(
             plx = float(plx) if plx is not None else None
         except (TypeError, ValueError):
             plx = None
-        designation = str(col(row, "main_id"))
-        if notable:
-            designation = _famous_alias(sim, designation)
         out.append(
             {
-                "designation": designation,
+                "designation": str(col(row, "main_id")),
                 "notable": notable,
+                "_nbref": nbref,
                 "ra": ra,
                 "dec": dec,
                 "mag": round(v, 2),
@@ -316,6 +323,12 @@ def named_bright_stars(
                 "dist_ly": round(1000.0 / plx * 3.26156) if plx and plx > 0.5 else None,
             }
         )
+    for s in sorted((s for s in out if s["notable"]), key=lambda s: -s["_nbref"])[
+        :MAX_ALIAS_LOOKUPS
+    ]:
+        s["designation"] = _famous_alias(sim, s["designation"])
+    for s in out:
+        s.pop("_nbref", None)
     out.sort(key=lambda s: s["mag"])
     return out
 
