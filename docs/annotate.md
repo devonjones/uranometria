@@ -146,7 +146,9 @@ key when the model lives elsewhere.
   objects join them regardless of brightness: any star SIMBAD cites at least
   `--notable-refs` times (default 300) is named — by its recognizable alias,
   not its HD number — as long as it has an optical magnitude within
-  `--mag-limit`, and carries `notable: true` in the model. Cyg X-1 (V 8.91,
+  the looser of the bright-star bar (V≈8.5) and `--mag-limit` — fame can
+  loosen the gate but never tighten it — and carries `notable: true` in
+  the model. Cyg X-1 (V 8.91,
   thousands of citations) is the motivating case.
 - **Field stars**: Gaia DR3 magnitudes and parallax distances via VizieR,
   with Tycho-2 designations where a match exists, brightest first up to

@@ -1722,3 +1722,37 @@ def test_model_passes_notable_flag(monkeypatch, tmp_path):
     # build_model forwards the fame knob and ties the notable faint limit
     # to the field-star mag limit
     assert seen == {"notable_refs": 500, "notable_faint_limit": 12.5}
+
+
+def test_alias_lookup_cap(monkeypatch):
+    import uranometria.annotate.field as field
+
+    rows = [
+        {
+            "main_id": f"HD {i}",
+            "ra": 299.0 + i * 0.01,
+            "dec": 35.0,
+            "V": 8.9,
+            "sp_type": None,
+            "plx_value": None,
+            "otype": "HXB",
+            "nbref": refs,
+        }
+        for i, refs in enumerate([1000, 500, 400])
+    ]
+    captured = {}
+    pkg, mod = _fake_simbad_module(
+        rows,
+        ids_by_designation={f"HD {i}": [f"HD {i}", f"NAME Famous {i}"] for i in range(3)},
+        captured=captured,
+    )
+    monkeypatch.setitem(__import__("sys").modules, "astroquery", pkg)
+    monkeypatch.setitem(__import__("sys").modules, "astroquery.simbad", mod)
+    monkeypatch.setattr(field, "MAX_ALIAS_LOOKUPS", 2)
+
+    out = field.named_bright_stars(299.0, 35.0, 1.0)
+    # most-cited two get the round trips, in nbref order; the third keeps main_id
+    assert captured["objectid_calls"] == ["HD 0", "HD 1"]
+    got = {s["designation"] for s in out}
+    assert got == {"Famous 0", "Famous 1", "HD 2"}
+    assert all(s["notable"] for s in out)
