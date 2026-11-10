@@ -3,6 +3,7 @@
 ```json
 {
   "defaults_version_checked": "1.6.0",
+  "bots": {"gemini": false},
   "disabled": [
     "concurrency-reviewer",
     "external-process-reviewer",
